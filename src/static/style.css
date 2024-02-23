@@ -38,3 +38,7 @@ vscode-panels {
   border: 2px dashed #7b61ff;
   border-radius: 5px;
 }
+
+.hidden {
+  display: none;
+}

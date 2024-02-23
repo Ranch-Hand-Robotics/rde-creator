@@ -74,43 +74,73 @@ export class CreateNodePanel {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; img-src ${webview.cspSource} https:; script-src 'nonce-${nonce}';">
           <link rel="stylesheet" href="${styleUri}">
-          <title>ROS 2 Node Creator</title>
+          <title>ROS 2 Package Creator</title>
         </head>
         <body>
-          <h1>Create new ROS 2 Package:</h1>
-          <section class="component-row">
-            <section class="component-container">
-            <h2>Package type</h2>
-              <section class="component-example">
-                <vscode-radio-group orientation="vertical">
-                  <label slot="label">Language:</label>
-                  <vscode-radio value="type_cpp">C++</vscode-radio>
-                  <vscode-radio value="type_python">Python</vscode-radio>
-                  <vscode-radio value="type_rust">Rust</vscode-radio>
-                  <vscode-radio value="type_resource">Resource</vscode-radio>
-                </vscode-radio-group>
+          <div id="create_package_page">
+            <h1>Create new ROS 2 Package:</h1>
+            <section class="component-row">
+              <section class="component-container">
+              <h2>Package type</h2>
+                <section class="component-example">
+                  <vscode-radio-group orientation="vertical">
+                    <label slot="label">Language:</label>
+                    <vscode-radio value="type_cpp">C++</vscode-radio>
+                    <vscode-radio value="type_python">Python</vscode-radio>
+                    <vscode-radio value="type_rust">Rust</vscode-radio>
+                    <vscode-radio value="type_resource">Resource</vscode-radio>
+                  </vscode-radio-group>
+                </section>
+              </section>
+              <section class="component-container">
+                <h2>Package Metadata</h2>
+                <section class="component-example">
+                  <vscode-text-field placeholder="my_package" name="package_name">Name</vscode-text-field>
+                  <vscode-text-field placeholder="nobody@nowhere.robots" name="package_maintainer">Maintainer</vscode-text-field>
+                  <vscode-text-field placeholder="0.0.0" name="package_version">Version</vscode-text-field>
+                  <vscode-text-area placeholder="This is a sample description" rows="5" cols="50" name="package_description">Description</vscode-text-area>
+                  <p>License:</p>
+                  <vscode-dropdown position="below">
+                    <vscode-option name="MIT">MIT</vscode-option>
+                    <vscode-option name="Apache">Apache</vscode-option>
+                    <vscode-option name="Other">Other</vscode-option>
+                  </vscode-dropdown>
+                </section>
               </section>
             </section>
-
-            <section class="component-container">
-              <h2>Package Metadata</h2>
-              <section class="component-example">
-                <vscode-text-field placeholder="my_package" name="package_name">Name</vscode-text-field>
-                <vscode-text-field placeholder="nobody@nowhere.robots" name="package_maintainer">Maintainer</vscode-text-field>
-                <vscode-text-field placeholder="0.0.0" name="package_version">Version</vscode-text-field>
-                <vscode-text-area placeholder="This is a sample description" rows="20" name="package_description">Description</vscode-text-area>
-                <p>License:</p>
-                <vscode-dropdown position="below">
-                  <vscode-option name="MIT">MIT</vscode-option>
-                  <vscode-option name="Apache">Apache</vscode-option>
-                  <vscode-option name="Other">Other</vscode-option>
-                </vscode-dropdown>
+            <section id="component-row">
+              <vscode-button id="second_page_button">Next Page</vscode-button>
+            </section>
+          </div>
+          <!-- Hidden by default -->
+          <div id="create_node_page" class="hidden">
+            <h1>Populate ROS 2 Node:</h1>
+            <section class="component-row">
+              <section class="component-container">
+                <h2>Node Properties:</h2>
+                <section class="component-example">
+                  <vscode-text-field placeholder="node_binary" name="node_name">Node Binary Name</vscode-text-field>
+                  <vscode-text-field placeholder="node_class" name="class_name">Primary Class Name</vscode-text-field>
+                </section>
+              </section>
+              <section class="component-container">
+                <h2>Include:</h2>
+                <section class="component-example">
+                  <vscode-checkbox id="include_publisher">Include Publisher</vscode-checkbox>
+                  <vscode-checkbox id="include_subscriber">Include Subscriber</vscode-checkbox>
+                  <vscode-checkbox id="include_service">Include Service</vscode-checkbox>
+                  <vscode-checkbox id="include_action">Include Action</vscode-checkbox>
+                </section>
+              </section>
+              <section class="component-container">
+                <h2>Options:</h2>
+                <section class="component-example">
+                  <vscode-checkbox id="include_i2c">Include I<sup>2</sup>C</vscode-checkbox>
+                  <vscode-checkbox id="include_gpio">Include GPIO</vscode-checkbox>
+                </section>
               </section>
             </section>
-          </section>
-          <section id="component-row">
-            <vscode-button id="create_node">Create Node</vscode-button>
-          </section>
+          </div>
           <script type="module" nonce="${nonce}" src="${webviewUri}"></script>
         </body>
       </html>

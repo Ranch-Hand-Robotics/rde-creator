@@ -6,7 +6,8 @@ import {
   vsCodeRadio, 
   vsCodeTextField,
   vsCodeDropdown,
-  vsCodeTextArea } from "@vscode/webview-ui-toolkit";
+  vsCodeTextArea,
+  vsCodeCheckbox } from "@vscode/webview-ui-toolkit";
 
 
 
@@ -16,6 +17,7 @@ provideVSCodeDesignSystem().register(vsCodeButton());
 provideVSCodeDesignSystem().register(vsCodeTextField());
 provideVSCodeDesignSystem().register(vsCodeDropdown());
 provideVSCodeDesignSystem().register(vsCodeTextArea());
+provideVSCodeDesignSystem().register(vsCodeCheckbox());
 
 const vscode = acquireVsCodeApi();
 
@@ -25,13 +27,14 @@ function main() {
   // To get improved type annotations/IntelliSense the associated class for
   // a given toolkit component can be imported and used to type cast a reference
   // to the element (i.e. the `as Button` syntax)
-  const createNodeButton = document.getElementById("create_node") as Button;
-  createNodeButton?.addEventListener("click", handleHowdyClick);
+  const createNodeButton = document.getElementById("second_page_button") as Button;
+  createNodeButton?.addEventListener("click", handleSecondPageClick);
 }
 
-function handleHowdyClick() {
-  vscode.postMessage({
-    command: "hello",
-    text: "Hey there partner! 🤠",
-  });
+function handleSecondPageClick() {
+  // hide div named "create_package_page", and show div named "create_node_page"
+  const createPackagePage = document.getElementById("create_package_page");
+  const createNodePage = document.getElementById("create_node_page");
+  createPackagePage?.classList.add("hidden");
+  createNodePage?.classList.remove("hidden");
 }
