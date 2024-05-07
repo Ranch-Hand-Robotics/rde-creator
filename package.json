@@ -41,12 +41,15 @@
     "@vscode/test-electron": "^2.3.9",
     "copy-webpack-plugin": "^12.0.2",
     "eslint": "^8.56.0",
+    "mock-fs": "^5.2.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "webpack": "^5.90.0",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@vscode/webview-ui-toolkit": "^1.4.0"
+    "@vscode/webview-ui-toolkit": "^1.4.0",
+    "handlebars": "^4.7.8",
+    "yaml": "^2.4.2"
   }
 }

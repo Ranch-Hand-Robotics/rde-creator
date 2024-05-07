@@ -35,6 +35,16 @@
 				"npm: watch-tests"
 			],
 			"problemMatcher": []
+		},
+		{
+			"label": "tasks: build-tests",
+			"dependsOn": [
+				"npm: compile-tests"
+			],
+			"problemMatcher": [],
+			"group": {
+				"kind": "build"
+			}
 		}
 	]
 }

@@ -32,6 +32,9 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+[Oo]ut/
+.vscode-test/
+[Ddist]/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
