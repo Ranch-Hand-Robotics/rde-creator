@@ -88,7 +88,8 @@ const webviewConfig = {
   plugins: [
     new CopyWebpackPlugin({
         patterns: [
-            { from: 'src/static' }
+            { from: 'src/static' },
+            { from: 'src/templates'}
         ]
     })
 ]

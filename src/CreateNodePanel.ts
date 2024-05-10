@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { getNonce, getUri } from './utils';
+import { ProcessCreateNode } from './ProcessCreateNode';
 
 export class CreateNodePanel {
   public static currentPanel: CreateNodePanel | undefined;
@@ -45,11 +46,23 @@ export class CreateNodePanel {
     webview.onDidReceiveMessage(
       (message: any) => {
         const command = message.command;
-        const text = message.text;
 
         switch (command) {
-          case "create_node":
-            //vscode.window.showInformationMessage(text);
+          case "createResourcePackage":
+            // find the template source directory from the extension package
+            const resourceTemplateSource = vscode.Uri.joinPath(vscode.extensions.getExtension("ros2-webview-template")!.extensionUri, "templates", "resource").fsPath;
+
+            const processCreateNode = new ProcessCreateNode(resourceTemplateSource);
+            const newPackageDir = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, message.packageName).fsPath;
+            const variables = new Map<string, string>();
+            variables.set("packageName", message.packageName);
+            variables.set("packageMaintainer", message.packageMaintainer);
+            variables.set("packageVersion", message.packageVersion);
+            variables.set("packageDescription", message.packageDescription);
+            variables.set("packageLicense", message.packageLicense);
+            processCreateNode.createResourcePackage(newPackageDir, variables);
+
+
             return;
         }
       },
@@ -83,8 +96,8 @@ export class CreateNodePanel {
               <section class="component-container">
               <h2>Package type</h2>
                 <section class="component-example">
-                  <vscode-radio-group orientation="vertical">
-                    <label slot="label">Language:</label>
+                  <vscode-radio-group id="ros_package_type" orientation="vertical">
+                    <label slot="label">Node Type:</label>
                     <vscode-radio value="type_cpp">C++</vscode-radio>
                     <vscode-radio value="type_python">Python</vscode-radio>
                     <vscode-radio value="type_rust">Rust</vscode-radio>
@@ -95,16 +108,12 @@ export class CreateNodePanel {
               <section class="component-container">
                 <h2>Package Metadata</h2>
                 <section class="component-example">
-                  <vscode-text-field placeholder="my_package" name="package_name">Name</vscode-text-field>
-                  <vscode-text-field placeholder="nobody@nowhere.robots" name="package_maintainer">Maintainer</vscode-text-field>
-                  <vscode-text-field placeholder="0.0.0" name="package_version">Version</vscode-text-field>
-                  <vscode-text-area placeholder="This is a sample description" rows="5" cols="50" name="package_description">Description</vscode-text-area>
+                  <vscode-text-field placeholder="my_package" id="package_name">Name</vscode-text-field>
+                  <vscode-text-field placeholder="nobody@nowhere.robots" id="package_maintainer">Maintainer</vscode-text-field>
+                  <vscode-text-field placeholder="0.0.0" id="package_version">Version</vscode-text-field>
+                  <vscode-text-area placeholder="This is a sample description" rows="5" cols="50" id="package_description">Description</vscode-text-area>
                   <p>License:</p>
-                  <vscode-dropdown position="below">
-                    <vscode-option name="MIT">MIT</vscode-option>
-                    <vscode-option name="Apache">Apache</vscode-option>
-                    <vscode-option name="Other">Other</vscode-option>
-                  </vscode-dropdown>
+                  <vscode-text-field placeholder="MIT" id="package_license">License</vscode-text-field>
                 </section>
               </section>
             </section>

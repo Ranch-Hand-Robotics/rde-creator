@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<robot name="bb_head">
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <!-- mesh filename="package://bb_description/meshes/monkey.dae" / -->
+        <mesh filename="package://bb_description/meshes/burger_base.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>

@@ -1,0 +1,9 @@
+name: "template friendly name"
+version: 0.0.0
+description: A templateMapping package
+maintainers:
+email:
+license: "MIT"
+file_mapping:
+  - robot.urdf: {{package_name_file}}.urdf
+  - package_name: {{package_name}}

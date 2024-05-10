@@ -37,7 +37,7 @@ suite('ProcessCreateNode Test Suite', () => {
 
 		const templateSource = path.join(process.cwd(), "test_source");
 
-		const processCreateNode = new ProcessCreateNode("test_package", "test_node", templateSource);
+		const processCreateNode = new ProcessCreateNode(templateSource);
 
 		const newPackageDir = path.join(process.cwd(), "test_package");
  

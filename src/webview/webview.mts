@@ -1,7 +1,11 @@
 import { 
   provideVSCodeDesignSystem, 
   vsCodeButton, 
-  Button, 
+  Button,
+  RadioGroup,
+  TextArea,
+  TextField, 
+  Dropdown,
   vsCodeRadioGroup, 
   vsCodeRadio, 
   vsCodeTextField,
@@ -35,6 +39,25 @@ function handleSecondPageClick() {
   // hide div named "create_package_page", and show div named "create_node_page"
   const createPackagePage = document.getElementById("create_package_page");
   const createNodePage = document.getElementById("create_node_page");
-  createPackagePage?.classList.add("hidden");
-  createNodePage?.classList.remove("hidden");
+  const packageType = document.getElementById("ros_package_type") as RadioGroup;
+
+  if (packageType.value === "type_resource") {
+    const packageName = document.getElementById("package_name") as TextField;
+    const packageMaintainer = document.getElementById("package_maintainer") as TextField;
+    const packageVersion = document.getElementById("package_version") as TextField;
+    const packageDescription = document.getElementById("package_Description") as TextArea;
+    const packageLicense = document.getElementById("package_license") as TextField;
+
+    vscode.postMessage({ 
+      command: "createResourcePackage",  
+      packageName: packageName.value, 
+      packageMaintainer: packageMaintainer.value, 
+      packageVersion: packageVersion.value, 
+      packageDescription: packageDescription.value,
+      packageLicense: packageLicense.value
+    });
+  } else {
+    createPackagePage?.classList.add("hidden");
+    createNodePage?.classList.remove("hidden");
+  }
 }

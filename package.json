@@ -15,9 +15,17 @@
     "commands": [
       {
         "command": "robotics-templates.create",
-        "title": "Create ROS Node"
+        "title": "ROS: Create ROS 2 Package"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "robotics-templates.create",
+          "when": "explorerResourceIsFolder"
+        }
+      ]
+    }    
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

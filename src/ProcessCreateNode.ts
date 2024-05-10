@@ -6,13 +6,9 @@ import Handlebars from 'handlebars';
 // This file implements the ProcessCreateNode class. It's purpose is to handle the creation of a new ROS 2 node in the extension. 
 
 export class ProcessCreateNode {
-  private packageName: string;
-  private nodeName: string;
   private nodeTemplateSource: string;
 
-  constructor(packageName: string, nodeName: string, nodeTemplateSource: string) {
-    this.packageName = packageName;
-    this.nodeName = nodeName;
+  constructor(nodeTemplateSource: string) {
     this.nodeTemplateSource = nodeTemplateSource;
   }
 
