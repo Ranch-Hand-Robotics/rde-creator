@@ -39,12 +39,14 @@
 		{
 			"label": "tasks: build-tests",
 			"dependsOn": [
-				"npm: compile-tests"
+				"npm: watch"
 			],
-			"problemMatcher": [],
-			"group": {
-				"kind": "build"
-			}
+			"command": "npm",
+			"args": [
+				"run",
+				"compile-tests"
+			],
+			"problemMatcher": []
 		}
 	]
 }

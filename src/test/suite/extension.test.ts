@@ -8,54 +8,114 @@ import {ProcessCreateNode} from '../../ProcessCreateNode';
 import path from 'path';
 import fs from 'fs';
 
-suite('Extension Test Suite', () => {
-	vscode.window.showInformationMessage('Start all tests.');
-
-	test('Sample test', () => {
-		assert.strictEqual(-1, [1, 2, 3].indexOf(5));
-		assert.strictEqual(-1, [1, 2, 3].indexOf(0));
-	});
-});
-
-
 // Create a new test suite for the ProcessCreateNode class
 suite('ProcessCreateNode Test Suite', () => {
-	// Test the createResourcePackage method
-	test('createResourcePackage Test', () => {
+  // Test the createResourcePackage method
+  test('createResourcePackage Test', () => {
 
-		// Use mock-fs to mock the manifest.yaml file, a single cpp file, a single hpp file, a CMakeLists.txt file, and a package.xml file
-		const mock = require('mock-fs');
-		mock({
-			'test_source': {
-				'manifest.yaml': 'name: "template friendly name"\nversion: 0.0.0\ndescription: A templateMapping package\nmaintainers:\n  - name: templateMapping\n    email:\nlicense: "Apache 2.0"\nfile_mapping:\n  - TemplateNode.cpp: "{{variable1}}Node.cpp"\n  - TemplateNode.hpp: "{{variable2}}Node.hpp"\n  - CMakeLists.txt: CMakeLists.txt\n  - package.xml: package.xml',
-				'TemplateNode.cpp': 'class {{class_name}} {\n}\n',
-				'CMakeLists.txt': 'cmake_minimum_required(VERSION 3.5)\nproject({{variable1}})\n\nfind_package(ament_cmake REQUIRED)\n\nament_package()',
-				'package.xml': '<?xml version="1.0"?>\n<package format="2">\n  <name>{{variable1}}</name>\n  <version>0.0.0</version>\n  <description>Template package</description>\n  <maintainer email="" name="templateMapping"></maintainer>\n  <license>Apache 2.0</license>\n</package>'
-			}
-		});
+    // Use mock-fs to mock the manifest.yaml file, a single cpp file, a single hpp file, a CMakeLists.txt file, and a package.xml file
+    const mock = require('mock-fs');
+    mock({
+      'test_source': {
+        'manifest.yaml': `
+name: "template friendly name"
+version: 0.0.0
+description: A templateMapping package
+maintainers:
+  - name: templateMapping
+email:
+license: "Apache 2.0"
+files:
+  - TemplateNode.cpp: "{{variable1}}Node.cpp"
+  - TemplateNode.hpp: "{{variable2}}Node.hpp"
+  - CMakeLists.txt: CMakeLists.txt
+  - package.xml: package.xml
+`,
+        'TemplateNode.cpp': 'class {{class_name}} {\n}\n',
+        'CMakeLists.txt': 'cmake_minimum_required(VERSION 3.5)\nproject({{variable1}})\n\nfind_package(ament_cmake REQUIRED)\n\nament_package()',
+        'package.xml': '<?xml version="1.0"?>\n<package format="2">\n  <name>{{variable1}}</name>\n  <version>0.0.0</version>\n  <description>Template package</description>\n  <maintainer email="" name="templateMapping"></maintainer>\n  <license>Apache 2.0</license>\n</package>'
+      }
+    });
 
 
-		const templateSource = path.join(process.cwd(), "test_source");
+    const templateSource = path.join(process.cwd(), "test_source");
 
-		const processCreateNode = new ProcessCreateNode(templateSource);
+    const processCreateNode = new ProcessCreateNode(templateSource);
 
-		const newPackageDir = path.join(process.cwd(), "test_package");
- 
-		// Create a new map of variables
-		const variables = new Map<string, string>();
-		variables.set("variable1", "test");
-		variables.set("variable2", "test2");
-		variables.set("class_name", "test_class");
+    const newPackageDir = path.join(process.cwd(), "test_package");
 
-		// Call the createResourcePackage method
-		processCreateNode.createResourcePackage(newPackageDir, variables);
-		// Check if the package directory was created
-		assert.strictEqual(fs.existsSync(newPackageDir), true);
-		// Check if the package directory contains the correct files
-		assert.strictEqual(fs.existsSync(path.join(newPackageDir, "CMakeLists.txt")), true);
-		assert.strictEqual(fs.existsSync(path.join(newPackageDir, "package.xml")), true);
-		assert.strictEqual(fs.existsSync(path.join(newPackageDir, "testNode.cpp")), true);
+    // Create a new map of variables
+    const variables = new Map<string, string>();
+    variables.set("variable1", "test");
+    variables.set("variable2", "test2");
+    variables.set("class_name", "test_class");
 
-		mock.restore();
-	});
+    // Call the createResourcePackage method
+    processCreateNode.createResourcePackage(newPackageDir, variables);
+    // Check if the package directory was created
+    assert.strictEqual(fs.existsSync(newPackageDir), true);
+    // Check if the package directory contains the correct files
+    assert.strictEqual(fs.existsSync(path.join(newPackageDir, "CMakeLists.txt")), true);
+    assert.strictEqual(fs.existsSync(path.join(newPackageDir, "package.xml")), true);
+    assert.strictEqual(fs.existsSync(path.join(newPackageDir, "testNode.cpp")), true);
+
+    mock.restore();
+  });
+
+  test('createResourcePackage with subdirectory Test', () => {
+
+    // Use mock-fs to mock the manifest.yaml file, a single cpp file, a single hpp file, a CMakeLists.txt file, and a package.xml file
+    const mock = require('mock-fs');
+    let mockInit = {
+      'test_source': {
+        'manifest.yaml': `
+        name: "template friendly name"
+        version: "0.0.0"
+        description: "A templateMapping package"
+        maintainers:
+        email:
+        license: "MIT"
+        options:
+          - include_urdf:
+            name: "Include URDF"
+            description: "Include a URDF file in the package"
+            type: "boolean"
+        files:
+        - "urdf":
+          files:
+          - "t.urdf": "r.urdf"
+            condition: include_urdf
+        - package.xml: "package.xml"
+`,
+        'urdf': {
+          't.urdf': '<?xml version="1.0"?>'
+        },
+        'package.xml': '<?xml version="1.0"?>'
+      }
+    };
+
+    mock(mockInit);
+
+
+    const templateSource = path.join(process.cwd(), "test_source");
+
+    const processCreateNode = new ProcessCreateNode(templateSource);
+
+    const newPackageDir = path.join(process.cwd(), "test_package");
+
+    // Create a new map of variables
+    const variables = new Map<string, string>();
+
+    processCreateNode.createResourcePackage(newPackageDir, variables);
+    assert.strictEqual(fs.existsSync(path.join(newPackageDir, "urdf", "r.urdf")), false);
+
+    // Reset for next test
+    mock.restore();
+
+    mock(mockInit);
+
+    variables.set("include_urdf", "true");
+    processCreateNode.createResourcePackage(newPackageDir, variables);
+    assert.strictEqual(fs.existsSync(path.join(newPackageDir, "urdf", "r.urdf")), true);
+  });
 });
