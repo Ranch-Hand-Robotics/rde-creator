@@ -1,6 +1,6 @@
-name: "template friendly name"
+name: "Resource"
 version: 0.0.0
-description: A templateMapping package
+description: A template for representing resources like launch files, urdf files, meshes, etc.
 maintainers:
 email:
 license: "MIT"
@@ -9,8 +9,16 @@ options:
     name: "Include URDF",
     description: "Include a URDF file in the package",
     type: "boolean"
+  - include_launch: 
+    name: "Include Python based Launch File",
+    description: "Include a Python Based Launch file in the package",
+    type: "boolean"
 file_mapping:
   - "urdf":
     condition: include_urdf
     files:
       - "robot.urdf": "{{package_name_file}}.urdf",
+  - "launch":
+    condition: include_launch
+    files:
+      - "robot.launch.py": "{{package_name_file}}.launch.py",

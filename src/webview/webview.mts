@@ -2,6 +2,7 @@ import {
   provideVSCodeDesignSystem, 
   vsCodeButton, 
   Button,
+  Radio,
   RadioGroup,
   TextArea,
   TextField, 
@@ -33,6 +34,24 @@ function main() {
   // to the element (i.e. the `as Button` syntax)
   const createNodeButton = document.getElementById("second_page_button") as Button;
   createNodeButton?.addEventListener("click", handleSecondPageClick);
+
+  window.addEventListener('message', event => {
+    const message = event.data; // The JSON data our extension sent
+    switch (message.command) {
+      case "setManifests":
+        const manifestDropdown = document.getElementById("ros_package_type") as RadioGroup;
+        // for each manifest in the map, create a new option in the radio group
+        for (const [key, value] of Object.entries(message.manifests) {
+          const option = document.createElement("vscode-radio") as Radio;
+          option.value = key;
+          option.innerText = key;
+          manifestDropdown.appendChild(option);
+        }
+
+
+
+    }
+  });
 }
 
 function handleSecondPageClick() {

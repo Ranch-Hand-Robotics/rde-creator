@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { getNonce, getUri } from './utils';
+import { getNonce, getUri, getAllManifestMap, fileNameFromPackage } from './utils';
 import { ProcessCreateNode } from './ProcessCreateNode';
 
 export class CreateNodePanel {
@@ -12,6 +12,10 @@ export class CreateNodePanel {
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
     this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
     this._setWebviewMessageListener(this._panel.webview);
+
+    let manifests = getAllManifestMap(extensionUri);
+
+    this._panel.webview.postMessage({ command: "setManifests", manifests: manifests});
   }
 
   public static render(extensionUri: vscode.Uri) {
@@ -21,8 +25,6 @@ export class CreateNodePanel {
       const panel = vscode.window.createWebviewPanel("robotics-templates", "Robotics Tempate", vscode.ViewColumn.One, {
         enableScripts: true,
         localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'dist')]
-
-
       });
 
       CreateNodePanel.currentPanel = new CreateNodePanel(panel, extensionUri);
@@ -56,6 +58,7 @@ export class CreateNodePanel {
             const newPackageDir = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, message.packageName).fsPath;
             const variables = new Map<string, string>();
             variables.set("packageName", message.packageName);
+            variables.set("packageNameFile", fileNameFromPackage(message.packageName));
             variables.set("packageMaintainer", message.packageMaintainer);
             variables.set("packageVersion", message.packageVersion);
             variables.set("packageDescription", message.packageDescription);
@@ -97,11 +100,7 @@ export class CreateNodePanel {
               <h2>Package type</h2>
                 <section class="component-example">
                   <vscode-radio-group id="ros_package_type" orientation="vertical">
-                    <label slot="label">Node Type:</label>
-                    <vscode-radio value="type_cpp">C++</vscode-radio>
-                    <vscode-radio value="type_python">Python</vscode-radio>
-                    <vscode-radio value="type_rust">Rust</vscode-radio>
-                    <vscode-radio value="type_resource">Resource</vscode-radio>
+                    <label slot="label">Package Type:</label>
                   </vscode-radio-group>
                 </section>
               </section>
