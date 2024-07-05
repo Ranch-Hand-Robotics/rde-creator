@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { getNonce, getUri, getAllManifestMap, fileNameFromPackage } from './utils';
+import { getNonce, getUri, getAllManifestMap, fileNameFromVariable } from './utils';
 import { ProcessCreateNode } from './ProcessCreateNode';
 
 export class CreateNodePanel {
@@ -57,12 +57,21 @@ export class CreateNodePanel {
             const processCreateNode = new ProcessCreateNode(resourceTemplateSource);
             const newPackageDir = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, message.packageName).fsPath;
             const variables = new Map<string, string>();
-            variables.set("packageName", message.packageName);
-            variables.set("packageNameFile", fileNameFromPackage(message.packageName));
-            variables.set("packageMaintainer", message.packageMaintainer);
-            variables.set("packageVersion", message.packageVersion);
-            variables.set("packageDescription", message.packageDescription);
-            variables.set("packageLicense", message.packageLicense);
+            variables.set("package_name", message.packageName);
+            variables.set("package_name_file", fileNameFromVariable(message.packageName));
+            variables.set("package_maintainer", message.packageMaintainer);
+            variables.set("package_version", message.packageVersion);
+            variables.set("package_description", message.packageDescription);
+            variables.set("package_license", message.packageLicense);
+
+            // add the message.variables map to the variables map
+            for (const [key, value] of message.variables) {
+              variables.set(key, value);
+
+              // add a _file for key
+              variables.set(key + "_file", fileNameFromVariable(value));
+            }
+
             processCreateNode.createResourcePackage(newPackageDir, variables);
 
 

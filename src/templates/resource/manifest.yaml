@@ -10,8 +10,12 @@ options:
     description: "Include a URDF file in the package",
     type: "boolean"
   - include_launch: 
-    name: "Include Python based Launch File",
+    name: "Include Launch File",
     description: "Include a Python Based Launch file in the package",
+    type: "boolean"
+  - include_meshes: 
+    name: "Include Mesh",
+    description: "Include a Mesh directory with sample mesh in the package and URDF",
     type: "boolean"
 file_mapping:
   - "urdf":

@@ -7,7 +7,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
 
-    urdf_file_name = '{{package_name}}.urdf'
+    urdf_file_name = '{{package_name_file}}.urdf'
     urdf = os.path.join(
         get_package_share_directory('{{package_name}}'),
         'urdf',

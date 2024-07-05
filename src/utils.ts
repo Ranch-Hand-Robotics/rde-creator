@@ -39,6 +39,6 @@ export function getAllManifestMap(extensionUri: Uri) {
   };
 }
 
-export function fileNameFromPackage(packageName: string) {
-  return packageName.replace(/ /g, "_").toLowerCase();
+export function fileNameFromVariable(variableValue: string) {
+  return variableValue.replace(/ /g, "_").toLowerCase();
 }

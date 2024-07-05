@@ -61,6 +61,6 @@ options:
     condition: include_urdf
 file_mapping:
   - "urdf/robot.urdf":
-      name: "urdf/{robot_name}}.urdf",
+      name: "urdf/{robot_name}.urdf",
       condition: include_urdf
 ```
