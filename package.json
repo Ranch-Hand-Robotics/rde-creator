@@ -25,11 +25,12 @@
           "when": "explorerResourceIsFolder"
         }
       ]
-    }    
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "webpack",
+    "build": "webpack",
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
     "compile-tests": "tsc -p . --outDir out",
@@ -58,6 +59,7 @@
   "dependencies": {
     "@vscode/webview-ui-toolkit": "^1.4.0",
     "handlebars": "^4.7.8",
+    "memfs": "^4.9.3",
     "yaml": "^2.4.2"
   }
 }

@@ -26,7 +26,10 @@ const extensionConfig = {
   },
   resolve: {
     // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
-    extensions: ['.ts', '.js']
+    extensions: ['.ts', '.js'],
+    alias: {
+      'handlebars' : 'handlebars/dist/handlebars.js'
+    }
   },
   module: {
     rules: [
@@ -89,7 +92,7 @@ const webviewConfig = {
     new CopyWebpackPlugin({
         patterns: [
             { from: 'src/static' },
-            { from: 'src/templates'}
+            { from: 'src/templates', to: 'templates' }
         ]
     })
 ]

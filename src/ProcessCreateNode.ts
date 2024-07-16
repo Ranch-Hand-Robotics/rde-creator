@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'yaml';
 import Handlebars from 'handlebars';
@@ -14,11 +14,12 @@ export class ProcessCreateNode {
 
 
   // Creates Resource package.
-  public createResourcePackage(newPackageDir: string, variables: Map<string, string>) {
+  public async createResourcePackage(newPackageDir: string, variables: Map<string, string>) {
     const manifestFile = path.join(this.nodeTemplateSource, 'manifest.yaml');
 
     // Read the manifest file
-    const manifestContent = fs.readFileSync(manifestFile, 'utf8');
+    const file = await fs.open(manifestFile, 'r');
+    const manifestContent = await file.readFile();
 
     const sampleManifest =`
     name: "template friendly name"
@@ -41,24 +42,25 @@ export class ProcessCreateNode {
       - package_name: {{package_name}}
 `;
 
-    const manifest = yaml.parse(manifestContent);
+    const manifest = yaml.parse(manifestContent.toString('utf-8'));
 
     console.log(` Parsing: ${manifestContent}`);
 
 
     // Copy the files from the template directory to the new package directory
     
-    const copyFilesRecursively = (source: string, destination: string, fileMapping: Array<object> | undefined) => {
+    const copyFilesRecursively = async (source: string, destination: string, fileMapping: Array<object> | undefined) => {
       // Get all files and directories in the source directory
-      const files = fs.readdirSync(source);
+      const files = await fs.readdir(source);
 
       // create destination directory if it doesn't exist
-      if (!fs.existsSync(destination)) {
-        fs.mkdirSync(destination);
+      const stat = await fs.stat(destination);
+      if (!stat.isDirectory()) {
+        await fs.mkdir(destination);
       }
 
       // recursively through each file/directory
-      files.forEach((filename : string) => {
+      files.forEach(async (filename : string) => {
         console.log(` Processing: ${filename}`);
 
         const sourcePath = path.join(source, filename);
@@ -116,7 +118,7 @@ export class ProcessCreateNode {
 
 
         // Check if it's a directory
-        if (fs.statSync(sourcePath).isDirectory()) {
+        if ((await fs.stat(sourcePath)).isDirectory()) {
           if (newMapping !== undefined) {
             const filesKey = "files" as keyof typeof newMapping;
             fileMapping = newMapping[filesKey];
@@ -124,14 +126,14 @@ export class ProcessCreateNode {
 
 
           // Create the corresponding directory in the destination
-          fs.mkdirSync(destinationPath);
+          await fs.mkdir(destinationPath);
 
           // Recursively copy files from the subdirectory
           copyFilesRecursively(sourcePath, destinationPath, fileMapping);
         } else {
 
           // Read the template file
-          const templateContent = fs.readFileSync(sourcePath, 'utf8');
+          const templateContent = await fs.readFile(sourcePath, 'utf8');
 
           // load the template using handlebars.js
           const template = Handlebars.compile(templateContent);
@@ -144,13 +146,13 @@ export class ProcessCreateNode {
           console.log(` Writing: ${destinationPath}`);
 
           // Write the file to the destination
-          fs.writeFileSync(destinationPath, result);
+          await fs.writeFile(destinationPath, result);
         }
       });
     };
 
     // Copy the files from the template directory to the new package directory
-    copyFilesRecursively(this.nodeTemplateSource, newPackageDir, manifest.files);
+    await copyFilesRecursively(this.nodeTemplateSource, newPackageDir, manifest.files);
   }
 
   

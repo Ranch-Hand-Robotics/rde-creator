@@ -13,9 +13,12 @@ export class CreateNodePanel {
     this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
     this._setWebviewMessageListener(this._panel.webview);
 
-    let manifests = getAllManifestMap(extensionUri);
+    let manifests = getAllManifestMap(vscode.Uri.joinPath(extensionUri, 'dist', 'templates'));
 
-    this._panel.webview.postMessage({ command: "setManifests", manifests: manifests});
+    let manifestString = JSON.stringify(Object.fromEntries(manifests));
+    let message = { command: "setManifests", manifests: manifestString};
+
+    this._panel.webview.postMessage(message);
   }
 
   public static render(extensionUri: vscode.Uri) {
@@ -46,7 +49,7 @@ export class CreateNodePanel {
 
   private _setWebviewMessageListener(webview: vscode.Webview) {
     webview.onDidReceiveMessage(
-      (message: any) => {
+      async (message: any) => {
         const command = message.command;
 
         switch (command) {
@@ -72,7 +75,7 @@ export class CreateNodePanel {
               variables.set(key + "_file", fileNameFromVariable(value));
             }
 
-            processCreateNode.createResourcePackage(newPackageDir, variables);
+            await processCreateNode.createResourcePackage(newPackageDir, variables);
 
 
             return;
@@ -133,28 +136,7 @@ export class CreateNodePanel {
           <div id="create_node_page" class="hidden">
             <h1>Populate ROS 2 Node:</h1>
             <section class="component-row">
-              <section class="component-container">
-                <h2>Node Properties:</h2>
-                <section class="component-example">
-                  <vscode-text-field placeholder="node_binary" name="node_name">Node Binary Name</vscode-text-field>
-                  <vscode-text-field placeholder="node_class" name="class_name">Primary Class Name</vscode-text-field>
-                </section>
-              </section>
-              <section class="component-container">
-                <h2>Include:</h2>
-                <section class="component-example">
-                  <vscode-checkbox id="include_publisher">Include Publisher</vscode-checkbox>
-                  <vscode-checkbox id="include_subscriber">Include Subscriber</vscode-checkbox>
-                  <vscode-checkbox id="include_service">Include Service</vscode-checkbox>
-                  <vscode-checkbox id="include_action">Include Action</vscode-checkbox>
-                </section>
-              </section>
-              <section class="component-container">
-                <h2>Options:</h2>
-                <section class="component-example">
-                  <vscode-checkbox id="include_i2c">Include I<sup>2</sup>C</vscode-checkbox>
-                  <vscode-checkbox id="include_gpio">Include GPIO</vscode-checkbox>
-                </section>
+              <section class="component-container"  id="IncludeContainer">
               </section>
             </section>
           </div>

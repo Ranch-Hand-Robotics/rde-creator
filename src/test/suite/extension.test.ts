@@ -11,7 +11,7 @@ import fs from 'fs';
 // Create a new test suite for the ProcessCreateNode class
 suite('ProcessCreateNode Test Suite', () => {
   // Test the createResourcePackage method
-  test('createResourcePackage Test', () => {
+  test('createResourcePackage Test', async () => {
 
     // Use mock-fs to mock the manifest.yaml file, a single cpp file, a single hpp file, a CMakeLists.txt file, and a package.xml file
     const mock = require('mock-fs');
@@ -39,7 +39,7 @@ files:
 
 
     const templateSource = path.join(process.cwd(), "test_source");
-
+    
     const processCreateNode = new ProcessCreateNode(templateSource);
 
     const newPackageDir = path.join(process.cwd(), "test_package");
@@ -51,7 +51,7 @@ files:
     variables.set("class_name", "test_class");
 
     // Call the createResourcePackage method
-    processCreateNode.createResourcePackage(newPackageDir, variables);
+    await processCreateNode.createResourcePackage(newPackageDir, variables);
     // Check if the package directory was created
     assert.strictEqual(fs.existsSync(newPackageDir), true);
     // Check if the package directory contains the correct files
@@ -62,7 +62,7 @@ files:
     mock.restore();
   });
 
-  test('createResourcePackage with subdirectory Test', () => {
+  test('createResourcePackage with subdirectory Test', async () => {
 
     // Use mock-fs to mock the manifest.yaml file, a single cpp file, a single hpp file, a CMakeLists.txt file, and a package.xml file
     const mock = require('mock-fs');
@@ -106,7 +106,7 @@ files:
     // Create a new map of variables
     const variables = new Map<string, string>();
 
-    processCreateNode.createResourcePackage(newPackageDir, variables);
+    await processCreateNode.createResourcePackage(newPackageDir, variables);
     assert.strictEqual(fs.existsSync(path.join(newPackageDir, "urdf", "r.urdf")), false);
 
     // Reset for next test
