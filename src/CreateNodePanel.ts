@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { getNonce, getUri, getAllManifestMap, fileNameFromVariable } from './utils';
 import { ProcessCreateNode } from './ProcessCreateNode';
+import * as extension from "./extension";
 
 export class CreateNodePanel {
   public static currentPanel: CreateNodePanel | undefined;
@@ -53,19 +54,19 @@ export class CreateNodePanel {
         const command = message.command;
 
         switch (command) {
-          case "createResourcePackage":
+          case "createPackage":
             // find the template source directory from the extension package
-            const resourceTemplateSource = vscode.Uri.joinPath(vscode.extensions.getExtension("ros2-webview-template")!.extensionUri, "templates", "resource").fsPath;
+            const resourceTemplateSource = vscode.Uri.joinPath(vscode.extensions.getExtension("ros2-webview-template")!.extensionUri, "templates", command.type).fsPath;
+
+            const packageName = message.variables.get("package_name");
+            if (packageName === undefined) {
+              vscode.window.showErrorMessage("Package Name is required");
+              return;
+            }
 
             const processCreateNode = new ProcessCreateNode(resourceTemplateSource);
-            const newPackageDir = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, message.packageName).fsPath;
+            const newPackageDir = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, packageName).fsPath;
             const variables = new Map<string, string>();
-            variables.set("package_name", message.packageName);
-            variables.set("package_name_file", fileNameFromVariable(message.packageName));
-            variables.set("package_maintainer", message.packageMaintainer);
-            variables.set("package_version", message.packageVersion);
-            variables.set("package_description", message.packageDescription);
-            variables.set("package_license", message.packageLicense);
 
             // add the message.variables map to the variables map
             for (const [key, value] of message.variables) {
@@ -79,6 +80,23 @@ export class CreateNodePanel {
 
 
             return;
+
+            case "cancel":
+              this.dispose();
+              return;
+
+
+            case "error":
+              vscode.window.showErrorMessage(message.text);
+              return;
+
+            case "info":
+              vscode.window.showInformationMessage(message.text);
+              return;
+
+            case "trace":
+              extension.outputChannel.appendLine(message.text);
+              return;
         }
       },
       undefined,
@@ -138,6 +156,9 @@ export class CreateNodePanel {
             <section class="component-row">
               <section class="component-container"  id="IncludeContainer">
               </section>
+            </section>
+            <section id="component-row">
+              <vscode-button id="create_node_button">Create</vscode-button>
             </section>
           </div>
           <script type="module" nonce="${nonce}" src="${webviewUri}"></script>

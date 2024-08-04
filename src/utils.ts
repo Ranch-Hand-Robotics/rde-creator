@@ -1,4 +1,5 @@
 import { Uri, Webview } from "vscode";
+import * as extension from "./extension";
 
 export function getNonce() {
   let text = "";
@@ -31,7 +32,7 @@ export function getAllManifestMap(templateSource: Uri): Map<string, string> {
             const manifest = yaml.load(contents);
             fileMap.set(path.basename(dir), manifest);
           } catch (e) {
-            console.log(`Error reading manifest.yaml in ${dir}: ${e}`);
+            extension.outputChannel.appendLine(`Error reading manifest.yaml in ${dir}: ${e}`);
           }
         }
       }

@@ -3,15 +3,15 @@ version: 0.0.0
 description: A template for representing resources like launch files, urdf files, meshes, etc.
 license: "MIT"
 options:
-  - include_urdf: 
+  - variable: "include_urdf"
     name: "Include URDF"
     description: "Include a URDF file in the package"
     type: "boolean"
-  - include_launch: 
+  - variable: "include_launch"
     name: "Include Launch File"
     description: "Include a Python Based Launch file in the package"
     type: "boolean"
-  - include_meshes: 
+  - vriable: "include_meshes"
     name: "Include Mesh"
     description: "Include a Mesh directory with sample mesh in the package and URDF"
     type: "boolean"

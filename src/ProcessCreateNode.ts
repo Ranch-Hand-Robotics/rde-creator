@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'yaml';
 import Handlebars from 'handlebars';
+import * as extension from "./extension";
 
 // This file implements the ProcessCreateNode class. It's purpose is to handle the creation of a new ROS 2 node in the extension. 
 
@@ -44,7 +45,7 @@ export class ProcessCreateNode {
 
     const manifest = yaml.parse(manifestContent.toString('utf-8'));
 
-    console.log(` Parsing: ${manifestContent}`);
+    extension.outputChannel.appendLine(` Parsing: ${manifestContent}`);
 
 
     // Copy the files from the template directory to the new package directory
@@ -61,7 +62,7 @@ export class ProcessCreateNode {
 
       // recursively through each file/directory
       files.forEach(async (filename : string) => {
-        console.log(` Processing: ${filename}`);
+        extension.outputChannel.appendLine(` Processing: ${filename}`);
 
         const sourcePath = path.join(source, filename);
         let destinationPath = path.join(destination, filename);
@@ -76,7 +77,7 @@ export class ProcessCreateNode {
 
         if (newMapping !== undefined) {
 
-          console.log(` Found mapping for file ${filename}: ${JSON.stringify(newMapping)}`);
+          extension.outputChannel.appendLine(` Found mapping for file ${filename}: ${JSON.stringify(newMapping)}`);
 
           // Get the new filename
           const key = filename as keyof typeof newMapping;
@@ -91,7 +92,7 @@ export class ProcessCreateNode {
           //    condition: condition_name
           if (newMapping[key] !== null && typeof newMapping[key] === 'string') {
             destinationPath = path.join(destination, newMapping[key]);
-            console.log(` Simple mapping ${filename} -> ${destinationPath}`);
+            extension.outputChannel.appendLine(` Simple mapping ${filename} -> ${destinationPath}`);
           }
 
           // Check if the directory has a condition
@@ -99,13 +100,13 @@ export class ProcessCreateNode {
           if (newMapping[conditionKey]) {
             // Check if the condition is met
             condition = newMapping[conditionKey] as string;
-            console.log(` Found Condition: ${condition}`);
+            extension.outputChannel.appendLine(` Found Condition: ${condition}`);
           }
         }
       
         if (condition) {
           if (!variables.has(condition) || variables.get(condition) === "false") {
-            console.log(` Skipping ${filename} due to condition ${condition} not being specified or false.`);
+            extension.outputChannel.appendLine(` Skipping ${filename} due to condition ${condition} not being specified or false.`);
             return;
           }
         }
@@ -143,7 +144,7 @@ export class ProcessCreateNode {
 
           const result = template(variablesObject);
 
-          console.log(` Writing: ${destinationPath}`);
+          extension.outputChannel.appendLine(` Writing: ${destinationPath}`);
 
           // Write the file to the destination
           await fs.writeFile(destinationPath, result);
