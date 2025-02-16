@@ -1,7 +1,8 @@
 {
-  "name": "robotics-templates",
+  "name": "rde-ros-template",
   "displayName": "Robotics Templates",
   "description": "Create or update ROS 2 Nodes from templates",
+  "publisher": "Ranch-Hand-Robotics",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.86.0"
