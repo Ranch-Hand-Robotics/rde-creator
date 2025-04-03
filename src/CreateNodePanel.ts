@@ -7,9 +7,13 @@ export class CreateNodePanel {
   public static currentPanel: CreateNodePanel | undefined;
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
+  private readonly _extensionUri: vscode.Uri;
+
+  
 
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
     this._panel = panel;
+    this._extensionUri = extensionUri;
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
     this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
     this._setWebviewMessageListener(this._panel.webview);
@@ -56,35 +60,53 @@ export class CreateNodePanel {
         switch (command) {
           case "createPackage":
             // find the template source directory from the extension package
-            const resourceTemplateSource = vscode.Uri.joinPath(vscode.extensions.getExtension("ros2-webview-template")!.extensionUri, "templates", command.type).fsPath;
+            const resourceTemplateSource = vscode.Uri.joinPath(this._extensionUri, "dist", "templates", message.type).fsPath;
 
-            const packageName = message.variables.get("package_name");
+            // Check if the variables came as a plain object
+            if (!message.variables || typeof message.variables !== 'object') {
+              vscode.window.showErrorMessage("No variables received from webview");
+              return;
+            }
+
+            const packageName = message.variables["package_name"];
             if (packageName === undefined) {
               vscode.window.showErrorMessage("Package Name is required");
               return;
             }
 
             const processCreateNode = new ProcessCreateNode(resourceTemplateSource);
-            const newPackageDir = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, packageName).fsPath;
             const variables = new Map<string, string>();
 
-            // add the message.variables map to the variables map
-            for (const [key, value] of message.variables) {
-              variables.set(key, value);
-
+            // Convert the plain object to a Map
+            Object.entries(message.variables).forEach(([key, value]) => {
+              variables.set(key, value as string);
+              
               // add a _file for key
-              variables.set(key + "_file", fileNameFromVariable(value));
+              variables.set(key + "_file", fileNameFromVariable(value as string));
+            });
+
+            // Add the current year as a variable for copyright statements
+            variables.set("year", new Date().getFullYear().toString());
+
+            const packageFileName = fileNameFromVariable(packageName);
+            const newPackageDir = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, packageFileName).fsPath;
+
+            extension.outputChannel.appendLine(`Creating package at ${newPackageDir} with ${variables.size} variables`);
+            
+            try {
+              await processCreateNode.createResourcePackage(newPackageDir, variables);
+              vscode.window.showInformationMessage(`Package ${packageName} created successfully`);
+              this.dispose();
+            } catch (error) {
+              extension.outputChannel.appendLine(`Error creating package: ${error}`);
+              vscode.window.showErrorMessage(`Error creating package: ${error}`);
             }
-
-            await processCreateNode.createResourcePackage(newPackageDir, variables);
-
 
             return;
 
             case "cancel":
               this.dispose();
               return;
-
 
             case "error":
               vscode.window.showErrorMessage(message.text);
@@ -111,7 +133,7 @@ export class CreateNodePanel {
 
     const nonce = getNonce();
     
-    
+    // Tip: Install the es6-string-html VS Code extension to enable code highlighting below
     return /*html*/ `
       <!DOCTYPE html>
       <html lang="en">

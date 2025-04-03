@@ -6,6 +6,12 @@ import * as extension from "./extension";
 
 // This file implements the ProcessCreateNode class. It's purpose is to handle the creation of a new ROS 2 node in the extension. 
 
+interface CopyQueueItem {
+  source: string;
+  destination: string;
+  fileMapping?: Array<object>;
+}
+
 export class ProcessCreateNode {
   private nodeTemplateSource: string;
 
@@ -13,148 +19,132 @@ export class ProcessCreateNode {
     this.nodeTemplateSource = nodeTemplateSource;
   }
 
-
   // Creates Resource package.
   public async createResourcePackage(newPackageDir: string, variables: Map<string, string>) {
     const manifestFile = path.join(this.nodeTemplateSource, 'manifest.yaml');
 
-    // Read the manifest file
-    const file = await fs.open(manifestFile, 'r');
-    const manifestContent = await file.readFile();
-
-    const sampleManifest =`
-    name: "template friendly name"
-    version: "0.0.0"
-    description: "A templateMapping package"
-    maintainers:
-    email:
-    license: "MIT"
-    options:
-      - include_urdf:
-        name: "Include URDF"
-        description: "Include a URDF file in the package"
-        type: "boolean"
-    files:
-      - "urdf":
-        condition: include_urdf
-        files:
-          - source: "t.urdf"
-            destination: "r.urdf"
-      - package_name: {{package_name}}
-`;
-
-    const manifest = yaml.parse(manifestContent.toString('utf-8'));
+    // Read the manifest file directly
+    const manifestContent = await fs.readFile(manifestFile, 'utf-8');
+    const manifest = yaml.parse(manifestContent);
 
     extension.outputChannel.appendLine(` Parsing: ${manifestContent}`);
 
+    // Copy the files from the template directory to the new package directory using iterative approach
+    await this.copyFilesIteratively(this.nodeTemplateSource, newPackageDir, manifest.files, variables);
+  }
 
-    // Copy the files from the template directory to the new package directory
+  private async copyFilesIteratively(
+    sourceRoot: string, 
+    destinationRoot: string, 
+    fileMapping: Array<object> | undefined,
+    variables: Map<string, string>
+  ) {
+    // Create a queue for BFS traversal
+    const queue: CopyQueueItem[] = [
+      { source: sourceRoot, destination: destinationRoot, fileMapping }
+    ];
     
-    const copyFilesRecursively = async (source: string, destination: string, fileMapping: Array<object> | undefined) => {
+    // Process items in queue one by one
+    while (queue.length > 0) {
+      const { source, destination, fileMapping } = queue.shift()!;
+      
+      // Create destination directory if it doesn't exist
+      try {
+        await fs.mkdir(destination, { recursive: true });
+      } catch (error) {
+        // Directory might already exist, which is fine
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+          throw error;
+        }
+      }
+      
       // Get all files and directories in the source directory
       const files = await fs.readdir(source);
-
-      // create destination directory if it doesn't exist
-      const stat = await fs.stat(destination);
-      if (!stat.isDirectory()) {
-        await fs.mkdir(destination);
-      }
-
-      // recursively through each file/directory
-      files.forEach(async (filename : string) => {
-        extension.outputChannel.appendLine(` Processing: ${filename}`);
-
+      
+      // Process each file/directory
+      for (const filename of files) {
         const sourcePath = path.join(source, filename);
         let destinationPath = path.join(destination, filename);
-        let newMapping : undefined | object | Array<object> = undefined;
-        let condition : undefined | string = undefined;
+        let newMapping: undefined | object | Array<object> = undefined;
+        let condition: undefined | string = undefined;
+        
+        // Check if there's a mapping for this file
         if (fileMapping !== undefined) {
           newMapping = fileMapping.find((element: any) => {
-            // On element, lookup the property by string
             return Object.keys(element).includes(filename);
           });
         }
-
+        
         if (newMapping !== undefined) {
-
           extension.outputChannel.appendLine(` Found mapping for file ${filename}: ${JSON.stringify(newMapping)}`);
-
+          
           // Get the new filename
           const key = filename as keyof typeof newMapping;
-
-          // if this is a yaml object, it is interpreted as a directory, potentially with a condition
-          // it has the format:
-          // filename: destination_file
-          //  destination:  
-          //  condition: condition_name
-          //  files:
-          //  - filename: destination_file
-          //    condition: condition_name
+          
+          // If this is a string mapping, use it directly
           if (newMapping[key] !== null && typeof newMapping[key] === 'string') {
             destinationPath = path.join(destination, newMapping[key]);
             extension.outputChannel.appendLine(` Simple mapping ${filename} -> ${destinationPath}`);
           }
-
+          
           // Check if the directory has a condition
           const conditionKey = "condition" as keyof typeof newMapping;
           if (newMapping[conditionKey]) {
-            // Check if the condition is met
             condition = newMapping[conditionKey] as string;
             extension.outputChannel.appendLine(` Found Condition: ${condition}`);
           }
         }
-      
+        
+        // Skip if condition is not met
         if (condition) {
           if (!variables.has(condition) || variables.get(condition) === "false") {
             extension.outputChannel.appendLine(` Skipping ${filename} due to condition ${condition} not being specified or false.`);
-            return;
+            continue;
           }
         }
-
-        // process the filename to replace variables using handlebar semantics
+        
+        // Process filename with handlebar variables
         for (const [key, value] of variables) {
           destinationPath = destinationPath.replace(`{{${key}}}`, value);
         }
-
-
-
+        
         // Check if it's a directory
-        if ((await fs.stat(sourcePath)).isDirectory()) {
+        const stats = await fs.stat(sourcePath);
+        if (stats.isDirectory()) {
+          let nextFileMapping = undefined;
           if (newMapping !== undefined) {
             const filesKey = "files" as keyof typeof newMapping;
-            fileMapping = newMapping[filesKey];
+            nextFileMapping = newMapping[filesKey];
           }
-
-
-          // Create the corresponding directory in the destination
-          await fs.mkdir(destinationPath);
-
-          // Recursively copy files from the subdirectory
-          copyFilesRecursively(sourcePath, destinationPath, fileMapping);
+          
+          // Add directory to queue for processing
+          queue.push({
+            source: sourcePath,
+            destination: destinationPath,
+            fileMapping: nextFileMapping
+          });
         } else {
-
+          // Process file
+          extension.outputChannel.appendLine(` Processing file: ${sourcePath} -> ${destinationPath}`);
+          
           // Read the template file
           const templateContent = await fs.readFile(sourcePath, 'utf8');
-
-          // load the template using handlebars.js
+          
+          // Load the template using handlebars.js
           const template = Handlebars.compile(templateContent);
-
-          // Convert the variables map to an object with variables as members
+          
+          // Convert the variables map to an object
           const variablesObject = Object.fromEntries(variables);
-
+          
+          // Apply template
           const result = template(variablesObject);
-
+          
           extension.outputChannel.appendLine(` Writing: ${destinationPath}`);
-
+          
           // Write the file to the destination
           await fs.writeFile(destinationPath, result);
         }
-      });
-    };
-
-    // Copy the files from the template directory to the new package directory
-    await copyFilesRecursively(this.nodeTemplateSource, newPackageDir, manifest.files);
+      }
+    }
   }
-
-  
 }

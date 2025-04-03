@@ -31,6 +31,13 @@ window.addEventListener("load", main);
 
 let manifestMap = new Map<string, any>();
 
+class WebviewMessage {
+  command: string = "";
+  text: string = "";
+  type: string = "";
+  variables: Map<string, string> = new Map<string, string>();
+}
+
 function main() {
   // To get improved type annotations/IntelliSense the associated class for
   // a given toolkit component can be imported and used to type cast a reference
@@ -90,7 +97,7 @@ function handleCreateNodeClick() {
     const packageDescription = document.getElementById("package_description") as TextArea;
     const packageLicense = document.getElementById("package_license") as TextField;
 
-    if (packageName.textContent == null || packageName.textContent === "") {
+    if (packageName.textContent === null || packageName.textContent === "") {
       vscode.postMessage( {command:"error", text: "Package Name is required"});
       return;
     }
@@ -102,37 +109,31 @@ function handleCreateNodeClick() {
       // find all checkboxes in the IncludeContainer
       const checkboxes = includeContainer?.querySelectorAll("vscode-checkbox");
 
+      let reply = new WebviewMessage();
+      reply.command = "createPackage";
+      reply.type = selectedManifest.name;
+
+
       // iterate over the checkboxes nd add the values to the variables map
-      const variables = new Map<string, string>();
       checkboxes?.forEach((el: Element) => {
         const checkbox = el as Checkbox;
-        variables.set(checkbox.id, checkbox.checked ? "true" : "false");
+        reply.variables.set(checkbox.id, checkbox.checked ? "true" : "false");
       });
 
-      variables.set("package_name", packageName.textContent);
-      if (packageMaintainer.textContent !== null) {
-        variables.set("package_maintainer", packageMaintainer.textContent);
-      }
-      if (packageVersion.textContent !== null) {
-        variables.set("package_version", packageVersion.textContent);
-      }
-      if (packageDescription.textContent !== null) {
-        variables.set("package_description", packageDescription.textContent);
-      }
-      if (packageLicense.textContent !== null) {
-        variables.set("package_license", packageLicense.textContent);
-      }
+      reply.variables.set("package_name", packageName.value || packageName.placeholder || "");
+      reply.variables.set("package_maintainer", packageMaintainer.value || packageMaintainer.placeholder || "");
+      reply.variables.set("package_version", packageVersion.value || packageVersion.placeholder || "");
+      reply.variables.set("package_description", packageDescription.value || packageDescription.placeholder || "");
+      reply.variables.set("package_license", packageLicense.value || packageLicense.placeholder || "");
 
-    
-      const reply = {
-        command: "createPackage",
-        type: selectedManifest.name,
-        variables: variables
-      };
-
-      vscode.postMessage(reply);
-
-
+      // Convert the Map to a plain object before sending
+      const variablesObject = Object.fromEntries(reply.variables);
+      vscode.postMessage({
+        command: reply.command,
+        text: reply.text,
+        type: reply.type,
+        variables: variablesObject
+      });
   }
 }
 
