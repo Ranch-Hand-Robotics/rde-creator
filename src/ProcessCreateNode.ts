@@ -27,7 +27,7 @@ export class ProcessCreateNode {
     const manifestContent = await fs.readFile(manifestFile, 'utf-8');
     const manifest = yaml.parse(manifestContent);
 
-    extension.outputChannel.appendLine(` Parsing: ${manifestContent}`);
+    extension?.outputChannel?.appendLine(` Parsing: ${manifestContent}`);
 
     // Copy the files from the template directory to the new package directory using iterative approach
     await this.copyFilesIteratively(this.nodeTemplateSource, newPackageDir, manifest.files, variables);
@@ -67,16 +67,15 @@ export class ProcessCreateNode {
         let destinationPath = path.join(destination, filename);
         let newMapping: undefined | object | Array<object> = undefined;
         let condition: undefined | string = undefined;
-        
-        // Check if there's a mapping for this file
+          // Check if there's a mapping for this file
         if (fileMapping !== undefined) {
           newMapping = fileMapping.find((element: any) => {
             return Object.keys(element).includes(filename);
           });
         }
-        
-        if (newMapping !== undefined) {
-          extension.outputChannel.appendLine(` Found mapping for file ${filename}: ${JSON.stringify(newMapping)}`);
+          if (newMapping !== undefined) {
+          extension.outputChannel?.appendLine(` Found mapping for file ${filename}: ${JSON.stringify(newMapping)}`);
+          console.log(` Found mapping for file ${filename}: ${JSON.stringify(newMapping)}`);
           
           // Get the new filename
           const key = filename as keyof typeof newMapping;
@@ -84,21 +83,31 @@ export class ProcessCreateNode {
           // If this is a string mapping, use it directly
           if (newMapping[key] !== null && typeof newMapping[key] === 'string') {
             destinationPath = path.join(destination, newMapping[key]);
-            extension.outputChannel.appendLine(` Simple mapping ${filename} -> ${destinationPath}`);
+            extension.outputChannel?.appendLine(` Simple mapping ${filename} -> ${destinationPath}`);
+            console.log(` Simple mapping ${filename} -> ${destinationPath}`);
           }
           
           // Check if the directory has a condition
           const conditionKey = "condition" as keyof typeof newMapping;
           if (newMapping[conditionKey]) {
-            condition = newMapping[conditionKey] as string;
-            extension.outputChannel.appendLine(` Found Condition: ${condition}`);
+            if (Array.isArray(newMapping[conditionKey])) {
+              // Handle array of conditions according to specification
+              const conditions = newMapping[conditionKey] as string[];
+              condition = conditions.length > 0 ? conditions[0] : undefined;
+              extension.outputChannel?.appendLine(` Found Conditions: ${conditions.join(', ')}`);
+              console.log(` Found Conditions: ${conditions.join(', ')}`);
+            } else {
+              condition = newMapping[conditionKey] as string;
+              extension.outputChannel?.appendLine(` Found Condition: ${condition}`);
+              console.log(` Found Condition: ${condition}`);
+            }
           }
         }
-        
-        // Skip if condition is not met
+          // Skip if condition is not met
         if (condition) {
+          // Check if the condition variable exists and is not "false"
           if (!variables.has(condition) || variables.get(condition) === "false") {
-            extension.outputChannel.appendLine(` Skipping ${filename} due to condition ${condition} not being specified or false.`);
+            extension.outputChannel?.appendLine(` Skipping ${filename} due to condition ${condition} not being specified or false.`);
             continue;
           }
         }
@@ -122,10 +131,9 @@ export class ProcessCreateNode {
             source: sourcePath,
             destination: destinationPath,
             fileMapping: nextFileMapping
-          });
-        } else {
+          });        } else {
           // Process file
-          extension.outputChannel.appendLine(` Processing file: ${sourcePath} -> ${destinationPath}`);
+          extension.outputChannel?.appendLine(` Processing file: ${sourcePath} -> ${destinationPath}`);
           
           // Read the template file
           const templateContent = await fs.readFile(sourcePath, 'utf8');
@@ -139,7 +147,7 @@ export class ProcessCreateNode {
           // Apply template
           const result = template(variablesObject);
           
-          extension.outputChannel.appendLine(` Writing: ${destinationPath}`);
+          extension.outputChannel?.appendLine(` Writing: ${destinationPath}`);
           
           // Write the file to the destination
           await fs.writeFile(destinationPath, result);

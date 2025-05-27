@@ -69,23 +69,24 @@ files:
     let mockInit = {
       'test_source': {
         'manifest.yaml': `
-        name: "template friendly name"
-        version: "0.0.0"
-        description: "A templateMapping package"
-        maintainers:
-        email:
-        license: "MIT"
-        options:
-          - include_urdf:
-            name: "Include URDF"
-            description: "Include a URDF file in the package"
-            type: "boolean"
-        files:
-        - "urdf":
-          files:
-          - "t.urdf": "r.urdf"
-            condition: include_urdf
-        - package.xml: "package.xml"
+name: "template friendly name"
+version: "0.0.0"
+description: "A templateMapping package"
+maintainers:
+email:
+license: "MIT"
+options:
+  - include_urdf:
+    name: "Include URDF"
+    description: "Include a URDF file in the package"
+    type: "boolean"
+    default: false
+files:
+  - "urdf":
+    condition: include_urdf
+  - "urdf/t.urdf": "urdf/r.urdf"
+    condition: include_urdf
+  - package.xml: "package.xml"
 `,
         'urdf': {
           't.urdf': '<?xml version="1.0"?>'
@@ -107,7 +108,8 @@ files:
     const variables = new Map<string, string>();
 
     await processCreateNode.createResourcePackage(newPackageDir, variables);
-    assert.strictEqual(fs.existsSync(path.join(newPackageDir, "urdf", "r.urdf")), false);
+    let exists = fs.existsSync(path.join(newPackageDir, "urdf", "r.urdf"));
+    assert.strictEqual(exists, false);
 
     // Reset for next test
     mock.restore();
@@ -115,7 +117,8 @@ files:
     mock(mockInit);
 
     variables.set("include_urdf", "true");
-    processCreateNode.createResourcePackage(newPackageDir, variables);
-    assert.strictEqual(fs.existsSync(path.join(newPackageDir, "urdf", "r.urdf")), true);
+    await processCreateNode.createResourcePackage(newPackageDir, variables);
+    exists = fs.existsSync(path.join(newPackageDir, "urdf", "r.urdf"));
+    assert.strictEqual(exists, true);
   });
 });

@@ -11,16 +11,16 @@ options:
     name: "Include Launch File"
     description: "Include a Python Based Launch file in the package"
     type: "boolean"
-  - vriable: "include_meshes"
+  - variable: "include_meshes"
     name: "Include Mesh"
     description: "Include a Mesh directory with sample mesh in the package and URDF"
     type: "boolean"
 file_mapping:
   - "urdf":
     condition: include_urdf
-    files:
-      - "robot.urdf": "{{package_name_file}}.urdf"
+  - "urdf/robot.urdf": "urdf/{{package_name_file}}.urdf"
+    condition: include_urdf
   - "launch":
     condition: include_launch
-    files:
-      - "robot.launch.py": "{{package_name_file}}.launch.py"
+  - "launch/robot.launch.py": "launch/{{package_name_file}}.launch.py"
+    condition: include_launch
