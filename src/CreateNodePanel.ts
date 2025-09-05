@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { getNonce, getUri, getAllManifestMap, fileNameFromVariable } from './utils';
 import { ProcessCreateNode } from './ProcessCreateNode';
+import { AIPackageGenerator } from './AIPackageGenerator';
 import * as extension from "./extension";
 
 export class CreateNodePanel {
@@ -116,21 +117,71 @@ export class CreateNodePanel {
 
             return;
 
-            case "cancel":
+          case "createPackageWithAI":
+            // AI-powered package generation
+            const aiTemplateSource = vscode.Uri.joinPath(this._extensionUri, "dist", "templates", message.type).fsPath;
+
+            if (!message.variables || typeof message.variables !== 'object') {
+              vscode.window.showErrorMessage("No variables received from webview");
+              return;
+            }
+
+            const aiPackageName = message.variables["package_name"];
+            if (aiPackageName === undefined) {
+              vscode.window.showErrorMessage("Package Name is required");
+              return;
+            }
+
+            const naturalLanguageDescription = message.naturalLanguageDescription || "";
+            if (!naturalLanguageDescription.trim()) {
+              vscode.window.showErrorMessage("Please provide a natural language description of what you want to build");
+              return;
+            }
+
+            const aiVariables = new Map<string, string>();
+            Object.entries(message.variables).forEach(([key, value]) => {
+              aiVariables.set(key, value as string);
+              aiVariables.set(key + "_file", fileNameFromVariable(value as string));
+            });
+            aiVariables.set("year", new Date().getFullYear().toString());
+
+            const aiPackageFileName = fileNameFromVariable(aiPackageName);
+            const aiNewPackageDir = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, aiPackageFileName).fsPath;
+
+            extension.outputChannel.appendLine(`AI-generating package at ${aiNewPackageDir} with description: ${naturalLanguageDescription}`);
+
+            try {
+              const aiGenerator = new AIPackageGenerator(extension.outputChannel);
+              await aiGenerator.generatePackageWithAI(
+                aiTemplateSource,
+                aiVariables,
+                naturalLanguageDescription,
+                aiNewPackageDir
+              );
+              vscode.window.showInformationMessage(`AI-generated package ${aiPackageName} created successfully`);
               this.dispose();
-              return;
+            } catch (error) {
+              extension.outputChannel.appendLine(`AI generation failed: ${error}`);
+              vscode.window.showErrorMessage(`AI generation failed: ${error}`);
+            }
 
-            case "error":
-              vscode.window.showErrorMessage(message.text);
-              return;
+            return;
 
-            case "info":
-              vscode.window.showInformationMessage(message.text);
-              return;
+          case "cancel":
+            this.dispose();
+            return;
 
-            case "trace":
-              extension.outputChannel.appendLine(message.text);
-              return;
+          case "error":
+            vscode.window.showErrorMessage(message.text);
+            return;
+
+          case "info":
+            vscode.window.showInformationMessage(message.text);
+            return;
+
+          case "trace":
+            extension.outputChannel.appendLine(message.text);
+            return;
         }
       },
       undefined,

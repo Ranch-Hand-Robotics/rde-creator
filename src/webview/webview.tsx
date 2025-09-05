@@ -20,6 +20,7 @@ interface WebviewMessage {
   text?: string;
   type?: string;
   variables?: Record<string, string>;
+  naturalLanguageDescription?: string;
 }
 
 const App: React.FC = () => {
@@ -32,6 +33,8 @@ const App: React.FC = () => {
   const [packageDescription, setPackageDescription] = useState('');
   const [packageLicense, setPackageLicense] = useState('');
   const [includeOptions, setIncludeOptions] = useState<Record<string, boolean>>({});
+  const [naturalLanguageDescription, setNaturalLanguageDescription] = useState('');
+  const [useAI, setUseAI] = useState(false);
 
   useEffect(() => {
     const messageHandler = (event: MessageEvent) => {
@@ -95,8 +98,13 @@ const App: React.FC = () => {
       return;
     }
 
+    if (useAI && !naturalLanguageDescription.trim()) {
+      vscode.postMessage({ command: 'error', text: 'Natural language description is required for AI generation' });
+      return;
+    }
+
     const message: WebviewMessage = {
-      command: 'createPackage',
+      command: useAI ? 'createPackageWithAI' : 'createPackage',
       type: selectedManifest.name,
       variables: {
         package_name: packageName,
@@ -107,7 +115,8 @@ const App: React.FC = () => {
         ...Object.fromEntries(
           Object.entries(includeOptions).map(([key, value]) => [key, value ? 'true' : 'false'])
         )
-      }
+      },
+      ...(useAI && { naturalLanguageDescription })
     };
 
     vscode.postMessage(message);
@@ -252,9 +261,47 @@ const App: React.FC = () => {
             })}
           </div>
         </div>
+        
+        {/* AI Generation Section */}
+        <div className="component-row">
+          <div className="component-container">
+            <h2>Generation Mode:</h2>
+            <div className="form-field">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  id="useAI"
+                  checked={useAI}
+                  onChange={(e) => setUseAI(e.target.checked)}
+                  className="checkbox"
+                />
+                Use AI-powered generation (requires natural language description)
+              </label>
+            </div>
+            
+            {useAI && (
+              <div className="form-field">
+                <label htmlFor="naturalLanguageDescription">Natural Language Description</label>
+                <textarea
+                  id="naturalLanguageDescription"
+                  placeholder="Describe what you want your ROS 2 node to do. For example: 'Create a publisher node that publishes sensor data at 10Hz and subscribes to control commands'"
+                  rows={6}
+                  cols={50}
+                  value={naturalLanguageDescription}
+                  onChange={(e) => setNaturalLanguageDescription(e.target.value)}
+                  className="text-area"
+                />
+                <small style={{ color: '#666', fontSize: '0.9em' }}>
+                  Provide a detailed description of the ROS 2 node's functionality, topics, services, and behavior.
+                </small>
+              </div>
+            )}
+          </div>
+        </div>
+        
         <div className="component-row">
           <button id="create_node_button" onClick={handleCreatePackage} className="button">
-            Create
+            {useAI ? 'Generate with AI' : 'Create Package'}
           </button>
         </div>
       </div>
