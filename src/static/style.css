@@ -42,3 +42,115 @@ vscode-panels {
 .hidden {
   display: none;
 }
+
+/* VS Code-like styles for React components */
+.app {
+  font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+  color: var(--vscode-foreground, #cccccc);
+  background-color: var(--vscode-editor-background, #1e1e1e);
+  padding: 1rem;
+}
+
+.button {
+  background-color: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+  border: 1px solid var(--vscode-button-border, #0e639c);
+  padding: 0.5rem 1rem;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: var(--vscode-font-size, 13px);
+  transition: background-color 0.2s;
+}
+
+.button:hover {
+  background-color: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+.button:active {
+  background-color: var(--vscode-button-activeBackground, #0e639c);
+}
+
+.text-field,
+.text-area {
+  background-color: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #cccccc);
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  padding: 0.5rem;
+  border-radius: 2px;
+  font-size: var(--vscode-font-size, 13px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.text-field:focus,
+.text-area:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder, #007acc);
+}
+
+.text-area {
+  resize: vertical;
+  min-height: 5rem;
+}
+
+.form-field {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--vscode-foreground, #cccccc);
+  font-size: var(--vscode-font-size, 13px);
+}
+
+.radio-group {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.radio-group legend {
+  color: var(--vscode-foreground, #cccccc);
+  font-size: var(--vscode-font-size, 13px);
+  margin-bottom: 0.5rem;
+}
+
+.radio-option {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--vscode-foreground, #cccccc);
+  font-size: var(--vscode-font-size, 13px);
+}
+
+.radio-option input[type="radio"] {
+  margin-right: 0.5rem;
+  accent-color: var(--vscode-progressBar-background, #0e639c);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  color: var(--vscode-foreground, #cccccc);
+  font-size: var(--vscode-font-size, 13px);
+  cursor: pointer;
+}
+
+.checkbox {
+  margin-right: 0.5rem;
+  accent-color: var(--vscode-progressBar-background, #0e639c);
+}
+
+h1, h2 {
+  color: var(--vscode-foreground, #cccccc);
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+}

@@ -4,6 +4,7 @@
 
 const path = require('path');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
@@ -54,19 +55,21 @@ const webviewConfig = {
   target: 'web', // VS Code extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
   mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
 
-  entry: './src/webview/webview.mts', // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
+  entry: './src/webview/webview.tsx', // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
   output: {
     // the bundle is stored in the 'dist' folder (check package.json), 📖 -> https://webpack.js.org/configuration/output/
     path: path.resolve(__dirname, 'dist'),
-    filename: 'webview.js',
-    libraryTarget: 'module'
+    filename: 'webview.js'
   },
   externals: {
     vscode: 'commonjs vscode' // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
     // modules added here also need to be added in the .vscodeignore file
   },
   resolve: {
-    extensions: ['.ts', '.js', '.mts', '.css']
+    extensions: ['.ts', '.js', '.mts', '.tsx', '.jsx', '.css'],
+    fallback: {
+      "process": false
+    }
   },
   module: {
     rules: [
@@ -78,17 +81,28 @@ const webviewConfig = {
             loader: 'ts-loader'
           }
         ]
+      },
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'ts-loader'
+          }
+        ]
       }
     ]
   },
-  devtool: 'nosources-source-map',
+  devtool: 'inline-source-map', // Enable inline source maps for webview debugging
   infrastructureLogging: {
     level: "log", // enables logging required for problem matchers
   },
-  experiments: {
-    outputModule: true
-  },
   plugins: [
+    new webpack.DefinePlugin({
+      'process.env': {
+        'NODE_ENV': JSON.stringify('development')
+      }
+    }),
     new CopyWebpackPlugin({
         patterns: [
             { from: 'src/static' },

@@ -1,4 +1,4 @@
-import { Uri, Webview } from "vscode";
+import { Uri, Webview, workspace, RelativePattern } from "vscode";
 import * as extension from "./extension";
 
 export function getNonce() {
@@ -14,34 +14,42 @@ export function getUri(webview: Webview, extensionUri: Uri, pathList: string[]) 
   return webview.asWebviewUri(Uri.joinPath(extensionUri, ...pathList));
 }
 
-export function getAllManifestMap(templateSource: Uri): Map<string, string> {
-  const manifestFiles = new Map<string, string>();
-  const fs = require('fs');
-  const path = require('path');
-  const walkSync = (dir: string, fileMap: Map<string, string>) => {
-    fs.readdirSync(dir).forEach((file: string) => {
-      const filePath = path.join(dir, file);
-      if (fs.statSync(filePath).isDirectory()) {
-        walkSync(filePath, fileMap);
-      } else {
-        if (file === "manifest.yaml") {
-          try {
-            // load manifest.yaml, convert to JSON, and add to the map using the directory name
-            const yaml = require('js-yaml');
-            const contents = fs.readFileSync(filePath, 'utf8');
-            const manifest = yaml.load(contents);
-            fileMap.set(path.basename(dir), manifest);
-          } catch (e) {
-            extension.outputChannel.appendLine(`Error reading manifest.yaml in ${dir}: ${e}`);
-          }
-        }
+export async function getAllManifestMap(templateSource: Uri): Promise<Map<string, any>> {
+  const manifestFiles = new Map<string, any>();
+
+  try {
+    // Use VS Code workspace filesystem API instead of Node.js fs
+    const files = await workspace.findFiles(
+      new RelativePattern(templateSource, '**/manifest.yaml'),
+      null,
+      100
+    );
+
+    extension.outputChannel.appendLine(`Found ${files.length} manifest files`);
+
+    for (const file of files) {
+      try {
+        const content = await workspace.fs.readFile(file);
+        const text = Buffer.from(content).toString('utf8');
+
+        // Parse YAML using the yaml package (not js-yaml)
+        const yaml = require('yaml');
+        const manifest = yaml.parse(text);
+
+        // Get the directory name (template name)
+        const dirName = workspace.asRelativePath(file.path).split('/').slice(-2)[0];
+        manifestFiles.set(dirName, manifest);
+
+        extension.outputChannel.appendLine(`Loaded manifest for ${dirName}: ${manifest.name}`);
+      } catch (e) {
+        extension.outputChannel.appendLine(`Error parsing manifest ${file.path}: ${e}`);
       }
-    });
-    return fileMap;
-  };
+    }
+  } catch (e) {
+    extension.outputChannel.appendLine(`Error finding manifest files: ${e}`);
+  }
 
-  walkSync(templateSource.fsPath, manifestFiles);
-
+  extension.outputChannel.appendLine(`Total manifests loaded: ${manifestFiles.size}`);
   return manifestFiles;
 }
 

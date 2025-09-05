@@ -18,12 +18,24 @@ export class CreateNodePanel {
     this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
     this._setWebviewMessageListener(this._panel.webview);
 
-    let manifests = getAllManifestMap(vscode.Uri.joinPath(extensionUri, 'dist', 'templates'));
+    // Load manifests asynchronously
+    this._loadManifests();
+  }
 
-    let manifestString = JSON.stringify(Object.fromEntries(manifests));
-    let message = { command: "setManifests", manifests: manifestString};
+  private async _loadManifests() {
+    try {
+      const manifests = await getAllManifestMap(vscode.Uri.joinPath(this._extensionUri, 'dist', 'templates'));
+      const manifestString = JSON.stringify(Object.fromEntries(manifests));
+      const message = { command: "setManifests", manifests: manifestString };
 
-    this._panel.webview.postMessage(message);
+      // Debug logging
+      extension.outputChannel.appendLine(`Found ${manifests.size} manifests: ${Array.from(manifests.keys()).join(', ')}`);
+      extension.outputChannel.appendLine(`Manifest data: ${manifestString}`);
+
+      this._panel.webview.postMessage(message);
+    } catch (error) {
+      extension.outputChannel.appendLine(`Error loading manifests: ${error}`);
+    }
   }
 
   public static render(extensionUri: vscode.Uri) {
@@ -145,45 +157,8 @@ export class CreateNodePanel {
           <title>ROS 2 Package Creator</title>
         </head>
         <body>
-          <div id="create_package_page">
-            <h1>Create new ROS 2 Package:</h1>
-            <section class="component-row">
-              <section class="component-container">
-              <h2>Package type</h2>
-                <section class="component-example">
-                  <vscode-radio-group id="ros_package_type" orientation="vertical">
-                    <label slot="label">Package Type:</label>
-                  </vscode-radio-group>
-                </section>
-              </section>
-              <section class="component-container">
-                <h2>Package Metadata</h2>
-                <section class="component-example">
-                  <vscode-text-field placeholder="my_package" id="package_name">Name</vscode-text-field>
-                  <vscode-text-field placeholder="nobody@nowhere.robots" id="package_maintainer">Maintainer</vscode-text-field>
-                  <vscode-text-field placeholder="0.0.0" id="package_version">Version</vscode-text-field>
-                  <vscode-text-area placeholder="This is a sample description" rows="5" cols="50" id="package_description">Description</vscode-text-area>
-                  <p>License:</p>
-                  <vscode-text-field placeholder="MIT" id="package_license">License</vscode-text-field>
-                </section>
-              </section>
-            </section>
-            <section id="component-row">
-              <vscode-button id="second_page_button">Next Page</vscode-button>
-            </section>
-          </div>
-          <!-- Hidden by default -->
-          <div id="create_node_page" class="hidden">
-            <h1>Populate ROS 2 Node:</h1>
-            <section class="component-row">
-              <section class="component-container"  id="IncludeContainer">
-              </section>
-            </section>
-            <section id="component-row">
-              <vscode-button id="create_node_button">Create</vscode-button>
-            </section>
-          </div>
-          <script type="module" nonce="${nonce}" src="${webviewUri}"></script>
+          <div id="root"></div>
+          <script nonce="${nonce}" src="${webviewUri}"></script>
         </body>
       </html>
     `;

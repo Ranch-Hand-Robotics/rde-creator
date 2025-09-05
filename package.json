@@ -42,7 +42,9 @@
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
-    "@types/node": "18.x",
+    "@types/node": "^18.19.124",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "@types/vscode": "^1.86.0",
     "@types/vscode-webview": "^1.57.5",
     "@typescript-eslint/eslint-plugin": "^6.19.1",
@@ -58,9 +60,10 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@vscode/webview-ui-toolkit": "^1.4.0",
     "handlebars": "^4.7.8",
     "memfs": "^4.9.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "yaml": "^2.4.2"
   }
 }
