@@ -6,9 +6,11 @@ import { ProcessCreateNode } from './ProcessCreateNode';
 
 export class AIPackageGenerator {
   private outputChannel: vscode.OutputChannel;
+  private webview: vscode.Webview | undefined;
 
-  constructor(outputChannel: vscode.OutputChannel) {
+  constructor(outputChannel: vscode.OutputChannel, webview?: vscode.Webview) {
     this.outputChannel = outputChannel;
+    this.webview = webview;
   }
 
   /**
@@ -56,31 +58,47 @@ export class AIPackageGenerator {
 
       // Read template files and manifest
       const templateContent = await this.readTemplateContent(templatePath);
+      this.sendProgress('Template files loaded and analyzed');
+
       const manifestContent = await fs.readFile(path.join(templatePath, 'manifest.yaml'), 'utf-8');
       const manifest = yaml.parse(manifestContent);
+      this.sendProgress('Package manifest parsed');
 
       // Construct the AI prompt
       const prompt = this.constructAIPrompt(templateContent, manifest, variables, naturalLanguageDescription);
+      this.sendProgress('AI prompt constructed with template and user requirements');
 
       // Send request to language model
       const messages = [
         vscode.LanguageModelChatMessage.User(prompt)
       ];
 
+      this.sendProgress('Sending request to AI language model...');
       const response = await model.sendRequest(messages, {
         justification: 'Generating ROS 2 package code based on template and user requirements'
       });
+      this.sendProgress('AI model response received, processing...');
 
       // Process the AI response
       const generatedContent = await this.processAIResponse(response);
+      this.sendProgress('AI response processed and parsed');
 
       // Generate the package using the AI response
       await this.createPackageFromAIResponse(generatedContent, targetDirectory, variables);
+      this.sendProgress('ROS 2 package files created successfully');
 
       this.outputChannel.appendLine('AI-powered ROS package generation completed successfully');
+      // Send completion message to webview
+      if (this.webview) {
+        this.webview.postMessage({ command: 'aiComplete' });
+      }
 
     } catch (error) {
       this.outputChannel.appendLine(`AI generation failed: ${error}`);
+      // Send completion message to webview
+      if (this.webview) {
+        this.webview.postMessage({ command: 'aiComplete' });
+      }
       // Fallback to traditional template processing
       this.outputChannel.appendLine('Falling back to traditional template processing...');
       const processor = new ProcessCreateNode(templatePath);
@@ -122,10 +140,16 @@ export class AIPackageGenerator {
   ): string {
     const variablesObj = Object.fromEntries(variables);
 
+    // Extract AI directive from manifest if present
+    const aiDirective = manifest.ai_directive || '';
+
     return `
 You are an expert ROS 2 developer tasked with generating a complete ROS 2 package based on a template and user requirements.
 
-## Template Information
+${aiDirective ? `## TEMPLATE-SPECIFIC AI DIRECTIVE (HIGH PRIORITY)
+${aiDirective}
+
+` : ''}## Template Information
 The following template files are available:
 ${templateContent}
 
@@ -181,16 +205,18 @@ Generate the ROS 2 package now:
 
     for await (const part of response.text) {
       fullResponse += part;
+      this.sendProgress(`Receiving AI response... (${fullResponse.length} characters so far)`);
     }
 
-    this.outputChannel.appendLine(`AI Response received (${fullResponse.length} characters)`);
+    this.sendProgress(`AI Response received (${fullResponse.length} characters)`);
 
     try {
       // Try to parse as JSON
       const parsed = JSON.parse(fullResponse);
       return parsed;
     } catch (error) {
-      this.outputChannel.appendLine(`Failed to parse AI response as JSON: ${error}`);
+      this.sendProgress(`Failed to parse AI response as JSON: ${error}`);
+
       // Fallback: try to extract JSON from the response
       const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -210,7 +236,8 @@ Generate the ROS 2 package now:
       for (const dir of aiResponse.directories) {
         const dirPath = path.join(targetDirectory, this.processVariables(dir, variables));
         await fs.mkdir(dirPath, { recursive: true });
-        this.outputChannel.appendLine(`Created directory: ${dirPath}`);
+
+        this.sendProgress(`Created directory: ${dirPath}`);
       }
     }
 
@@ -225,7 +252,7 @@ Generate the ROS 2 package now:
         await fs.mkdir(path.dirname(fullPath), { recursive: true });
 
         await fs.writeFile(fullPath, processedContent, 'utf-8');
-        this.outputChannel.appendLine(`Created file: ${fullPath}`);
+        this.sendProgress(`Created file: ${fullPath}`);
       }
     }
   }
@@ -236,5 +263,12 @@ Generate the ROS 2 package now:
       result = result.replace(new RegExp(`{{${key}}}`, 'g'), value);
     }
     return result;
+  }
+
+  private sendProgress(message: string) {
+    this.outputChannel.appendLine(`AI Progress: ${message}`);
+    if (this.webview) {
+      this.webview.postMessage({ command: 'aiProgress', text: message });
+    }
   }
 }

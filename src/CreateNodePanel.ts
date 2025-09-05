@@ -9,23 +9,40 @@ export class CreateNodePanel {
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
   private readonly _extensionUri: vscode.Uri;
+  private _isLoadingManifests: boolean = false;
+  private _targetFolderUri?: vscode.Uri;
 
   
 
-  private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+  private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, targetFolderUri?: vscode.Uri) {
     this._panel = panel;
     this._extensionUri = extensionUri;
+    this._targetFolderUri = targetFolderUri;
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
     this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
     this._setWebviewMessageListener(this._panel.webview);
-
-    // Load manifests asynchronously
-    this._loadManifests();
   }
 
   private async _loadManifests() {
+    // Prevent multiple simultaneous manifest loading operations
+    if (this._isLoadingManifests) {
+      extension.outputChannel.appendLine('Manifest loading already in progress, skipping...');
+      return;
+    }
+
+    this._isLoadingManifests = true;
+
     try {
-      const manifests = await getAllManifestMap(vscode.Uri.joinPath(this._extensionUri, 'dist', 'templates'));
+      extension.outputChannel.appendLine('Loading manifests...');
+      
+      // Add a timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Manifest loading timed out after 30 seconds')), 30000);
+      });
+
+      const manifestPromise = getAllManifestMap(vscode.Uri.joinPath(this._extensionUri, 'dist', 'templates'));
+      
+      const manifests = await Promise.race([manifestPromise, timeoutPromise]) as Map<string, any>;
       const manifestString = JSON.stringify(Object.fromEntries(manifests));
       const message = { command: "setManifests", manifests: manifestString };
 
@@ -33,22 +50,39 @@ export class CreateNodePanel {
       extension.outputChannel.appendLine(`Found ${manifests.size} manifests: ${Array.from(manifests.keys()).join(', ')}`);
       extension.outputChannel.appendLine(`Manifest data: ${manifestString}`);
 
+      // Send message to webview
       this._panel.webview.postMessage(message);
+      extension.outputChannel.appendLine('Manifests sent to webview');
     } catch (error) {
       extension.outputChannel.appendLine(`Error loading manifests: ${error}`);
+      // Send error message to webview
+      this._panel.webview.postMessage({ 
+        command: "error", 
+        text: `Failed to load manifests: ${error}` 
+      });
+    } finally {
+      this._isLoadingManifests = false;
     }
   }
 
-  public static render(extensionUri: vscode.Uri) {
+  public static render(extensionUri: vscode.Uri, targetFolderUri?: vscode.Uri) {
     if (CreateNodePanel.currentPanel) {
       CreateNodePanel.currentPanel._panel.reveal(vscode.ViewColumn.One);
+      // Update target folder if provided
+      if (targetFolderUri) {
+        CreateNodePanel.currentPanel._targetFolderUri = targetFolderUri;
+      }
+      // Reload manifests when panel is revealed (only if not already loading)
+      if (!CreateNodePanel.currentPanel._isLoadingManifests) {
+        CreateNodePanel.currentPanel._loadManifests();
+      }
     } else {
       const panel = vscode.window.createWebviewPanel("robotics-templates", "Robotics Tempate", vscode.ViewColumn.One, {
         enableScripts: true,
         localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'dist')]
       });
 
-      CreateNodePanel.currentPanel = new CreateNodePanel(panel, extensionUri);
+      CreateNodePanel.currentPanel = new CreateNodePanel(panel, extensionUri, targetFolderUri);
     }
   }
 
@@ -71,6 +105,16 @@ export class CreateNodePanel {
         const command = message.command;
 
         switch (command) {
+          case "webviewLoaded":
+            // Webview is ready, now load manifests
+            this._loadManifests();
+            return;
+
+          case "retryManifests":
+            // User clicked retry button, reload manifests
+            this._loadManifests();
+            return;
+
           case "createPackage":
             // find the template source directory from the extension package
             const resourceTemplateSource = vscode.Uri.joinPath(this._extensionUri, "dist", "templates", message.type).fsPath;
@@ -102,9 +146,14 @@ export class CreateNodePanel {
             variables.set("year", new Date().getFullYear().toString());
 
             const packageFileName = fileNameFromVariable(packageName);
-            const newPackageDir = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, packageFileName).fsPath;
+            const workspaceFolder = this._targetFolderUri || vscode.workspace.workspaceFolders?.[0]?.uri;
+            if (!workspaceFolder) {
+              vscode.window.showErrorMessage("No workspace folder available");
+              return;
+            }
+            const newPackageDir = vscode.Uri.joinPath(workspaceFolder, packageFileName).fsPath;
 
-            extension.outputChannel.appendLine(`Creating package at ${newPackageDir} with ${variables.size} variables`);
+            extension.outputChannel.appendLine(`Creating package at ${newPackageDir} (target folder: ${this._targetFolderUri?.fsPath || 'workspace root'})`);
             
             try {
               await processCreateNode.createResourcePackage(newPackageDir, variables);
@@ -146,24 +195,32 @@ export class CreateNodePanel {
             aiVariables.set("year", new Date().getFullYear().toString());
 
             const aiPackageFileName = fileNameFromVariable(aiPackageName);
-            const aiNewPackageDir = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, aiPackageFileName).fsPath;
-
-            extension.outputChannel.appendLine(`AI-generating package at ${aiNewPackageDir} with description: ${naturalLanguageDescription}`);
-
-            try {
-              const aiGenerator = new AIPackageGenerator(extension.outputChannel);
-              await aiGenerator.generatePackageWithAI(
-                aiTemplateSource,
-                aiVariables,
-                naturalLanguageDescription,
-                aiNewPackageDir
-              );
-              vscode.window.showInformationMessage(`AI-generated package ${aiPackageName} created successfully`);
-              this.dispose();
-            } catch (error) {
-              extension.outputChannel.appendLine(`AI generation failed: ${error}`);
-              vscode.window.showErrorMessage(`AI generation failed: ${error}`);
+            const aiWorkspaceFolder = this._targetFolderUri || vscode.workspace.workspaceFolders?.[0]?.uri;
+            if (!aiWorkspaceFolder) {
+              vscode.window.showErrorMessage("No workspace folder available");
+              return;
             }
+            const aiNewPackageDir = vscode.Uri.joinPath(aiWorkspaceFolder, aiPackageFileName).fsPath;
+
+            extension.outputChannel.appendLine(`AI-generating package at ${aiNewPackageDir} (target folder: ${this._targetFolderUri?.fsPath || 'workspace root'})`);
+
+            // Run AI generation asynchronously without blocking the UI
+            (async () => {
+              try {
+                const aiGenerator = new AIPackageGenerator(extension.outputChannel, this._panel.webview);
+                await aiGenerator.generatePackageWithAI(
+                  aiTemplateSource,
+                  aiVariables,
+                  naturalLanguageDescription,
+                  aiNewPackageDir
+                );
+                vscode.window.showInformationMessage(`AI-generated package ${aiPackageName} created successfully`);
+                this.dispose();
+              } catch (error) {
+                extension.outputChannel.appendLine(`AI generation failed: ${error}`);
+                vscode.window.showErrorMessage(`AI generation failed: ${error}`);
+              }
+            })();
 
             return;
 

@@ -154,3 +154,151 @@ h1 {
 h2 {
   font-size: 1.25rem;
 }
+
+/* Progress page styles */
+.progress-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+.progress-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--vscode-progressBar-background, #3c3c3c);
+  border-top: 4px solid var(--vscode-progressBar-background, #0e639c);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.progress-log {
+  margin-top: 2rem;
+  text-align: left;
+}
+
+.progress-log h3 {
+  margin-bottom: 1rem;
+  color: var(--vscode-foreground, #cccccc);
+}
+
+.log-entries {
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: var(--vscode-input-background, #3c3c3c);
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
+.log-entry {
+  display: flex;
+  margin-bottom: 0.5rem;
+  font-family: var(--vscode-editor-font-family, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
+  font-size: 0.9rem;
+}
+
+.log-timestamp {
+  color: var(--vscode-descriptionForeground, #cccccc);
+  margin-right: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.log-message {
+  color: var(--vscode-foreground, #cccccc);
+}
+
+.progress-steps {
+  margin-top: 2rem;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.step-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--vscode-progressBar-background, #3c3c3c);
+  margin-right: 0.75rem;
+  transition: background-color 0.3s;
+}
+
+.step-indicator.active {
+  background-color: var(--vscode-progressBar-background, #0e639c);
+}
+
+.generating-page {
+  background-color: var(--vscode-editor-background, #1e1e1e);
+}
+
+/* Header bar and back button styles */
+.header-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: var(--vscode-foreground, #cccccc);
+  cursor: pointer;
+  font-size: var(--vscode-font-size, 13px);
+  padding: 0.5rem 1rem;
+  margin-right: 1rem;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.back-button:hover {
+  background-color: var(--vscode-toolbar-hoverBackground, #2a2d2e);
+}
+
+.back-button:active {
+  background-color: var(--vscode-toolbar-activeBackground, #37373d);
+}
+
+.back-button:disabled {
+  color: var(--vscode-disabledForeground, #cccccc);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.back-button:disabled:hover {
+  background: none;
+}
+
+.header-bar h1 {
+  margin: 0;
+  flex: 1;
+}
+
+/* Full-width containers */
+.component-container.full-width {
+  width: 100%;
+  margin: 1rem 0;
+  padding: 1rem;
+}
+
+/* Full-width includes section */
+#IncludeContainer {
+  width: 100%;
+  margin: 0;
+  padding: 1rem 0;
+}
+
+#IncludeContainer .component-example {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}

@@ -2,6 +2,26 @@ name: "Resource"
 version: 0.0.0
 description: A template for representing resources like launch files, urdf files, meshes, etc.
 license: "MIT"
+ai_directive: |
+  This is a ROS 2 resource package template. When generating code for this template:
+  
+  HIGH PRIORITY REQUIREMENTS:
+  - Focus on creating resource files (URDF, meshes, launch files, configuration files)
+  - Ensure all file paths and references are correctly structured
+  - Include proper ROS 2 package structure for resource packages
+  - Add appropriate dependencies for the included resources
+  - Follow ROS 2 naming conventions for all generated files
+  - Include comprehensive documentation for the resource package
+  
+  RESOURCE-SPECIFIC GUIDELINES:
+  - URDF files should be well-formed XML with proper joint and link definitions
+  - Launch files should use modern ROS 2 launch API (not legacy launch)
+  - Mesh files should be properly referenced in URDF with correct relative paths
+  - Include parameter files for configurable resource parameters
+  - Add proper error handling for resource loading failures
+  - If you need to generate more than just simple geometry, create OpenSCAD files for complex meshes. 
+  - OpenSCAD files will be post processed to stl files, so reference the stl files in the URDF or Xacro.
+  
 options:
   - variable: "include_urdf"
     name: "Include URDF"

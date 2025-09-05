@@ -24,7 +24,7 @@ interface WebviewMessage {
 }
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<'create_package' | 'create_node'>('create_package');
+  const [currentPage, setCurrentPage] = useState<'create_package' | 'create_node' | 'generating'>('create_package');
   const [manifests, setManifests] = useState<Map<string, Manifest>>(new Map());
   const [selectedPackageType, setSelectedPackageType] = useState<string>('');
   const [packageName, setPackageName] = useState('');
@@ -35,27 +35,45 @@ const App: React.FC = () => {
   const [includeOptions, setIncludeOptions] = useState<Record<string, boolean>>({});
   const [naturalLanguageDescription, setNaturalLanguageDescription] = useState('');
   const [useAI, setUseAI] = useState(false);
+  const [isLoadingManifests, setIsLoadingManifests] = useState(true);
+  const [generationProgress, setGenerationProgress] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [manifestLoadStartTime, setManifestLoadStartTime] = useState<number | null>(null);
 
   useEffect(() => {
+    // Notify the extension that the webview is loaded and ready
+    vscode.postMessage({ command: 'webviewLoaded' });
+    
+    setManifestLoadStartTime(Date.now());
+    
     const messageHandler = (event: MessageEvent) => {
       const message = event.data;
       switch (message.command) {
         case 'setManifests':
-          vscode.postMessage({ command: 'trace', text: `Received setManifests message: ${JSON.stringify(message)}` });
           const parsedManifests = JSON.parse(message.manifests);
-          vscode.postMessage({ command: 'trace', text: `Parsed manifests: ${JSON.stringify(parsedManifests)}` });
           const manifestMap = new Map<string, Manifest>();
           for (const [key, value] of Object.entries(parsedManifests) as [string, any][]) {
             manifestMap.set(key, value);
           }
-          vscode.postMessage({ command: 'trace', text: `Manifest map size: ${manifestMap.size}` });
           setManifests(manifestMap);
+          setIsLoadingManifests(false);
+          setManifestLoadStartTime(null);
           if (manifestMap.size > 0) {
             const firstKey = manifestMap.keys().next().value;
             if (firstKey) {
               setSelectedPackageType(firstKey);
             }
           }
+          break;
+        case 'error':
+          setIsLoadingManifests(false);
+          setManifestLoadStartTime(null);
+          break;
+        case 'aiProgress':
+          setGenerationProgress(prev => [...prev, message.text]);
+          break;
+        case 'aiComplete':
+          setIsGenerating(false);
           break;
       }
     };
@@ -64,14 +82,28 @@ const App: React.FC = () => {
     return () => window.removeEventListener('message', messageHandler);
   }, []);
 
+  // Add timeout for manifest loading
+  useEffect(() => {
+    if (manifestLoadStartTime && isLoadingManifests) {
+      const timeoutId = setTimeout(() => {
+        const elapsed = Date.now() - manifestLoadStartTime;
+        if (elapsed > 10000) { // 10 seconds timeout
+          setIsLoadingManifests(false);
+          setManifestLoadStartTime(null);
+          vscode.postMessage({ command: 'error', text: 'Manifest loading timed out. Please try reopening the panel.' });
+        }
+      }, 10000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [manifestLoadStartTime, isLoadingManifests]);
+
   const handleNextPage = () => {
     const selectedManifest = manifests.get(selectedPackageType);
     if (!selectedManifest) {
       vscode.postMessage({ command: 'error', text: `No manifest found for ${selectedPackageType}` });
       return;
     }
-
-    vscode.postMessage({ command: 'trace', text: `Selected manifest: ${selectedManifest.name}` });
 
     const options: Record<string, boolean> = {};
     if (selectedManifest.options) {
@@ -93,56 +125,160 @@ const App: React.FC = () => {
       return;
     }
 
-    if (!packageName.trim()) {
+    // Use placeholder values if fields are empty
+    const finalPackageName = packageName.trim() || "my_package";
+    const finalPackageMaintainer = packageMaintainer.trim() || "robots@example.com";
+    const finalPackageVersion = packageVersion.trim() || "0.0.0";
+    const finalPackageDescription = packageDescription.trim() || "This is a sample description";
+    const finalPackageLicense = packageLicense.trim() || "MIT";
+
+    // Use package description as natural language description if it's been modified
+    let finalNaturalLanguageDescription = naturalLanguageDescription.trim();
+    
+    // If package description has been modified (not default), use it as natural language description
+    if (finalPackageDescription && finalPackageDescription !== "This is a sample description") {
+      if (!finalNaturalLanguageDescription) {
+        // Use package description if natural language is empty
+        finalNaturalLanguageDescription = finalPackageDescription;
+      } else {
+        // Combine both if both are provided
+        finalNaturalLanguageDescription = `${finalPackageDescription}\n\n${finalNaturalLanguageDescription}`;
+      }
+    } else if (!finalNaturalLanguageDescription) {
+      // Use default placeholder if both are empty
+      finalNaturalLanguageDescription = "Describe what you want your ROS 2 node to do. For example: 'Create a publisher node that publishes sensor data at 10Hz and subscribes to control commands'";
+    }
+
+    if (!finalPackageName) {
       vscode.postMessage({ command: 'error', text: 'Package Name is required' });
       return;
     }
 
-    if (useAI && !naturalLanguageDescription.trim()) {
+    if (useAI && !finalNaturalLanguageDescription.trim()) {
       vscode.postMessage({ command: 'error', text: 'Natural language description is required for AI generation' });
       return;
+    }
+
+    // For AI generation, we need either natural language description or package description
+    if (useAI && !finalNaturalLanguageDescription.trim() && finalPackageDescription === "This is a sample description") {
+      vscode.postMessage({ command: 'error', text: 'Either natural language description or a custom package description is required for AI generation' });
+      return;
+    }
+
+    // Combine package description with natural language description for AI
+    let combinedDescription = finalNaturalLanguageDescription;
+    if (finalPackageDescription && finalPackageDescription !== "This is a sample description") {
+      combinedDescription = `Package Description: ${finalPackageDescription}\n\nDetailed Requirements: ${finalNaturalLanguageDescription}`;
     }
 
     const message: WebviewMessage = {
       command: useAI ? 'createPackageWithAI' : 'createPackage',
       type: selectedManifest.name,
       variables: {
-        package_name: packageName,
-        package_maintainer: packageMaintainer,
-        package_version: packageVersion,
-        package_description: packageDescription,
-        package_license: packageLicense,
+        package_name: finalPackageName,
+        package_maintainer: finalPackageMaintainer,
+        package_version: finalPackageVersion,
+        package_description: finalPackageDescription,
+        package_license: finalPackageLicense,
         ...Object.fromEntries(
           Object.entries(includeOptions).map(([key, value]) => [key, value ? 'true' : 'false'])
         )
       },
-      ...(useAI && { naturalLanguageDescription })
+      ...(useAI && { naturalLanguageDescription: finalNaturalLanguageDescription })
     };
+
+    if (useAI) {
+      setIsGenerating(true);
+      setGenerationProgress([]);
+      setCurrentPage('generating');
+    }
 
     vscode.postMessage(message);
   };
 
+  const handleBack = () => {
+    if (currentPage === 'create_node') {
+      setCurrentPage('create_package');
+    } else if (currentPage === 'generating') {
+      setCurrentPage('create_node');
+    } else {
+      // On the first page, close the panel
+      vscode.postMessage({ command: 'cancel' });
+    }
+  };
+
+  // Hook into browser navigation
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      event.preventDefault();
+      handleBack();
+    };
+
+    // Set up initial state for navigation
+    if (typeof window !== 'undefined' && window.history) {
+      window.history.replaceState({ page: currentPage }, '', '');
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentPage]);
+
+  // Update browser history when page changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.history) {
+      window.history.pushState({ page: currentPage }, '', '');
+    }
+  }, [currentPage]);
+
   const renderCreatePackagePage = () => (
     <div id="create_package_page">
-      <h1>Create new ROS 2 Package:</h1>
+      <div className="header-bar">
+        <button 
+          className="back-button" 
+          onClick={handleBack}
+          title="Close"
+        >
+          ← Close
+        </button>
+        <h1>Create new ROS 2 Package:</h1>
+      </div>
       <div className="component-row">
         <div className="component-container">
           <h2>Package type</h2>
           <div className="component-example">
             <fieldset className="radio-group">
               <legend>Package Type:</legend>
-              {Array.from(manifests.entries()).map(([key, manifest]) => (
-                <label key={key} className="radio-option">
-                  <input
-                    type="radio"
-                    name="packageType"
-                    value={key}
-                    checked={selectedPackageType === key}
-                    onChange={(e) => setSelectedPackageType(e.target.value)}
-                  />
-                  {manifest.name}
-                </label>
-              ))}
+              {isLoadingManifests ? (
+                <p>Loading package templates...</p>
+              ) : manifests.size === 0 ? (
+                <div>
+                  <p>No package templates found. Please check the extension installation.</p>
+                  <button 
+                    className="button" 
+                    onClick={() => {
+                      setIsLoadingManifests(true);
+                      setManifestLoadStartTime(Date.now());
+                      vscode.postMessage({ command: 'retryManifests' });
+                    }}
+                    style={{ marginTop: '1rem' }}
+                  >
+                    Retry Loading
+                  </button>
+                </div>
+              ) : (
+                Array.from(manifests.entries()).map(([key, manifest]) => (
+                  <label key={key} className="radio-option">
+                    <input
+                      type="radio"
+                      name="packageType"
+                      value={key}
+                      checked={selectedPackageType === key}
+                      onChange={(e) => setSelectedPackageType(e.target.value)}
+                    />
+                    {manifest.name}
+                  </label>
+                ))
+              )}
             </fieldset>
           </div>
         </div>
@@ -209,8 +345,8 @@ const App: React.FC = () => {
         </div>
       </div>
       <div className="component-row">
-        <button id="second_page_button" onClick={handleNextPage} className="button">
-          Next Page
+        <button id="second_page_button" onClick={handleNextPage} className="button" disabled={isLoadingManifests || manifests.size === 0}>
+          {isLoadingManifests ? 'Loading...' : 'Next Page'}
         </button>
       </div>
     </div>
@@ -222,11 +358,21 @@ const App: React.FC = () => {
 
     return (
       <div id="create_node_page">
-        <h1>Populate ROS 2 Node:</h1>
-        <div className="component-row">
-          <div className="component-container" id="IncludeContainer">
-            {options.length > 0 && <h2>Include:</h2>}
-            {options.map((option) => {
+        <div className="header-bar">
+          <button 
+            className="back-button" 
+            onClick={handleBack}
+            title="Back to Package Selection"
+          >
+            ← Back
+          </button>
+          <h1>Populate ROS 2 Node:</h1>
+        </div>
+        {options.length > 0 && (
+          <div className="component-container full-width" id="IncludeContainer">
+            <h2>Include:</h2>
+            <div className="component-example">
+              {options.map((option) => {
               if (option.type === 'boolean') {
                 return (
                   <div key={option.variable} className="form-field">
@@ -259,44 +405,44 @@ const App: React.FC = () => {
                 );
               }
             })}
+            </div>
           </div>
-        </div>
+        )}
         
         {/* AI Generation Section */}
-        <div className="component-row">
-          <div className="component-container">
-            <h2>Generation Mode:</h2>
-            <div className="form-field">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  id="useAI"
-                  checked={useAI}
-                  onChange={(e) => setUseAI(e.target.checked)}
-                  className="checkbox"
-                />
-                Use AI-powered generation (requires natural language description)
-              </label>
-            </div>
-            
-            {useAI && (
-              <div className="form-field">
-                <label htmlFor="naturalLanguageDescription">Natural Language Description</label>
-                <textarea
-                  id="naturalLanguageDescription"
-                  placeholder="Describe what you want your ROS 2 node to do. For example: 'Create a publisher node that publishes sensor data at 10Hz and subscribes to control commands'"
-                  rows={6}
-                  cols={50}
-                  value={naturalLanguageDescription}
-                  onChange={(e) => setNaturalLanguageDescription(e.target.value)}
-                  className="text-area"
-                />
-                <small style={{ color: '#666', fontSize: '0.9em' }}>
-                  Provide a detailed description of the ROS 2 node's functionality, topics, services, and behavior.
-                </small>
-              </div>
-            )}
+        <div className="component-container full-width">
+          <h2>Generation Mode:</h2>
+          <div className="form-field">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                id="useAI"
+                checked={useAI}
+                onChange={(e) => setUseAI(e.target.checked)}
+                className="checkbox"
+              />
+              Use AI-powered generation (provide description in either the Package Description field above or the detailed description below)
+            </label>
           </div>
+          
+          {useAI && (
+            <div className="form-field">
+              <label htmlFor="naturalLanguageDescription">Natural Language Description</label>
+              <textarea
+                id="naturalLanguageDescription"
+                placeholder="Describe what you want your ROS 2 node to do. For example: 'Create a publisher node that publishes sensor data at 10Hz and subscribes to control commands'"
+                rows={6}
+                cols={50}
+                value={naturalLanguageDescription}
+                onChange={(e) => setNaturalLanguageDescription(e.target.value)}
+                className="text-area"
+              />
+              <small style={{ color: '#666', fontSize: '0.9em' }}>
+                Provide a detailed description of the ROS 2 node's functionality, topics, services, and behavior. 
+                You can also provide details in the Package Description field above.
+              </small>
+            </div>
+          )}
         </div>
         
         <div className="component-row">
@@ -308,9 +454,71 @@ const App: React.FC = () => {
     );
   };
 
+  const renderGeneratingPage = () => (
+    <div id="generating_page">
+      <div className="header-bar">
+        <button 
+          className="back-button" 
+          onClick={handleBack}
+          title="Back to Node Configuration"
+          disabled={isGenerating}
+        >
+          ← Back
+        </button>
+        <h1>Generating ROS 2 Package with AI</h1>
+      </div>
+      <div className="component-row">
+        <div className="component-container">
+          <h2>AI Generation Progress</h2>
+          <div className="component-example">
+            <div className="progress-container">
+              <div className="progress-spinner"></div>
+              <p>AI is analyzing your requirements and generating the ROS 2 package...</p>
+            </div>
+            
+            {generationProgress.length > 0 && (
+              <div className="progress-log">
+                <h3>Progress Log:</h3>
+                <div className="log-entries">
+                  {generationProgress.map((message, index) => (
+                    <div key={index} className="log-entry">
+                      <span className="log-timestamp">{new Date().toLocaleTimeString()}</span>
+                      <span className="log-message">{message}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="progress-steps">
+              <div className="step">
+                <div className="step-indicator active"></div>
+                <span>Analyzing template structure</span>
+              </div>
+              <div className="step">
+                <div className={`step-indicator ${generationProgress.some(msg => msg.includes('prompt') || msg.includes('language')) ? 'active' : ''}`}></div>
+                <span>Processing natural language description</span>
+              </div>
+              <div className="step">
+                <div className={`step-indicator ${generationProgress.some(msg => msg.includes('model') || msg.includes('response')) ? 'active' : ''}`}></div>
+                <span>Generating ROS 2 code and configuration</span>
+              </div>
+              <div className="step">
+                <div className={`step-indicator ${generationProgress.some(msg => msg.includes('files') || msg.includes('created')) ? 'active' : ''}`}></div>
+                <span>Creating package files</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className={`app ${currentPage === 'create_package' ? '' : 'node-page'}`}>
-      {currentPage === 'create_package' ? renderCreatePackagePage() : renderCreateNodePage()}
+    <div className={`app ${currentPage === 'create_package' ? '' : currentPage === 'create_node' ? 'node-page' : 'generating-page'}`}>
+      {currentPage === 'create_package' ? renderCreatePackagePage() : 
+       currentPage === 'create_node' ? renderCreateNodePage() : 
+       renderGeneratingPage()}
     </div>
   );
 };
