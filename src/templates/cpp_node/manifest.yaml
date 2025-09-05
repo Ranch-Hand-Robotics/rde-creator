@@ -1,0 +1,111 @@
+name: "C++ ROS 2 Node"
+version: 0.0.0
+description: A template for creating C++-based ROS 2 composable nodes with optional lifecycle support
+license: "MIT"
+ai_directive: |
+  This is a ROS 2 C++ composable node template. When generating code for this template:
+
+  HIGH PRIORITY REQUIREMENTS:
+  - Create a complete, functional ROS 2 C++ composable node using rclcpp_components
+  - Follow ROS 2 C++ best practices and modern C++ standards (C++17+)
+  - Include proper node lifecycle management and component registration
+  - Use appropriate ROS 2 message types and interfaces
+  - Implement proper error handling and logging with RCLCPP macros
+  - Include comprehensive Doxygen-style documentation comments
+  - Follow ROS 2 naming conventions for nodes, topics, services, and parameters
+
+  C++ SPECIFIC GUIDELINES:
+  - Use modern C++17 features (auto, smart pointers, lambdas)
+  - Implement RAII principles for resource management
+  - Use const correctness and noexcept where appropriate
+  - Include proper header guards and include ordering
+  - Use std::chrono for timing instead of deprecated methods
+  - Implement thread-safe operations where needed
+  - Use ROS 2 quality of service (QoS) profiles appropriately
+
+  COMPOSABLE NODE PATTERNS:
+  - Register the node as a component using RCLCPP_COMPONENTS_REGISTER_NODE
+  - Include proper pluginlib export macros
+  - Support loading via component manager
+  - Include parameter declaration and validation
+  - Implement proper cleanup in destructors
+
+  LIFECYCLE NODE PATTERNS (when enabled):
+  - Inherit from rclcpp_lifecycle::LifecycleNode instead of rclcpp::Node
+  - Implement all lifecycle state callbacks (configure, activate, deactivate, cleanup, shutdown)
+  - Handle state transitions properly
+  - Use lifecycle publishers and subscriptions
+  - Include proper error handling for state transitions
+
+  QUALITY ASSURANCE:
+  - Include proper includes and dependencies in CMakeLists.txt
+  - Add input validation for parameters and messages
+  - Include example usage in documentation
+  - Ensure thread safety for multi-threaded operations
+  - Add proper error handling and logging
+
+options:
+  - variable: "include_publisher"
+    name: "Include Publisher"
+    description: "Include a publisher that sends messages on a topic"
+    type: "boolean"
+  - variable: "include_subscriber"
+    name: "Include Subscriber"
+    description: "Include a subscriber that receives messages from a topic"
+    type: "boolean"
+  - variable: "include_service"
+    name: "Include Service"
+    description: "Include a service server that responds to requests"
+    type: "boolean"
+  - variable: "include_client"
+    name: "Include Service Client"
+    description: "Include a service client that makes requests"
+    type: "boolean"
+  - variable: "include_timer"
+    name: "Include Timer"
+    description: "Include a timer for periodic tasks"
+    type: "boolean"
+  - variable: "include_parameters"
+    name: "Include Parameters"
+    description: "Include dynamic parameter handling"
+    type: "boolean"
+  - variable: "include_lifecycle"
+    name: "Lifecycle Node"
+    description: "Make this a lifecycle node with state management"
+    type: "boolean"
+  - variable: "include_launch"
+    name: "Include Launch File"
+    description: "Include a Python-based launch file for the node"
+    type: "boolean"
+  - variable: "node_name"
+    name: "Node Name"
+    description: "Name of the ROS 2 node"
+    type: "string"
+    default: "my_node"
+  - variable: "topic_name"
+    name: "Topic Name"
+    description: "Name of the topic for publisher/subscriber"
+    type: "string"
+    default: "my_topic"
+    condition: "include_publisher"
+  - variable: "service_name"
+    name: "Service Name"
+    description: "Name of the service for server/client"
+    type: "string"
+    default: "my_service"
+    condition: "include_service"
+  - variable: "timer_period"
+    name: "Timer Period (seconds)"
+    description: "Period for timer callbacks"
+    type: "string"
+    default: "1.0"
+    condition: "include_timer"
+file_mapping:
+  - "cpp_node": "{{package_name}}"
+  - "launch":
+    condition: include_launch
+  - "launch/node.launch.py": "launch/{{package_name}}.launch.py"
+    condition: include_launch
+  - "resource/package_name": "resource/{{package_name}}"
+  - "cpp_node/include/node.hpp": "include/{{package_name}}/{{node_name}}.hpp"
+  - "cpp_node/src/node.cpp": "src/{{node_name}}.cpp"

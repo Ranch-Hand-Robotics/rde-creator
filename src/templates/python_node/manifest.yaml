@@ -1,0 +1,101 @@
+name: "Python ROS 2 Node"
+version: 0.0.0
+description: A template for creating Python-based ROS 2 nodes with various communication patterns
+license: "MIT"
+ai_directive: |
+  This is a ROS 2 Python node template. When generating code for this template:
+
+  HIGH PRIORITY REQUIREMENTS:
+  - Create a complete, functional ROS 2 Python node using rclpy
+  - Follow ROS 2 Python best practices and conventions
+  - Include proper node lifecycle management (initialization, spinning, shutdown)
+  - Use appropriate ROS 2 message types and interfaces
+  - Implement proper error handling and logging
+  - Include comprehensive docstrings and comments
+  - Follow ROS 2 naming conventions for nodes, topics, services, and parameters
+
+  PYTHON-SPECIFIC GUIDELINES:
+  - Use modern Python 3.8+ syntax and features
+  - Implement proper async/await patterns where appropriate
+  - Include type hints for better code maintainability
+  - Use logging instead of print statements for debugging
+  - Handle ROS 2 exceptions properly (e.g., ParameterNotDeclaredException)
+  - Include proper QoS settings for reliability and durability
+  - Use timer callbacks for periodic tasks
+  - Implement graceful shutdown handling
+
+  NODE ARCHITECTURE PATTERNS:
+  - Publisher nodes: Include message publishing at configurable rates
+  - Subscriber nodes: Include message processing with callbacks
+  - Service nodes: Include both client and server implementations
+  - Action nodes: Include action server/client with proper goal handling
+  - Parameter nodes: Include dynamic parameter handling
+  - Timer-based nodes: Include periodic task execution
+
+  QUALITY ASSURANCE:
+  - Include proper imports and dependencies
+  - Add input validation for parameters and messages
+  - Include example usage in docstrings
+  - Ensure thread safety for multi-threaded operations
+  - Add proper cleanup in destructors
+
+options:
+  - variable: "include_publisher"
+    name: "Include Publisher"
+    description: "Include a publisher that sends messages on a topic"
+    type: "boolean"
+  - variable: "include_subscriber"
+    name: "Include Subscriber"
+    description: "Include a subscriber that receives messages from a topic"
+    type: "boolean"
+  - variable: "include_service"
+    name: "Include Service"
+    description: "Include a service server that responds to requests"
+    type: "boolean"
+  - variable: "include_client"
+    name: "Include Service Client"
+    description: "Include a service client that makes requests"
+    type: "boolean"
+  - variable: "include_timer"
+    name: "Include Timer"
+    description: "Include a timer for periodic tasks"
+    type: "boolean"
+  - variable: "include_parameters"
+    name: "Include Parameters"
+    description: "Include dynamic parameter handling"
+    type: "boolean"
+  - variable: "include_launch"
+    name: "Include Launch File"
+    description: "Include a Python-based launch file for the node"
+    type: "boolean"
+  - variable: "node_name"
+    name: "Node Name"
+    description: "Name of the ROS 2 node"
+    type: "string"
+    default: "my_node"
+  - variable: "topic_name"
+    name: "Topic Name"
+    description: "Name of the topic for publisher/subscriber"
+    type: "string"
+    default: "my_topic"
+    condition: "include_publisher"
+  - variable: "service_name"
+    name: "Service Name"
+    description: "Name of the service for server/client"
+    type: "string"
+    default: "my_service"
+    condition: "include_service"
+  - variable: "timer_period"
+    name: "Timer Period (seconds)"
+    description: "Period for timer callbacks"
+    type: "string"
+    default: "1.0"
+    condition: "include_timer"
+file_mapping:
+  - "python_node": "{{package_name}}"
+  - "launch":
+    condition: include_launch
+  - "launch/node.launch.py": "launch/{{package_name}}.launch.py"
+    condition: include_launch
+  - "test": "test"
+  - "resource/package_name": "resource/{{package_name}}"
