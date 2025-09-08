@@ -242,6 +242,45 @@ const App: React.FC = () => {
         </button>
         <h1>Create new ROS 2 Package:</h1>
       </div>
+      
+      {/* AI Generation Mode Section */}
+      <div className="component-container full-width">
+        <h2>Generation Mode:</h2>
+        <div className="component-example">
+          <div className="form-field">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                id="useAI"
+                checked={useAI}
+                onChange={(e) => setUseAI(e.target.checked)}
+                className="checkbox"
+              />
+              Use AI-powered generation (provide description in the Package Description field below or detailed description on the next page)
+            </label>
+          </div>
+          
+          {useAI && (
+            <div className="form-field">
+              <label htmlFor="naturalLanguageDescription">Natural Language Description</label>
+              <textarea
+                id="naturalLanguageDescription"
+                placeholder="Describe what you want your ROS 2 node to do. For example: 'Create a publisher node that publishes sensor data at 10Hz and subscribes to control commands'"
+                rows={4}
+                cols={50}
+                value={naturalLanguageDescription}
+                onChange={(e) => setNaturalLanguageDescription(e.target.value)}
+                className="text-area"
+              />
+              <small>
+                Provide a detailed description of the ROS 2 node's functionality, topics, services, and behavior. 
+                You can also provide details in the Package Description field below.
+              </small>
+            </div>
+          )}
+        </div>
+      </div>
+      
       <div className="component-row">
         <div className="component-container">
           <h2>Package type</h2>
@@ -346,7 +385,7 @@ const App: React.FC = () => {
       </div>
       <div className="component-row">
         <button id="second_page_button" onClick={handleNextPage} className="button" disabled={isLoadingManifests || manifests.size === 0}>
-          {isLoadingManifests ? 'Loading...' : 'Next Page'}
+          {isLoadingManifests ? 'Loading...' : useAI ? 'Configure & Generate with AI' : 'Next Page'}
         </button>
       </div>
     </div>
@@ -372,78 +411,44 @@ const App: React.FC = () => {
           <div className="component-container full-width" id="IncludeContainer">
             <h2>Include:</h2>
             <div className="component-example">
-              {options.map((option) => {
-              if (option.type === 'boolean') {
-                return (
-                  <div key={option.variable} className="form-field">
-                    <label className="checkbox-label">
+              <div className="includes-grid">
+                {options.map((option) => {
+                if (option.type === 'boolean') {
+                  return (
+                    <div key={option.variable} className="form-field">
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          id={option.variable}
+                          checked={includeOptions[option.variable] || false}
+                          onChange={(e) => setIncludeOptions(prev => ({
+                            ...prev,
+                            [option.variable]: e.target.checked
+                          }))}
+                          className="checkbox"
+                        />
+                        {option.name}
+                      </label>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div key={option.variable} className="form-field">
+                      <label htmlFor={option.variable}>{option.name}</label>
                       <input
-                        type="checkbox"
                         id={option.variable}
-                        checked={includeOptions[option.variable] || false}
-                        onChange={(e) => setIncludeOptions(prev => ({
-                          ...prev,
-                          [option.variable]: e.target.checked
-                        }))}
-                        className="checkbox"
+                        type="text"
+                        placeholder={option.name}
+                        className="text-field"
                       />
-                      {option.name}
-                    </label>
-                  </div>
-                );
-              } else {
-                return (
-                  <div key={option.variable} className="form-field">
-                    <label htmlFor={option.variable}>{option.name}</label>
-                    <input
-                      id={option.variable}
-                      type="text"
-                      placeholder={option.name}
-                      className="text-field"
-                    />
-                  </div>
-                );
-              }
-            })}
+                    </div>
+                  );
+                }
+              })}
+              </div>
             </div>
           </div>
         )}
-        
-        {/* AI Generation Section */}
-        <div className="component-container full-width">
-          <h2>Generation Mode:</h2>
-          <div className="form-field">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                id="useAI"
-                checked={useAI}
-                onChange={(e) => setUseAI(e.target.checked)}
-                className="checkbox"
-              />
-              Use AI-powered generation (provide description in either the Package Description field above or the detailed description below)
-            </label>
-          </div>
-          
-          {useAI && (
-            <div className="form-field">
-              <label htmlFor="naturalLanguageDescription">Natural Language Description</label>
-              <textarea
-                id="naturalLanguageDescription"
-                placeholder="Describe what you want your ROS 2 node to do. For example: 'Create a publisher node that publishes sensor data at 10Hz and subscribes to control commands'"
-                rows={6}
-                cols={50}
-                value={naturalLanguageDescription}
-                onChange={(e) => setNaturalLanguageDescription(e.target.value)}
-                className="text-area"
-              />
-              <small style={{ color: '#666', fontSize: '0.9em' }}>
-                Provide a detailed description of the ROS 2 node's functionality, topics, services, and behavior. 
-                You can also provide details in the Package Description field above.
-              </small>
-            </div>
-          )}
-        </div>
         
         <div className="component-row">
           <button id="create_node_button" onClick={handleCreatePackage} className="button">

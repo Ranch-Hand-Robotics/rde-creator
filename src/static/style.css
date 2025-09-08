@@ -1,6 +1,22 @@
+/* Button positioning */
 .component-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
+}
+
+.node-page .component-row:last-child {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.generating-page .component-row {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 #data-grid-row,
@@ -15,9 +31,10 @@
   align-items: flex-start;
   justify-content: flex-start;
   margin: 1rem;
-  padding: 1rem;
+  padding: 1.5rem;
   border: 2px dashed #7b61ff;
   border-radius: 5px;
+  background-color: var(--vscode-editor-background, #1e1e1e);
 }
 
 .component-container > * {
@@ -43,11 +60,21 @@ vscode-panels {
   display: none;
 }
 
-/* VS Code-like styles for React components */
+/* Page-specific layout improvements */
 .app {
   font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
   color: var(--vscode-foreground, #cccccc);
   background-color: var(--vscode-editor-background, #1e1e1e);
+  padding: 1rem;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.app.node-page {
+  padding: 1rem;
+}
+
+.app.generating-page {
   padding: 1rem;
 }
 
@@ -93,6 +120,7 @@ vscode-panels {
   min-height: 5rem;
 }
 
+/* Form field improvements */
 .form-field {
   width: 100%;
   margin-bottom: 1rem;
@@ -100,9 +128,17 @@ vscode-panels {
 
 .form-field label {
   display: block;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
   color: var(--vscode-foreground, #cccccc);
   font-size: var(--vscode-font-size, 13px);
+  font-weight: 500;
+}
+
+/* Generation Mode section styling */
+.component-container h2 {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
 }
 
 .radio-group {
@@ -285,20 +321,82 @@ h2 {
 
 /* Full-width containers */
 .component-container.full-width {
-  width: 100%;
-  margin: 1rem 0;
-  padding: 1rem;
+  width: calc(100% - 2rem);
+  margin: 1rem;
+  padding: 1.5rem;
+  border: 2px dashed #7b61ff;
+  border-radius: 5px;
 }
 
-/* Full-width includes section */
-#IncludeContainer {
+/* First page generation mode container */
+#create_package_page .component-container.full-width {
+  margin: 1rem 0 2rem 0;
+}
+
+/* Second page layout adjustments */
+.node-page .component-row {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   margin: 0;
-  padding: 1rem 0;
+  padding: 0;
+}
+
+/* Includes section styling */
+#IncludeContainer {
+  width: calc(100% - 2rem);
+  margin: 1rem;
+  padding: 1.5rem;
 }
 
 #IncludeContainer .component-example {
+  width: 100%;
+  padding: 1rem 0;
+}
+
+.includes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+#IncludeContainer .form-field {
+  margin-bottom: 0.25rem;
+}
+
+/* Better spacing for checkbox groups */
+.checkbox-label {
+  padding: 0.25rem 0;
+  margin-bottom: 0.25rem;
+}
+
+/* Natural language description field styling */
+.form-field textarea {
+  font-family: var(--vscode-editor-font-family, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
+}
+
+.form-field small {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--vscode-descriptionForeground, #999);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .includes-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .component-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .component-container.full-width {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
 }

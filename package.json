@@ -16,14 +16,53 @@
     "commands": [
       {
         "command": "robotics-templates.create",
-        "title": "ROS: Create ROS 2 Package"
+        "title": "Create ROS 2 Package",
+        "category": "ROS"
+      },
+      {
+        "command": "robotics-templates.buildWorkspace",
+        "title": "Build Workspace",
+        "category": "ROS"
+      },
+      {
+        "command": "robotics-templates.sourceWorkspace",
+        "title": "Source Workspace",
+        "category": "ROS"
+      },
+      {
+        "command": "robotics-templates.cleanWorkspace",
+        "title": "Clean Workspace",
+        "category": "ROS"
+      },
+      {
+        "command": "robotics-templates.listPackages",
+        "title": "List Packages",
+        "category": "ROS"
       }
     ],
     "menus": {
       "explorer/context": [
         {
           "command": "robotics-templates.create",
-          "when": "explorerResourceIsFolder"
+          "when": "explorerResourceIsFolder",
+          "group": "ros@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "robotics-templates.create"
+        },
+        {
+          "command": "robotics-templates.buildWorkspace"
+        },
+        {
+          "command": "robotics-templates.sourceWorkspace"
+        },
+        {
+          "command": "robotics-templates.cleanWorkspace"
+        },
+        {
+          "command": "robotics-templates.listPackages"
         }
       ]
     }
