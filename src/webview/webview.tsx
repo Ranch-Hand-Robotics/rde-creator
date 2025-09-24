@@ -34,7 +34,7 @@ const App: React.FC = () => {
   const [packageLicense, setPackageLicense] = useState('');
   const [includeOptions, setIncludeOptions] = useState<Record<string, boolean>>({});
   const [naturalLanguageDescription, setNaturalLanguageDescription] = useState('');
-  const [useAI, setUseAI] = useState(false);
+
   const [isLoadingManifests, setIsLoadingManifests] = useState(true);
   const [generationProgress, setGenerationProgress] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -154,26 +154,13 @@ const App: React.FC = () => {
       return;
     }
 
-    if (useAI && !finalNaturalLanguageDescription.trim()) {
-      vscode.postMessage({ command: 'error', text: 'Natural language description is required for AI generation' });
-      return;
-    }
-
-    // For AI generation, we need either natural language description or package description
-    if (useAI && !finalNaturalLanguageDescription.trim() && finalPackageDescription === "This is a sample description") {
-      vscode.postMessage({ command: 'error', text: 'Either natural language description or a custom package description is required for AI generation' });
-      return;
-    }
-
-    // Combine package description with natural language description for AI
-    let combinedDescription = finalNaturalLanguageDescription;
-    if (finalPackageDescription && finalPackageDescription !== "This is a sample description") {
-      combinedDescription = `Package Description: ${finalPackageDescription}\n\nDetailed Requirements: ${finalNaturalLanguageDescription}`;
-    }
+    // Always try AI first if there's a meaningful description
+    const hasMeaningfulDescription = finalNaturalLanguageDescription.trim() !== "" && 
+                                   finalNaturalLanguageDescription.trim() !== "Describe what you want your ROS 2 node to do. For example: 'Create a publisher node that publishes sensor data at 10Hz and subscribes to control commands'";
 
     const message: WebviewMessage = {
-      command: useAI ? 'createPackageWithAI' : 'createPackage',
-      type: selectedManifest.name,
+      command: hasMeaningfulDescription ? 'createPackageWithAI' : 'createPackage',
+      type: selectedPackageType,
       variables: {
         package_name: finalPackageName,
         package_maintainer: finalPackageMaintainer,
@@ -184,10 +171,10 @@ const App: React.FC = () => {
           Object.entries(includeOptions).map(([key, value]) => [key, value ? 'true' : 'false'])
         )
       },
-      ...(useAI && { naturalLanguageDescription: finalNaturalLanguageDescription })
+      naturalLanguageDescription: finalNaturalLanguageDescription
     };
 
-    if (useAI) {
+    if (hasMeaningfulDescription) {
       setIsGenerating(true);
       setGenerationProgress([]);
       setCurrentPage('generating');
@@ -233,55 +220,33 @@ const App: React.FC = () => {
   const renderCreatePackagePage = () => (
     <div id="create_package_page">
       <div className="header-bar">
-        <button 
-          className="back-button" 
-          onClick={handleBack}
-          title="Close"
-        >
-          ← Close
-        </button>
         <h1>Create new ROS 2 Package:</h1>
       </div>
       
       {/* AI Generation Mode Section */}
       <div className="component-container full-width">
-        <h2>Generation Mode:</h2>
+        <h2>AI-powered Generation:</h2>
         <div className="component-example">
           <div className="form-field">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                id="useAI"
-                checked={useAI}
-                onChange={(e) => setUseAI(e.target.checked)}
-                className="checkbox"
-              />
-              Use AI-powered generation (provide description in the Package Description field below or detailed description on the next page)
-            </label>
+            <label htmlFor="naturalLanguageDescription">Describe your package</label>
+            <textarea
+              id="naturalLanguageDescription"
+              placeholder="Create a publisher node that publishes Raw and fused IMU data from a SparkFun 9DoF IMU Breakout - ISM330DHCX, MMC5983MA using a configurable rate using libi2c. The node should implement a calibration tooling which can be started independently and update calibration in the launch file."
+              rows={4}
+              cols={50}
+              value={naturalLanguageDescription}
+              onChange={(e) => setNaturalLanguageDescription(e.target.value)}
+              className="text-area"
+            />
+            <small>
+              Provide a detailed description of the ROS 2 node's functionality, topics, services, and behavior. 
+              You can also provide details in the Package Description field below.
+            </small>
           </div>
-          
-          {useAI && (
-            <div className="form-field">
-              <label htmlFor="naturalLanguageDescription">Natural Language Description</label>
-              <textarea
-                id="naturalLanguageDescription"
-                placeholder="Describe what you want your ROS 2 node to do. For example: 'Create a publisher node that publishes sensor data at 10Hz and subscribes to control commands'"
-                rows={4}
-                cols={50}
-                value={naturalLanguageDescription}
-                onChange={(e) => setNaturalLanguageDescription(e.target.value)}
-                className="text-area"
-              />
-              <small>
-                Provide a detailed description of the ROS 2 node's functionality, topics, services, and behavior. 
-                You can also provide details in the Package Description field below.
-              </small>
-            </div>
-          )}
         </div>
       </div>
       
-      <div className="component-row">
+      <div className="main-content">
         <div className="component-container">
           <h2>Package type</h2>
           <div className="component-example">
@@ -383,9 +348,22 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="component-row">
-        <button id="second_page_button" onClick={handleNextPage} className="button" disabled={isLoadingManifests || manifests.size === 0}>
-          {isLoadingManifests ? 'Loading...' : useAI ? 'Configure & Generate with AI' : 'Next Page'}
+      
+      <div className="button-bar">
+        <button 
+          className="button secondary" 
+          onClick={handleBack}
+          title="Cancel"
+        >
+          Cancel
+        </button>
+        <button 
+          id="second_page_button" 
+          onClick={handleNextPage} 
+          className="button primary" 
+          disabled={isLoadingManifests || manifests.size === 0}
+        >
+          {isLoadingManifests ? 'Loading...' : 'Next Page'}
         </button>
       </div>
     </div>
@@ -398,16 +376,31 @@ const App: React.FC = () => {
     return (
       <div id="create_node_page">
         <div className="header-bar">
-          <button 
-            className="back-button" 
-            onClick={handleBack}
-            title="Back to Package Selection"
-          >
-            ← Back
-          </button>
-          <h1>Populate ROS 2 Node:</h1>
+          <h1>Configure ROS 2 Package:</h1>
         </div>
-        {options.length > 0 && (
+        
+      {/* AI Generation Mode Section */}
+      <div className="component-container full-width">
+        <h2>AI-powered Generation:</h2>
+        <div className="component-example">
+          <div className="form-field">
+            <label htmlFor="naturalLanguageDescription">Natural Language Description</label>
+            <textarea
+              id="naturalLanguageDescription"
+              placeholder="Describe what you want your ROS 2 node to do. For example: 'Create a publisher node that publishes sensor data at 10Hz and subscribes to control commands'"
+              rows={4}
+              cols={50}
+              value={naturalLanguageDescription}
+              onChange={(e) => setNaturalLanguageDescription(e.target.value)}
+              className="text-area"
+            />
+            <small>
+              Provide a detailed description of the ROS 2 node's functionality, topics, services, and behavior. 
+              You can also provide details in the Package Description field below.
+            </small>
+          </div>
+        </div>
+      </div>        {options.length > 0 && (
           <div className="component-container full-width" id="IncludeContainer">
             <h2>Include:</h2>
             <div className="component-example">
@@ -450,9 +443,20 @@ const App: React.FC = () => {
           </div>
         )}
         
-        <div className="component-row">
-          <button id="create_node_button" onClick={handleCreatePackage} className="button">
-            {useAI ? 'Generate with AI' : 'Create Package'}
+        <div className="button-bar">
+          <button 
+            className="button secondary" 
+            onClick={handleBack}
+            title="Previous Page"
+          >
+            Previous Page
+          </button>
+          <button 
+            id="create_node_button" 
+            onClick={handleCreatePackage} 
+            className="button primary"
+          >
+            {naturalLanguageDescription.trim() ? 'Generate with AI' : 'Create Package'}
           </button>
         </div>
       </div>
@@ -462,14 +466,6 @@ const App: React.FC = () => {
   const renderGeneratingPage = () => (
     <div id="generating_page">
       <div className="header-bar">
-        <button 
-          className="back-button" 
-          onClick={handleBack}
-          title="Back to Node Configuration"
-          disabled={isGenerating}
-        >
-          ← Back
-        </button>
         <h1>Generating ROS 2 Package with AI</h1>
       </div>
       <div className="component-row">

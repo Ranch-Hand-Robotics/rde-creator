@@ -75,7 +75,6 @@ export class ProcessCreateNode {
         }
           if (newMapping !== undefined) {
           extension.outputChannel?.appendLine(` Found mapping for file ${filename}: ${JSON.stringify(newMapping)}`);
-          console.log(` Found mapping for file ${filename}: ${JSON.stringify(newMapping)}`);
           
           // Get the new filename
           const key = filename as keyof typeof newMapping;
@@ -84,7 +83,6 @@ export class ProcessCreateNode {
           if (newMapping[key] !== null && typeof newMapping[key] === 'string') {
             destinationPath = path.join(destination, newMapping[key]);
             extension.outputChannel?.appendLine(` Simple mapping ${filename} -> ${destinationPath}`);
-            console.log(` Simple mapping ${filename} -> ${destinationPath}`);
           }
           
           // Check if the directory has a condition
@@ -95,11 +93,9 @@ export class ProcessCreateNode {
               const conditions = newMapping[conditionKey] as string[];
               condition = conditions.length > 0 ? conditions[0] : undefined;
               extension.outputChannel?.appendLine(` Found Conditions: ${conditions.join(', ')}`);
-              console.log(` Found Conditions: ${conditions.join(', ')}`);
             } else {
               condition = newMapping[conditionKey] as string;
               extension.outputChannel?.appendLine(` Found Condition: ${condition}`);
-              console.log(` Found Condition: ${condition}`);
             }
           }
         }

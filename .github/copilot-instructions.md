@@ -11,6 +11,8 @@ When generating code, ensure that:
 - The webpack configuration supports both development and production builds, with appropriate optimizations for each.
 - The extension follows the structure and conventions outlined in the provided documentation, including file naming, directory structure, and coding standards.
 
+- This extension does NOT build or manage workspaces; that is taken care of by the rde-ros-2 extension which is a partner extension.
+
 ## Project Overview
 This is a VS Code extension that generates ROS 2 packages from Handlebars-based templates. It features a React webview UI for template selection and configuration, AI-powered package generation via VS Code's Language Model API, and a dual-webpack build system. The extension supports both traditional template-based generation and AI-powered generation with natural language descriptions.
 

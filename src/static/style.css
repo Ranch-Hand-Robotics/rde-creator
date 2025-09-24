@@ -1,4 +1,32 @@
-/* Button positioning */
+/* Main content layout */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  align-items: stretch;
+}
+
+.main-content .component-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+/* Button bar layout */
+.button-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 0 1rem 0;
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--vscode-panel-border, #3c3c3c);
+  position: relative;
+  z-index: 10;
+}
+
+/* Button positioning - legacy support */
 .component-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -30,8 +58,8 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
-  margin: 1rem;
-  padding: 1.5rem;
+  margin: 1rem 0;
+  padding: 1.25rem;
   border: 2px dashed #7b61ff;
   border-radius: 5px;
   background-color: var(--vscode-editor-background, #1e1e1e);
@@ -44,6 +72,9 @@
 .component-example {
   margin-bottom: 0.5rem;
   width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .component-example > p {
@@ -68,6 +99,8 @@ vscode-panels {
   padding: 1rem;
   min-height: 100vh;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .app.node-page {
@@ -97,6 +130,21 @@ vscode-panels {
   background-color: var(--vscode-button-activeBackground, #0e639c);
 }
 
+.button.primary {
+  background-color: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+}
+
+.button.secondary {
+  background-color: var(--vscode-button-secondaryBackground, #3c3c3c);
+  color: var(--vscode-button-secondaryForeground, #cccccc);
+  border: 1px solid var(--vscode-button-border, #3c3c3c);
+}
+
+.button.secondary:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground, #4a4a4a);
+}
+
 .text-field,
 .text-area {
   background-color: var(--vscode-input-background, #3c3c3c);
@@ -115,15 +163,25 @@ vscode-panels {
   border-color: var(--vscode-focusBorder, #007acc);
 }
 
+.text-field:disabled,
+.text-area:disabled {
+  background-color: var(--vscode-input-background, #2d2d2d);
+  color: var(--vscode-disabledForeground, #666666);
+  border-color: var(--vscode-input-border, #2d2d2d);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .text-area {
   resize: vertical;
   min-height: 5rem;
+  max-width: 100%;
 }
 
 /* Form field improvements */
 .form-field {
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .form-field label {
@@ -275,43 +333,14 @@ h2 {
   background-color: var(--vscode-editor-background, #1e1e1e);
 }
 
-/* Header bar and back button styles */
+/* Header bar styles */
 .header-bar {
   display: flex;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
-}
-
-.back-button {
-  background: none;
-  border: none;
-  color: var(--vscode-foreground, #cccccc);
-  cursor: pointer;
-  font-size: var(--vscode-font-size, 13px);
-  padding: 0.5rem 1rem;
-  margin-right: 1rem;
-  border-radius: 3px;
-  transition: background-color 0.2s;
-}
-
-.back-button:hover {
-  background-color: var(--vscode-toolbar-hoverBackground, #2a2d2e);
-}
-
-.back-button:active {
-  background-color: var(--vscode-toolbar-activeBackground, #37373d);
-}
-
-.back-button:disabled {
-  color: var(--vscode-disabledForeground, #cccccc);
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.back-button:disabled:hover {
-  background: none;
 }
 
 .header-bar h1 {
@@ -321,16 +350,15 @@ h2 {
 
 /* Full-width containers */
 .component-container.full-width {
-  width: calc(100% - 2rem);
-  margin: 1rem;
-  padding: 1.5rem;
+  margin: 0 0 1.5rem 0;
+  padding: 1.25rem;
   border: 2px dashed #7b61ff;
   border-radius: 5px;
 }
 
 /* First page generation mode container */
 #create_package_page .component-container.full-width {
-  margin: 1rem 0 2rem 0;
+  margin: 0 0 1.5rem 0;
 }
 
 /* Second page layout adjustments */
@@ -344,14 +372,16 @@ h2 {
 
 /* Includes section styling */
 #IncludeContainer {
-  width: calc(100% - 2rem);
-  margin: 1rem;
-  padding: 1.5rem;
+  margin: 0 0 1.5rem 0;
+  padding: 1.25rem;
 }
 
 #IncludeContainer .component-example {
   width: 100%;
   padding: 1rem 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .includes-grid {
@@ -371,6 +401,80 @@ h2 {
   margin-bottom: 0.25rem;
 }
 
+/* Sliding switch styles */
+.switch-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.switch-label {
+  color: var(--vscode-foreground, #cccccc);
+  font-size: var(--vscode-font-size, 13px);
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.switch-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--vscode-input-background, #3c3c3c);
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 3px;
+  background-color: var(--vscode-foreground, #cccccc);
+  transition: .4s;
+  border-radius: 50%;
+}
+
+.switch-input:checked + .switch-slider {
+  background-color: var(--vscode-progressBar-background, #0e639c);
+  border-color: var(--vscode-progressBar-background, #0e639c);
+}
+
+.switch-input:focus + .switch-slider {
+  box-shadow: 0 0 1px var(--vscode-focusBorder, #007acc);
+}
+
+.switch-input:checked + .switch-slider:before {
+  transform: translateX(26px);
+}
+
+.switch-description {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--vscode-descriptionForeground, #999);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
 /* Natural language description field styling */
 .form-field textarea {
   font-family: var(--vscode-editor-font-family, 'Monaco', 'Menlo', 'Ubuntu Mono', monospace);
@@ -386,6 +490,11 @@ h2 {
 
 /* Responsive improvements */
 @media (max-width: 768px) {
+  .main-content {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
   .includes-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
@@ -398,5 +507,24 @@ h2 {
   .component-container.full-width {
     margin: 0.5rem;
     padding: 1rem;
+  }
+  
+  .button-bar {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .button-bar .button {
+    width: 100%;
+  }
+  
+  .switch-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .switch-label {
+    min-width: auto;
   }
 }

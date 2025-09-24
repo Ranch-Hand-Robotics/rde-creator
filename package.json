@@ -1,7 +1,7 @@
 {
-  "name": "rde-ros-template",
-  "displayName": "Robotics Templates",
-  "description": "Create or update ROS 2 Nodes from templates",
+  "name": "rde-creator",
+  "displayName": "Robotics Package Creation Tool",
+  "description": "Create ROS 2 Packages using AI",
   "publisher": "Ranch-Hand-Robotics",
   "version": "0.0.1",
   "engines": {
@@ -10,7 +10,8 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -18,29 +19,15 @@
         "command": "robotics-templates.create",
         "title": "Create ROS 2 Package",
         "category": "ROS"
-      },
-      {
-        "command": "robotics-templates.buildWorkspace",
-        "title": "Build Workspace",
-        "category": "ROS"
-      },
-      {
-        "command": "robotics-templates.sourceWorkspace",
-        "title": "Source Workspace",
-        "category": "ROS"
-      },
-      {
-        "command": "robotics-templates.cleanWorkspace",
-        "title": "Clean Workspace",
-        "category": "ROS"
-      },
-      {
-        "command": "robotics-templates.listPackages",
-        "title": "List Packages",
-        "category": "ROS"
       }
     ],
     "menus": {
+      "ros": [
+        {
+          "command": "robotics-templates.create",
+          "group": "1_packages@1"
+        }
+      ],
       "explorer/context": [
         {
           "command": "robotics-templates.create",
@@ -51,18 +38,6 @@
       "commandPalette": [
         {
           "command": "robotics-templates.create"
-        },
-        {
-          "command": "robotics-templates.buildWorkspace"
-        },
-        {
-          "command": "robotics-templates.sourceWorkspace"
-        },
-        {
-          "command": "robotics-templates.cleanWorkspace"
-        },
-        {
-          "command": "robotics-templates.listPackages"
         }
       ]
     }

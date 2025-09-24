@@ -58,7 +58,7 @@ export class CreateNodePanel {
       // Send error message to webview
       this._panel.webview.postMessage({ 
         command: "error", 
-        text: `Failed to load manifests: ${error}` 
+        text: `Failed to load template manifests. Please consider reinstalling this extension: ${error}` 
       });
     } finally {
       this._isLoadingManifests = false;
