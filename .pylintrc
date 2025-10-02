@@ -1,0 +1,50 @@
+[MASTER]
+# Add files or folders to the blacklist. They should be base names, not paths.
+ignore=templates
+
+# Add paths to the blacklist. These paths are skipped during collection.
+ignore-paths=src/templates,
+             dist/templates
+
+[MESSAGES CONTROL]
+# Disable specific warnings for template files that contain Handlebars syntax
+disable=syntax-error,
+        import-error,
+        undefined-variable,
+        unused-import,
+        unused-variable
+
+[REPORTS]
+# Set the output format. Available formats are text, parseable, colorized, json
+output-format=text
+
+# Include message's id in output
+include-ids=yes
+
+# Template for displaying messages
+msg-template={path}:{line}: [{msg_id}({symbol}), {obj}] {msg}
+
+[BASIC]
+# Good variable names which should always be accepted, separated by a comma
+good-names=i,j,k,ex,Run,_
+
+[DESIGN]
+# Maximum number of arguments for function / method
+max-args=10
+
+# Maximum number of attributes for a class
+max-attributes=15
+
+[FORMAT]
+# Maximum number of characters on a single line.
+max-line-length=120
+
+[TYPECHECK]
+# List of module names for which member attributes should not be checked
+ignored-modules=rclpy,
+                std_msgs,
+                geometry_msgs,
+                sensor_msgs,
+                nav_msgs,
+                tf2_ros,
+                tf2_geometry_msgs

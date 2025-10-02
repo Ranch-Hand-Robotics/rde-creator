@@ -1,0 +1,390 @@
+# Contributing to {{package_name}}
+
+This document provides information about the structure and architecture of this ROS 2 package to help contributors understand and extend the codebase.
+
+## Package Overview
+
+**Package Name:** {{package_name}}  
+**Description:** {{package_description}}  
+**Version:** {{package_version}}  
+**License:** {{package_license}}  
+**Maintainer:** {{package_maintainer}}
+
+## Generation Information
+
+{{#if ai_generated}}
+### AI Generation Details
+
+This package was generated using AI-powered code generation with the following specifications:
+
+**User Requirements:**
+```
+{{natural_language_description}}
+```
+
+{{#if test_description}}
+**Test Requirements:**
+```
+{{test_description}}
+```
+{{/if}}
+
+**AI Template Directive:**
+```
+{{ai_directive}}
+```
+
+**Generation Parameters:**
+{{#each generation_parameters}}
+- **{{@key}}:** {{this}}
+{{/each}}
+
+{{else}}
+### Template Generation
+
+This package was generated from the {{template_name}} template with the following parameters:
+
+{{#each template_parameters}}
+- **{{@key}}:** {{this}}
+{{/each}}
+{{/if}}
+
+## Package Architecture
+
+{{#if ai_generated}}
+### System Overview
+
+```mermaid
+graph TB
+    subgraph "{{package_name}} Package"
+        {{#if include_publisher}}
+        PUB[Publisher Node<br/>{{node_name}}]
+        PUB --> |publishes| TOPIC_OUT[{{topic_name}}]
+        {{/if}}
+        
+        {{#if include_subscriber}}
+        SUB[Subscriber Node<br/>{{node_name}}]
+        TOPIC_IN[{{topic_name}}] --> |subscribes| SUB
+        {{/if}}
+        
+        {{#if include_service}}
+        SRV[Service Server<br/>{{service_name}}]
+        CLIENT[Service Client] --> |request| SRV
+        SRV --> |response| CLIENT
+        {{/if}}
+        
+        {{#if include_timer}}
+        TIMER[Timer<br/>{{timer_period}}s] --> |triggers| NODE[{{node_name}}]
+        {{/if}}
+        
+        {{#if include_parameters}}
+        PARAMS[Parameters<br/>Dynamic Config] --> NODE
+        {{/if}}
+    end
+    
+    {{#if include_launch}}
+    subgraph "Launch System"
+        LAUNCH[{{package_name}}.launch.py] --> |starts| NODE
+        LAUNCH --> |configures| PARAMS
+    end
+    {{/if}}
+```
+{{/if}}
+
+{{#if ai_generated}}
+### Node Communication Patterns
+
+{{#if include_publisher}}
+#### Publisher Pattern
+```mermaid
+sequenceDiagram
+    participant N as {{node_name}}
+    participant T as {{topic_name}}
+    participant S as Subscribers
+    
+    loop Every {{timer_period|default:"1.0"}}s
+        N->>T: publish(message)
+        T->>S: forward(message)
+    end
+```
+{{/if}}
+
+{{#if include_subscriber}}
+#### Subscriber Pattern
+```mermaid
+sequenceDiagram
+    participant P as Publishers
+    participant T as {{topic_name}}
+    participant N as {{node_name}}
+    
+    P->>T: publish(message)
+    T->>N: callback(message)
+    N->>N: process(message)
+```
+{{/if}}
+
+{{#if include_service}}
+#### Service Pattern
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as {{service_name}} Server
+    
+    C->>S: request
+    S->>S: process_request()
+    S->>C: response
+```
+{{/if}}
+{{/if}}
+
+## File Structure
+
+```
+{{package_name}}/
+├── package.xml                 # Package manifest
+{{#if template_language_python}}
+├── setup.py                    # Python package setup
+├── setup.cfg                   # Python configuration
+├── {{package_name}}/          # Python source code
+│   ├── __init__.py
+│   └── {{node_name}}.py       # Main node implementation
+{{/if}}
+{{#if template_language_cpp}}
+├── CMakeLists.txt              # CMake build configuration
+├── include/
+│   └── {{package_name}}/
+│       └── {{package_name}}_node.hpp  # Node header
+└── src/
+    └── {{package_name}}_node.cpp      # Node implementation
+{{/if}}
+{{#if template_language_nodejs}}
+├── {{package_name}}/          # Node.js source code
+│   ├── package.json           # Node.js dependencies
+│   └── node.js                # Main node implementation
+{{/if}}
+├── launch/                     # Launch files
+{{#if include_launch}}
+│   └── {{package_name}}.launch.py     # Launch configuration
+{{/if}}
+├── test/                       # Test files
+{{#if template_language_python}}
+│   ├── __init__.py
+│   └── test_{{node_name}}.py  # Unit tests
+{{#if has_custom_tests}}
+│   └── test_custom_{{package_name}}.py # Custom tests
+{{/if}}
+{{/if}}
+{{#if template_language_cpp}}
+│   └── test_{{package_name}}_node.cpp  # Unit tests
+{{#if has_custom_tests}}
+│   └── test_custom_{{package_name}}.cpp # Custom tests
+{{/if}}
+{{/if}}
+{{#if template_language_nodejs}}
+│   ├── setup.js               # Test setup
+│   └── node.test.js           # Unit tests
+{{#if has_custom_tests}}
+│   └── custom.test.js         # Custom tests
+{{/if}}
+{{/if}}
+├── resource/                   # Package resources
+│   └── {{package_name}}       # Resource marker
+└── CONTRIBUTING.md            # This file
+```
+
+## Development Guidelines
+
+### Building the Package
+
+{{#if template_language_python}}
+```bash
+# Python package
+cd ~/ros2_ws
+colcon build --packages-select {{package_name}}
+source install/setup.bash
+```
+{{/if}}
+
+{{#if template_language_cpp}}
+```bash
+# C++ package
+cd ~/ros2_ws
+colcon build --packages-select {{package_name}}
+source install/setup.bash
+```
+{{/if}}
+
+{{#if template_language_nodejs}}
+```bash
+# Node.js package
+cd ~/ros2_ws
+colcon build --packages-select {{package_name}}
+source install/setup.bash
+
+# Install Node.js dependencies
+cd src/{{package_name}}/{{package_name}}
+npm install
+```
+{{/if}}
+
+### Running the Node
+
+```bash
+# Direct execution
+{{#if template_language_python}}
+ros2 run {{package_name}} {{node_name}}
+{{/if}}
+{{#if template_language_cpp}}
+ros2 run {{package_name}} {{node_name}}_component
+{{/if}}
+{{#if template_language_nodejs}}
+ros2 run {{package_name}} {{node_name}}
+{{/if}}
+
+# Using launch file
+{{#if include_launch}}
+ros2 launch {{package_name}} {{package_name}}.launch.py
+{{/if}}
+```
+
+### Testing
+
+{{#if template_language_python}}
+```bash
+# Python tests
+cd ~/ros2_ws
+colcon test --packages-select {{package_name}}
+colcon test-result --verbose
+
+# Run tests directly
+python -m pytest src/{{package_name}}/test/
+```
+{{/if}}
+
+{{#if template_language_cpp}}
+```bash
+# C++ tests
+cd ~/ros2_ws
+colcon test --packages-select {{package_name}}
+colcon test-result --verbose
+```
+{{/if}}
+
+{{#if template_language_nodejs}}
+```bash
+# Node.js tests
+cd src/{{package_name}}/{{package_name}}
+npm test
+
+# With coverage
+npm run test:coverage
+```
+{{/if}}
+
+## Key Components
+
+{{#if include_publisher}}
+### Publisher ({{topic_name}})
+- **Topic:** `{{topic_name}}`
+- **Message Type:** `std_msgs/msg/String`
+- **Frequency:** {{timer_period|default:"1.0"}} Hz
+- **Purpose:** {{#if ai_generated}}{{natural_language_description}}{{else}}Publishes messages on the {{topic_name}} topic{{/if}}
+{{/if}}
+
+{{#if include_subscriber}}
+### Subscriber ({{topic_name}})
+- **Topic:** `{{topic_name}}`
+- **Message Type:** `std_msgs/msg/String`
+- **Purpose:** Processes incoming messages and performs defined actions
+{{/if}}
+
+{{#if include_service}}
+### Service Server ({{service_name}})
+- **Service:** `{{service_name}}`
+- **Service Type:** `std_srvs/srv/Trigger`
+- **Purpose:** Responds to service requests with appropriate actions
+{{/if}}
+
+{{#if include_client}}
+### Service Client ({{service_name}})
+- **Service:** `{{service_name}}`
+- **Service Type:** `std_srvs/srv/Trigger`
+- **Purpose:** Makes requests to service servers
+{{/if}}
+
+{{#if include_parameters}}
+### Parameters
+The node supports dynamic parameter configuration:
+- **example_param:** Default configuration parameter
+- Runtime reconfiguration supported through ROS 2 parameter services
+{{/if}}
+
+## Quality Assurance
+
+### Code Quality
+{{#if template_language_python}}
+- Follows PEP 8 style guidelines
+- Uses type hints for better maintainability
+- Includes comprehensive docstrings
+- Proper error handling with ROS 2 exceptions
+{{/if}}
+
+{{#if template_language_cpp}}
+- Follows ROS 2 C++ style guidelines
+- Uses modern C++17+ features
+- RAII principles for resource management
+- Comprehensive error handling
+{{/if}}
+
+{{#if template_language_nodejs}}
+- Follows JavaScript/Node.js best practices
+- Uses async/await patterns appropriately
+- Proper error handling and cleanup
+- ESLint compliance
+{{/if}}
+
+### Testing Strategy
+{{#if ai_generated}}
+{{#if test_description}}
+**Custom Test Requirements:**
+{{test_description}}
+{{/if}}
+{{/if}}
+
+- **Unit Tests:** Individual component functionality
+- **Integration Tests:** ROS 2 communication patterns
+- **Edge Case Tests:** Error conditions and boundary cases
+- **Performance Tests:** Resource usage and timing
+- **Lifecycle Tests:** Node startup and shutdown
+
+### ROS 2 Best Practices
+- Proper QoS configuration for reliability
+- Graceful shutdown handling
+- Parameter validation and error reporting
+- Comprehensive logging for debugging
+- Thread-safe operations where applicable
+
+## Contributing
+
+### Code Contributions
+1. Fork the repository
+2. Create a feature branch
+3. Follow the coding standards outlined above
+4. Add appropriate tests
+5. Update documentation
+6. Submit a pull request
+
+### Reporting Issues
+- Use the issue tracker for bug reports
+- Include ROS 2 version and system information
+- Provide minimal reproduction steps
+- Include relevant log output
+
+### Development Environment
+- **ROS 2 Distribution:** {{ros_distro|default:"humble"}}
+- **Build System:** {{#if template_language_python}}setuptools{{/if}}{{#if template_language_cpp}}CMake + ament{{/if}}{{#if template_language_nodejs}}npm + colcon{{/if}}
+- **Testing Framework:** {{#if template_language_python}}pytest + unittest{{/if}}{{#if template_language_cpp}}gtest{{/if}}{{#if template_language_nodejs}}Jest{{/if}}
+
+---
+
+*This CONTRIBUTING.md was automatically generated {{#if ai_generated}}using AI-powered code generation{{else}}from the {{template_name}} template{{/if}} on {{generation_date}}.*

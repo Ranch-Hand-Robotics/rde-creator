@@ -20,7 +20,8 @@ export class AIPackageGenerator {
     templatePath: string,
     variables: Map<string, string>,
     naturalLanguageDescription: string,
-    targetDirectory: string
+    targetDirectory: string,
+    testDescription?: string
   ): Promise<void> {
     try {
       // Check if language model access is available
@@ -65,7 +66,7 @@ export class AIPackageGenerator {
       this.sendProgress('Package manifest parsed');
 
       // Construct the AI prompt
-      const prompt = this.constructAIPrompt(templateContent, manifest, variables, naturalLanguageDescription);
+      const prompt = this.constructAIPrompt(templateContent, manifest, variables, naturalLanguageDescription, testDescription);
       this.sendProgress('AI prompt constructed with template and user requirements');
 
       // Send request to language model
@@ -86,6 +87,16 @@ export class AIPackageGenerator {
       // Generate the package using the AI response
       await this.createPackageFromAIResponse(generatedContent, targetDirectory, variables);
       this.sendProgress('ROS 2 package files created successfully');
+
+      // Generate CONTRIBUTING.md for AI-generated package
+      await this.generateAIContributingMd(
+        targetDirectory,
+        variables,
+        naturalLanguageDescription,
+        testDescription || '',
+        prompt
+      );
+      this.sendProgress('CONTRIBUTING.md documentation generated');
 
       this.outputChannel.appendLine('AI-powered ROS package generation completed successfully');
       // Send completion message to webview
@@ -136,7 +147,8 @@ export class AIPackageGenerator {
     templateContent: string,
     manifest: any,
     variables: Map<string, string>,
-    naturalLanguageDescription: string
+    naturalLanguageDescription: string,
+    testDescription?: string
   ): string {
     const variablesObj = Object.fromEntries(variables);
 
@@ -162,7 +174,22 @@ ${JSON.stringify(variablesObj, null, 2)}
 ## User Requirements
 ${naturalLanguageDescription}
 
-## Instructions
+${testDescription && testDescription.trim() ? `## Test Requirements
+The user has specified the following test case requirements:
+${testDescription}
+
+Please generate comprehensive test cases that:
+- Test the functionality described above
+- Cover edge cases and error scenarios mentioned
+- Follow ROS 2 testing best practices
+- Include unit tests, integration tests, and any specific test types mentioned
+- Use appropriate test frameworks (gtest for C++, unittest/pytest for Python, Jest for Node.js)
+- Include proper setup and teardown procedures
+- Test ROS 2 specific functionality (publishers, subscribers, services, parameters)
+- Validate message flows and service calls
+- Include performance and reliability tests where mentioned
+
+` : ''}## Instructions
 1. Analyze the template structure and understand the ROS 2 package layout
 2. Consider the user's natural language description and adapt the package accordingly
 3. Use the provided parameters to customize the package (replace {{variable}} placeholders)
@@ -175,6 +202,8 @@ ${naturalLanguageDescription}
 10. Add comprehensive logging and error handling
 11. Follow ROS 2 naming conventions and message standards
 12. Include launch files with proper parameter handling
+13. Generate comprehensive test suites based on test requirements (if provided)
+14. Ensure test files follow language-specific testing conventions and ROS 2 patterns
 
 ## Important ROS 2 Requirements
 - Use the correct import statements for ROS 2 (rclpy, rclcpp)
@@ -202,10 +231,17 @@ Generate the ROS 2 package now:
 
   private async processAIResponse(response: vscode.LanguageModelChatResponse): Promise<any> {
     let fullResponse = '';
+    let lastLoggedLength = 0;
+    const logInterval = 1000; // Log every 1000 characters
 
     for await (const part of response.text) {
       fullResponse += part;
-      this.sendProgress(`Receiving AI response... (${fullResponse.length} characters so far)`);
+      
+      // Only log progress every 1000 characters to reduce spam
+      if (fullResponse.length - lastLoggedLength >= logInterval) {
+        this.sendProgress(`Receiving AI response... (${fullResponse.length} characters so far)`);
+        lastLoggedLength = fullResponse.length;
+      }
     }
 
     this.sendProgress(`AI Response received (${fullResponse.length} characters)`);
@@ -270,5 +306,189 @@ Generate the ROS 2 package now:
     if (this.webview) {
       this.webview.postMessage({ command: 'aiProgress', text: message });
     }
+  }
+
+  /**
+   * Generates CONTRIBUTING.md for AI-generated packages
+   */
+  private async generateAIContributingMd(
+    targetDirectory: string,
+    variables: Map<string, string>,
+    naturalLanguageDescription: string,
+    testDescription: string,
+    aiPrompt: string
+  ): Promise<void> {
+    try {
+      // Create a mock manifest for AI-generated packages
+      const aiManifest = {
+        name: "AI Generated Package",
+        ai_directive: this.extractAIDirectiveFromPrompt(aiPrompt)
+      };
+
+      // Use ProcessCreateNode's CONTRIBUTING.md generation logic
+      const processCreateNode = new ProcessCreateNode('');
+      
+      await processCreateNode.generateContributingMd(
+        targetDirectory,
+        variables,
+        aiManifest,
+        true, // isAiGenerated
+        aiPrompt,
+        naturalLanguageDescription,
+        testDescription
+      );
+    } catch (error) {
+      this.outputChannel.appendLine(`Error generating AI CONTRIBUTING.md: ${error}`);
+    }
+  }
+
+  /**
+   * Direct CONTRIBUTING.md generation for AI packages
+   */
+  private async generateContributingMdDirect(
+    targetDirectory: string,
+    variables: Map<string, string>,
+    naturalLanguageDescription: string,
+    testDescription: string,
+    aiPrompt: string
+  ): Promise<void> {
+    const packageName = variables.get('package_name') || 'ai_generated_package';
+    const packageDescription = variables.get('package_description') || 'AI generated ROS 2 package';
+    const maintainer = variables.get('package_maintainer') || 'AI Generated';
+    const version = variables.get('package_version') || '0.0.0';
+    const license = variables.get('package_license') || 'MIT';
+
+    const contributingContent = `# Contributing to ${packageName}
+
+This document provides information about the structure and architecture of this AI-generated ROS 2 package.
+
+## Package Overview
+
+**Package Name:** ${packageName}  
+**Description:** ${packageDescription}  
+**Version:** ${version}  
+**License:** ${license}  
+**Maintainer:** ${maintainer}
+
+## AI Generation Details
+
+This package was generated using AI-powered code generation with the following specifications:
+
+### User Requirements
+\`\`\`
+${naturalLanguageDescription}
+\`\`\`
+
+${testDescription ? `### Test Requirements
+\`\`\`
+${testDescription}
+\`\`\`
+
+` : ''}### AI Prompt Used
+<details>
+<summary>Full AI Prompt (Click to expand)</summary>
+
+\`\`\`
+${aiPrompt}
+\`\`\`
+</details>
+
+## Package Architecture
+
+### System Overview
+
+\`\`\`mermaid
+graph TB
+    subgraph "${packageName} Package"
+        NODE[AI Generated Node]
+        ${variables.get('include_publisher') === 'true' ? 'NODE --> |publishes| TOPIC[Topic]' : ''}
+        ${variables.get('include_subscriber') === 'true' ? 'TOPIC_IN[Input Topic] --> |subscribes| NODE' : ''}
+        ${variables.get('include_service') === 'true' ? 'CLIENT --> |request| NODE\n        NODE --> |response| CLIENT' : ''}
+    end
+\`\`\`
+
+### Communication Patterns
+
+The package implements the following ROS 2 communication patterns based on the AI analysis:
+
+${variables.get('include_publisher') === 'true' ? `#### Publisher Pattern
+- Publishes messages on configured topics
+- Uses appropriate QoS settings for reliability
+
+` : ''}${variables.get('include_subscriber') === 'true' ? `#### Subscriber Pattern  
+- Subscribes to input topics
+- Processes messages according to requirements
+
+` : ''}${variables.get('include_service') === 'true' ? `#### Service Pattern
+- Provides service endpoints for external requests
+- Implements proper error handling and responses
+
+` : ''}## Development Guidelines
+
+### Building the Package
+
+\`\`\`bash
+cd ~/ros2_ws
+colcon build --packages-select ${packageName}
+source install/setup.bash
+\`\`\`
+
+### Running the Package
+
+\`\`\`bash
+# Check the generated launch files for specific run instructions
+ros2 launch ${packageName} <launch_file>.launch.py
+
+# Or run nodes directly
+ros2 run ${packageName} <node_name>
+\`\`\`
+
+### Testing
+
+\`\`\`bash
+# Run package tests
+colcon test --packages-select ${packageName}
+colcon test-result --verbose
+\`\`\`
+
+## AI Generation Metadata
+
+- **Generated On:** ${new Date().toISOString().split('T')[0]}
+- **AI Model:** GitHub Copilot
+- **Generation Type:** Template-guided AI generation
+- **Template Base:** ROS 2 best practices
+
+## Contributing
+
+This package was generated by AI based on user requirements. To contribute:
+
+1. Understand the original requirements (see above)
+2. Follow ROS 2 best practices and conventions
+3. Add appropriate tests for new functionality
+4. Update this documentation for significant changes
+
+---
+
+*This CONTRIBUTING.md was automatically generated using AI-powered code generation on ${new Date().toISOString().split('T')[0]}.*
+`;
+
+    const contributingPath = path.join(targetDirectory, 'CONTRIBUTING.md');
+    await fs.writeFile(contributingPath, contributingContent, 'utf-8');
+    this.outputChannel.appendLine(`Generated AI CONTRIBUTING.md at ${contributingPath}`);
+  }
+
+  /**
+   * Extracts AI directive from the full prompt
+   */
+  private extractAIDirectiveFromPrompt(prompt: string): string {
+    // Try to extract the template-specific directive section
+    const directiveMatch = prompt.match(/## TEMPLATE-SPECIFIC AI DIRECTIVE.*?\n(.*?)\n\n/s);
+    if (directiveMatch) {
+      return directiveMatch[1].trim();
+    }
+    
+    // Fallback: return first part of prompt
+    const lines = prompt.split('\n');
+    return lines.slice(0, Math.min(10, lines.length)).join('\n');
   }
 }

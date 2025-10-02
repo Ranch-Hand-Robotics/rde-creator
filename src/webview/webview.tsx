@@ -21,6 +21,7 @@ interface WebviewMessage {
   type?: string;
   variables?: Record<string, string>;
   naturalLanguageDescription?: string;
+  testDescription?: string;
 }
 
 const App: React.FC = () => {
@@ -34,6 +35,7 @@ const App: React.FC = () => {
   const [packageLicense, setPackageLicense] = useState('');
   const [includeOptions, setIncludeOptions] = useState<Record<string, boolean>>({});
   const [naturalLanguageDescription, setNaturalLanguageDescription] = useState('');
+  const [testDescription, setTestDescription] = useState('');
 
   const [isLoadingManifests, setIsLoadingManifests] = useState(true);
   const [generationProgress, setGenerationProgress] = useState<string[]>([]);
@@ -171,7 +173,8 @@ const App: React.FC = () => {
           Object.entries(includeOptions).map(([key, value]) => [key, value ? 'true' : 'false'])
         )
       },
-      naturalLanguageDescription: finalNaturalLanguageDescription
+      naturalLanguageDescription: finalNaturalLanguageDescription,
+      testDescription: testDescription.trim()
     };
 
     if (hasMeaningfulDescription) {
@@ -241,6 +244,22 @@ const App: React.FC = () => {
             <small>
               Provide a detailed description of the ROS 2 node's functionality, topics, services, and behavior. 
               You can also provide details in the Package Description field below.
+            </small>
+          </div>
+          
+          <div className="form-field">
+            <label htmlFor="testDescription">Describe your test cases</label>
+            <textarea
+              id="testDescription"
+              placeholder="Create unit tests that verify the IMU data publisher is working correctly, test the calibration functionality, and validate that the node handles sensor connection failures gracefully. Include integration tests for the launch file parameters."
+              rows={3}
+              cols={50}
+              value={testDescription}
+              onChange={(e) => setTestDescription(e.target.value)}
+              className="text-area"
+            />
+            <small>
+              Describe the test scenarios, edge cases, and validation requirements for your ROS 2 package.
             </small>
           </div>
         </div>
@@ -316,7 +335,7 @@ const App: React.FC = () => {
               <input
                 id="package_version"
                 type="text"
-                placeholder="0.0.0"
+                placeholder="0.0.1"
                 value={packageVersion}
                 onChange={(e) => setPackageVersion(e.target.value)}
                 className="text-field"
@@ -384,10 +403,10 @@ const App: React.FC = () => {
         <h2>AI-powered Generation:</h2>
         <div className="component-example">
           <div className="form-field">
-            <label htmlFor="naturalLanguageDescription">Natural Language Description</label>
+            <label htmlFor="naturalLanguageDescription">Describe your package</label>
             <textarea
               id="naturalLanguageDescription"
-              placeholder="Describe what you want your ROS 2 node to do. For example: 'Create a publisher node that publishes sensor data at 10Hz and subscribes to control commands'"
+              placeholder="Create a publisher node that publishes Raw and fused IMU data from a SparkFun 9DoF IMU Breakout - ISM330DHCX, MMC5983MA using a configurable rate using libi2c. The node should implement a calibration tooling which can be started independently and update calibration in the launch file."
               rows={4}
               cols={50}
               value={naturalLanguageDescription}
@@ -397,6 +416,22 @@ const App: React.FC = () => {
             <small>
               Provide a detailed description of the ROS 2 node's functionality, topics, services, and behavior. 
               You can also provide details in the Package Description field below.
+            </small>
+          </div>
+          
+          <div className="form-field">
+            <label htmlFor="testDescription">Describe your test cases</label>
+            <textarea
+              id="testDescription"
+              placeholder="Create unit tests that verify the IMU data publisher is working correctly, test the calibration functionality, and validate that the node handles sensor connection failures gracefully. Include integration tests for the launch file parameters."
+              rows={3}
+              cols={50}
+              value={testDescription}
+              onChange={(e) => setTestDescription(e.target.value)}
+              className="text-area"
+            />
+            <small>
+              Describe the test scenarios, edge cases, and validation requirements for your ROS 2 package.
             </small>
           </div>
         </div>

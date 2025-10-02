@@ -145,6 +145,10 @@ export class CreateNodePanel {
             // Add the current year as a variable for copyright statements
             variables.set("year", new Date().getFullYear().toString());
 
+            // Handle test description for test generation
+            const packageTestDescription = message.testDescription || "";
+            variables.set("test_description", packageTestDescription);
+
             const packageFileName = fileNameFromVariable(packageName);
             const workspaceFolder = this._targetFolderUri || vscode.workspace.workspaceFolders?.[0]?.uri;
             if (!workspaceFolder) {
@@ -194,6 +198,10 @@ export class CreateNodePanel {
             });
             aiVariables.set("year", new Date().getFullYear().toString());
 
+            // Handle test description for AI generation
+            const aiTestDescription = message.testDescription || "";
+            aiVariables.set("test_description", aiTestDescription);
+
             const aiPackageFileName = fileNameFromVariable(aiPackageName);
             const aiWorkspaceFolder = this._targetFolderUri || vscode.workspace.workspaceFolders?.[0]?.uri;
             if (!aiWorkspaceFolder) {
@@ -212,7 +220,8 @@ export class CreateNodePanel {
                   aiTemplateSource,
                   aiVariables,
                   naturalLanguageDescription,
-                  aiNewPackageDir
+                  aiNewPackageDir,
+                  aiTestDescription
                 );
                 vscode.window.showInformationMessage(`AI-generated package ${aiPackageName} created successfully`);
                 this.dispose();

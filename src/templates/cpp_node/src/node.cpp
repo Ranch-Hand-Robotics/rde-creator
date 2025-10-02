@@ -8,7 +8,7 @@
  * {{/if}}
  */
 
-#include "{{node_name}}.hpp"
+#include "{{package_name}}/{{node_name}}.hpp"
 
 #include <chrono>
 #include <memory>

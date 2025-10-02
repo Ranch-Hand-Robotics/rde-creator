@@ -37,6 +37,15 @@ ai_directive: |
   - Use lifecycle publishers and subscriptions
   - Include proper error handling for state transitions
 
+  CMAKE AND BUILD REQUIREMENTS:
+  - When support_humble is enabled: Runtime detection of ROS_DISTRO environment variable
+  - Automatically uses ament_target_dependencies for Humble/Galactic/Foxy
+  - Automatically uses target_link_libraries for Iron/Jazzy/Kilted and later
+  - When support_humble is disabled: Always uses modern target_link_libraries approach
+  - Modern approach: target_link_libraries(target PUBLIC rclcpp::rclcpp ${std_msgs_TARGETS})
+  - Legacy approach: ament_target_dependencies(target rclcpp std_msgs)
+  - Include proper status messages to show which approach is being used
+
   QUALITY ASSURANCE:
   - Include proper includes and dependencies in CMakeLists.txt
   - Add input validation for parameters and messages
@@ -100,6 +109,11 @@ options:
     type: "string"
     default: "1.0"
     condition: "include_timer"
+  - variable: "support_humble"
+    name: "Support ROS 2 Humble"
+    description: "Enable runtime ROS distribution detection to automatically choose CMake approach (disable for Kilted+ only environments)"
+    type: "boolean"
+    default: true
 file_mapping:
   - "cpp_node": "{{package_name}}"
   - "launch":

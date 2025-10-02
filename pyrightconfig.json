@@ -1,0 +1,22 @@
+{
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "src/templates/**/*",
+        "dist/templates/**/*",
+        "node_modules",
+        "out",
+        "dist"
+    ],
+    "ignore": [
+        "src/templates/**/*.py",
+        "src/templates/**/*.js",
+        "src/templates/**/*.cpp",
+        "src/templates/**/*.hpp"
+    ],
+    "reportMissingImports": "warning",
+    "reportMissingTypeStubs": false,
+    "pythonVersion": "3.10",
+    "pythonPlatform": "Windows"
+}

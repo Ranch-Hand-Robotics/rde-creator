@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node node.js",
     "dev": "nodemon node.js",
-    "test": "jest"
+    "test": "jest --testTimeout=10000",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [
     "ros2",

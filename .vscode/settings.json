@@ -6,7 +6,8 @@
     },
     "search.exclude": {
         "out": true, // set this to false to include "out" folder in search results
-        "dist": true
+        "dist": true,
+        "**/src/templates/**": true
     },
     // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
     "typescript.tsc.autoDetect": "off",
@@ -16,6 +17,27 @@
         "**/src/templates/**"
     ],
     "javascript.validate.enable": false,
+    "python.analysis.exclude": [
+        "**/src/templates/**"
+    ],
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": false,
+    "python.linting.ignorePatterns": [
+        "**/src/templates/**/*.py"
+    ],
+    "pylance.analysis.exclude": [
+        "**/src/templates/**"
+    ],
+    "json.validate.enable": true,
+    "json.schemaDownload.enable": false,
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "files.associations": {
+        "**/src/templates/**/*.json": "handlebars-json",
+        "**/dist/templates/**/*.json": "handlebars-json"
+    },
     "ros.distro": "humble",
     "python.autoComplete.extraPaths": [
         "C:\\opt\\ros\\humble\\x64\\Lib\\site-packages",
