@@ -13,9 +13,10 @@ ai_directive: |
   - Implement proper error handling and logging
   - Include comprehensive docstrings and comments
   - Follow ROS 2 naming conventions for nodes, topics, services, and parameters
+  - Add python tests if prompted by the user. If no tests are requested, do not include any test files.
 
   PYTHON-SPECIFIC GUIDELINES:
-  - Use modern Python 3.8+ syntax and features
+  - Use modern Python 3.12+ syntax and features
   - Implement proper async/await patterns where appropriate
   - Include type hints for better code maintainability
   - Use logging instead of print statements for debugging
@@ -31,6 +32,8 @@ ai_directive: |
   - Action nodes: Include action server/client with proper goal handling
   - Parameter nodes: Include dynamic parameter handling
   - Timer-based nodes: Include periodic task execution
+  - Lifecycle nodes: Include state transitions and callbacks if required
+  - Create Composable nodes when possible
 
   QUALITY ASSURANCE:
   - Include proper imports and dependencies
@@ -39,63 +42,33 @@ ai_directive: |
   - Ensure thread safety for multi-threaded operations
   - Add proper cleanup in destructors
 
-options:
-  - variable: "include_publisher"
-    name: "Include Publisher"
-    description: "Include a publisher that sends messages on a topic"
-    type: "boolean"
-  - variable: "include_subscriber"
-    name: "Include Subscriber"
-    description: "Include a subscriber that receives messages from a topic"
-    type: "boolean"
-  - variable: "include_service"
-    name: "Include Service"
-    description: "Include a service server that responds to requests"
-    type: "boolean"
-  - variable: "include_client"
-    name: "Include Service Client"
-    description: "Include a service client that makes requests"
-    type: "boolean"
-  - variable: "include_timer"
-    name: "Include Timer"
-    description: "Include a timer for periodic tasks"
-    type: "boolean"
-  - variable: "include_parameters"
-    name: "Include Parameters"
-    description: "Include dynamic parameter handling"
-    type: "boolean"
-  - variable: "include_launch"
-    name: "Include Launch File"
-    description: "Include a Python-based launch file for the node"
-    type: "boolean"
-  - variable: "node_name"
-    name: "Node Name"
-    description: "Name of the ROS 2 node"
-    type: "string"
-    default: "my_node"
-  - variable: "topic_name"
-    name: "Topic Name"
-    description: "Name of the topic for publisher/subscriber"
-    type: "string"
-    default: "my_topic"
-    condition: "include_publisher"
-  - variable: "service_name"
-    name: "Service Name"
-    description: "Name of the service for server/client"
-    type: "string"
-    default: "my_service"
-    condition: "include_service"
-  - variable: "timer_period"
-    name: "Timer Period (seconds)"
-    description: "Period for timer callbacks"
-    type: "string"
-    default: "1.0"
-    condition: "include_timer"
-file_mapping:
-  - "python_node": "{{package_name}}"
-  - "launch":
-    condition: include_launch
-  - "launch/node.launch.py": "launch/{{package_name}}.launch.py"
-    condition: include_launch
-  - "test": "test"
-  - "resource/package_name": "resource/{{package_name}}"
+  Code structure should follow this layout:
+  replaced with actual package name and node name where applicable.
+
+  ```
+  package_name/
+  ├── package.xml
+  ├── setup.py
+  ├── setup.cfg
+  ├── resource/package_name
+  ├── test/
+  │   └── test_package_name.py  # Unit tests if specified; otherwise do not include.
+  ├── README.md
+  ├── LICENSE
+  ├── CONTRIBUTING.md
+  ├── Agents.md
+  ├── .gitignore
+  ├── launch/
+  │   └── node.launch.py  # One launch simple file for each node to facilitate debugging. If multiple nodes are included, create a launch file which calls each node's launch file.
+  └── package_name/
+      ├── __init.py
+      └── node.py
+  ```
+
+  Setup.cfg must include:
+  ```ini
+    [develop]
+    script_dir=$base/lib/package_name
+    [install]
+    install_scripts=$base/lib/package_name
+  ```

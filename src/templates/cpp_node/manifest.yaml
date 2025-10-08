@@ -13,6 +13,9 @@ ai_directive: |
   - Implement proper error handling and logging with RCLCPP macros
   - Include comprehensive Doxygen-style documentation comments
   - Follow ROS 2 naming conventions for nodes, topics, services, and parameters
+  - If you are confused about any requirements, ask for clarification
+  - Do not generate placeholder code; either implement the requirement or comments explaining why it is not implemented and inform the user.
+
 
   C++ SPECIFIC GUIDELINES:
   - Use modern C++17 features (auto, smart pointers, lambdas)
@@ -53,73 +56,206 @@ ai_directive: |
   - Ensure thread safety for multi-threaded operations
   - Add proper error handling and logging
 
-options:
-  - variable: "include_publisher"
-    name: "Include Publisher"
-    description: "Include a publisher that sends messages on a topic"
-    type: "boolean"
-  - variable: "include_subscriber"
-    name: "Include Subscriber"
-    description: "Include a subscriber that receives messages from a topic"
-    type: "boolean"
-  - variable: "include_service"
-    name: "Include Service"
-    description: "Include a service server that responds to requests"
-    type: "boolean"
-  - variable: "include_client"
-    name: "Include Service Client"
-    description: "Include a service client that makes requests"
-    type: "boolean"
-  - variable: "include_timer"
-    name: "Include Timer"
-    description: "Include a timer for periodic tasks"
-    type: "boolean"
-  - variable: "include_parameters"
-    name: "Include Parameters"
-    description: "Include dynamic parameter handling"
-    type: "boolean"
-  - variable: "include_lifecycle"
-    name: "Lifecycle Node"
-    description: "Make this a lifecycle node with state management"
-    type: "boolean"
-  - variable: "include_launch"
-    name: "Include Launch File"
-    description: "Include a Python-based launch file for the node"
-    type: "boolean"
-  - variable: "node_name"
-    name: "Node Name"
-    description: "Name of the ROS 2 node"
-    type: "string"
-    default: "my_node"
-  - variable: "topic_name"
-    name: "Topic Name"
-    description: "Name of the topic for publisher/subscriber"
-    type: "string"
-    default: "my_topic"
-    condition: "include_publisher"
-  - variable: "service_name"
-    name: "Service Name"
-    description: "Name of the service for server/client"
-    type: "string"
-    default: "my_service"
-    condition: "include_service"
-  - variable: "timer_period"
-    name: "Timer Period (seconds)"
-    description: "Period for timer callbacks"
-    type: "string"
-    default: "1.0"
-    condition: "include_timer"
-  - variable: "support_humble"
-    name: "Support ROS 2 Humble"
-    description: "Enable runtime ROS distribution detection to automatically choose CMake approach (disable for Kilted+ only environments)"
-    type: "boolean"
-    default: true
-file_mapping:
-  - "cpp_node": "{{package_name}}"
-  - "launch":
-    condition: include_launch
-  - "launch/node.launch.py": "launch/{{package_name}}.launch.py"
-    condition: include_launch
-  - "resource/package_name": "resource/{{package_name}}"
-  - "cpp_node/include/node.hpp": "include/{{package_name}}/{{node_name}}.hpp"
-  - "cpp_node/src/node.cpp": "src/{{node_name}}.cpp"
+  Code Layout:
+  In the following specification, replace package_name with the actual package name
+  and node_name with the actual node name provided by the user.
+  and publisher_name or subscriber_name with the actual publisher or subscriber name provided by the user if applicable.
+  and service_name with the actual service name provided by the user if applicable.
+  and action_name with the actual action name provided by the user if applicable.
+  The CONTRIBUTING.md should include instructions on how to build and run the node, how to run any included tests.
+  Create Agents.md with instructions for AI on how to use the node with ROS 2 command line tools (ros2 topic pub, ros2 topic echo, ros2 service call, etc.).
+  Ensure that you suport Windows, Linux and MacOS where possible.
+  Windows requires Symbol Visiblity on exports, so ensure that is included in the CMakeLists.txt and code where applicable.
+  All classes should be exported with the appropriate visibility macros.
+  README.md should include comprehensive Enduser documentation about the node, its features, how to install it and run it, and example usage.
+
+  ```
+  package_name/
+  ├── package.xml
+  ├── CMakeLists.txt
+  ├── README.md
+  ├── LICENSE
+  ├── CONTRIBUTING.md
+  ├── Agents.md
+  ├── .gitignore
+  ├── include/
+  │   └── package_name/
+  │       ├── package_name.hpp          # Main node header
+  │       └── package_name_visibility_control.h  # Visibility control for Windows
+  ├── src/
+  │   ├── package_name.cpp              # Main node implementation
+  │   ├── package_name_publisher_name.cpp    # Publisher implementation if required
+  │   ├── package_name_subscriber_name.cpp   # Subscriber implementation if required
+  │   ├── package_name_service_name.cpp      # Service server implementation if required
+  │   ├── package_name_client_name.cpp       # Service client implementation if required
+  │   └── package_name_component.cpp         # Component registration
+  ├── launch/
+  │   └── package_name_node.launch.py   # Launch file for debugging
+  ├── resource/
+  │   └── package_name                  # Resource file for ament index
+  └── test/
+    └── test_package_name.cpp         # Unit tests if specified
+  ```
+
+  Visibility Control Header (for Windows compatibility):
+  Create a header file named package_name_visibility_control.h in the include/package_name/ directory with the following content, where MY_LIB is replaced with the actual package name in uppercase with underscores:
+  ```cpp
+  #ifndef MY_LIB__VISIBILITY_CONTROL_H_
+  #define MY_LIB__VISIBILITY_CONTROL_H_
+  #if defined _WIN32 || defined __CYGWIN__
+  #ifdef __GNUC__
+    #define MY_LIB_EXPORT __attribute__ ((dllexport))
+    #define MY_LIB_IMPORT __attribute__ ((dllimport))
+  #else
+    #define MY_LIB_EXPORT __declspec(dllexport)
+    #define MY_LIB_IMPORT __declspec(dllimport)
+  #endif
+  #ifdef MY_LIB_BUILDING_LIBRARY
+    #define MY_LIB_PUBLIC MY_LIB_EXPORT
+  #else
+    #define MY_LIB_PUBLIC MY_LIB_IMPORT
+  #endif
+  #define MY_LIB_PUBLIC_TYPE MY_LIB_PUBLIC
+  #define MY_LIB_LOCAL
+  #else
+  // Linux visibility settings
+  #define MY_LIB_PUBLIC_TYPE
+  #endif
+  #endif  // MY_LIB__VISIBILITY_CONTROL_H_
+  ```
+
+
+
+  CMakeLists.txt Requirements:
+  Note that CMakeLists.txt must runtime support detection of ROS_DISTRO environment variable when support_humble is enabled.
+  Here is a sample CMakeLists.txt that meets the requirements, adapt to the user requirements
+
+  ``` CMakeLists.txt
+    cmake_minimum_required(VERSION 3.8)
+    project({{package_name}})
+
+    if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      add_compile_options(-Wall -Wextra -Wpedantic)
+    endif()
+
+    # find dependencies
+    find_package(ament_cmake REQUIRED)
+    find_package(ament_cmake_auto REQUIRED)
+    ament_auto_find_build_dependencies()
+
+    # Create ament index resource which references the libraries in the binary dir
+    set(node_plugins "")
+
+    # Include directories
+    include_directories(include)
+
+    # Create the composable node library
+    add_library({{node_name}}_component SHARED
+      src/node.cpp
+    )
+
+    # Set target properties
+    set_target_properties({{node_name}}_component PROPERTIES
+      VERSION {{package_version}}
+      SOVERSION 0
+    )
+    target_compile_definitions(${PROJECT_NAME} PRIVATE "MY_LIB_BUILDING_LIBRARY")
+    set_target_properties(${LIB_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+
+    # Link dependencies
+    set(ROS_DISTRO $ENV{ROS_DISTRO})
+    if(ROS_DISTRO STREQUAL "humble" OR ROS_DISTRO STREQUAL "galactic" OR ROS_DISTRO STREQUAL "foxy")
+      message(STATUS "Using legacy ament_target_dependencies for ROS 2 ${ROS_DISTRO}")
+      ament_target_dependencies({{node_name}}_component
+        rclcpp
+        rclcpp_components
+        std_msgs
+        rclcpp_lifecycle
+        std_srvs
+      )
+    else()
+      message(STATUS "Using modern target_link_libraries for ROS 2 ${ROS_DISTRO}")
+      target_link_libraries({{node_name}}_component PUBLIC
+        ${{std_msgs_TARGETS}}
+        rclcpp::rclcpp
+        rclcpp_components::component
+        rclcpp_components::component_manager
+        {{#if include_lifecycle}}
+        ${{rclcpp_lifecycle_TARGETS}}
+        {{/if}}
+        {{#if include_service}}
+        ${{std_srvs_TARGETS}}
+        {{/if}}
+      )
+    endif()
+
+    # Register the component
+    rclcpp_components_register_nodes({{node_name}}_component "{{package_name}}::{{node_name|pascalcase}}")
+
+    # Install the library
+    install(TARGETS
+      {{node_name}}_component
+      ARCHIVE DESTINATION lib
+      LIBRARY DESTINATION lib
+      RUNTIME DESTINATION bin
+    )
+
+    # Install include files
+    install(DIRECTORY include/
+      DESTINATION include
+    )
+
+    # Install launch files
+    install(DIRECTORY
+      launch
+      DESTINATION share/${PROJECT_NAME}
+    )
+
+    if(BUILD_TESTING)
+      find_package(ament_lint_auto REQUIRED)
+      find_package(ament_cmake_gtest REQUIRED)
+      
+      # the following line skips the linter which checks for copyrights
+      # comment the line when a copyright and license is added to all source files
+      set(ament_cmake_copyright_FOUND TRUE)
+      # the following line skips cpplint (only works in a git repo)
+      # comment the line when this package is in a git repo and when
+      # a copyright and license is added to all source files
+      set(ament_cmake_cpplint_FOUND TRUE)
+      ament_lint_auto_find_test_dependencies()
+
+      # Add unit tests
+      ament_add_gtest(test_{{package_name}}_node
+        test/test_{{package_name}}_node.cpp
+      )
+      
+      if(TARGET test_{{package_name}}_node)
+        # Runtime check for ROS distribution to choose appropriate CMake approach for tests
+        if(ROS_DISTRO STREQUAL "humble" OR ROS_DISTRO STREQUAL "galactic" OR ROS_DISTRO STREQUAL "foxy")
+          target_link_libraries(test_{{package_name}}_node {{node_name}}_component)
+          # Legacy approach for ROS 2 Humble and earlier
+          ament_target_dependencies(test_{{package_name}}_node
+            rclcpp
+            std_msgs
+            {{#if include_service}}
+            std_srvs
+            {{/if}}
+          )
+        else()
+          # Modern CMake approach for ROS 2 Iron, Jazzy, Kilted and later
+        # Modern CMake approach (support_humble disabled)
+          target_link_libraries(test_{{package_name}}_node
+            ${{std_msgs_TARGETS}}
+            rclcpp::rclcpp
+            rclcpp_components::component
+            rclcpp_components::component_manager
+            {{#if include_service}}
+            ${{std_srvs_TARGETS}}
+            {{/if}}
+          )
+        endif()
+      endif()
+    endif()
+
+    ament_package()
+    ```  

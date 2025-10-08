@@ -5,16 +5,6 @@ import { createRoot } from 'react-dom/client';
 declare const acquireVsCodeApi: () => any;
 const vscode = acquireVsCodeApi();
 
-interface Manifest {
-  name: string;
-  options?: Array<{
-    variable: string;
-    name: string;
-    description: string;
-    type: string;
-  }>;
-}
-
 interface WebviewMessage {
   command: string;
   text?: string;
@@ -25,15 +15,11 @@ interface WebviewMessage {
 }
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<'create_package' | 'create_node' | 'generating'>('create_package');
-  const [manifests, setManifests] = useState<Map<string, Manifest>>(new Map());
-  const [selectedPackageType, setSelectedPackageType] = useState<string>('');
   const [packageName, setPackageName] = useState('');
   const [packageMaintainer, setPackageMaintainer] = useState('');
   const [packageVersion, setPackageVersion] = useState('');
   const [packageDescription, setPackageDescription] = useState('');
   const [packageLicense, setPackageLicense] = useState('');
-  const [includeOptions, setIncludeOptions] = useState<Record<string, boolean>>({});
   const [naturalLanguageDescription, setNaturalLanguageDescription] = useState('');
   const [testDescription, setTestDescription] = useState('');
 
@@ -52,20 +38,8 @@ const App: React.FC = () => {
       const message = event.data;
       switch (message.command) {
         case 'setManifests':
-          const parsedManifests = JSON.parse(message.manifests);
-          const manifestMap = new Map<string, Manifest>();
-          for (const [key, value] of Object.entries(parsedManifests) as [string, any][]) {
-            manifestMap.set(key, value);
-          }
-          setManifests(manifestMap);
           setIsLoadingManifests(false);
           setManifestLoadStartTime(null);
-          if (manifestMap.size > 0) {
-            const firstKey = manifestMap.keys().next().value;
-            if (firstKey) {
-              setSelectedPackageType(firstKey);
-            }
-          }
           break;
         case 'error':
           setIsLoadingManifests(false);
@@ -100,33 +74,7 @@ const App: React.FC = () => {
     }
   }, [manifestLoadStartTime, isLoadingManifests]);
 
-  const handleNextPage = () => {
-    const selectedManifest = manifests.get(selectedPackageType);
-    if (!selectedManifest) {
-      vscode.postMessage({ command: 'error', text: `No manifest found for ${selectedPackageType}` });
-      return;
-    }
-
-    const options: Record<string, boolean> = {};
-    if (selectedManifest.options) {
-      selectedManifest.options.forEach(option => {
-        if (option.type === 'boolean') {
-          options[option.variable] = false;
-        }
-      });
-    }
-    setIncludeOptions(options);
-    setCurrentPage('create_node');
-  };
-
   const handleCreatePackage = () => {
-    const selectedManifest = manifests.get(selectedPackageType);
-    if (!selectedManifest) {
-      vscode.postMessage({ command: 'error', text: `No manifest found for ${selectedPackageType}` });
-      vscode.postMessage({ command: 'cancel' });
-      return;
-    }
-
     // Use placeholder values if fields are empty
     const finalPackageName = packageName.trim() || "my_package";
     const finalPackageMaintainer = packageMaintainer.trim() || "robots@example.com";
@@ -162,16 +110,13 @@ const App: React.FC = () => {
 
     const message: WebviewMessage = {
       command: hasMeaningfulDescription ? 'createPackageWithAI' : 'createPackage',
-      type: selectedPackageType,
+      type: 'ros2_package',
       variables: {
         package_name: finalPackageName,
         package_maintainer: finalPackageMaintainer,
         package_version: finalPackageVersion,
         package_description: finalPackageDescription,
-        package_license: finalPackageLicense,
-        ...Object.fromEntries(
-          Object.entries(includeOptions).map(([key, value]) => [key, value ? 'true' : 'false'])
-        )
+        package_license: finalPackageLicense
       },
       naturalLanguageDescription: finalNaturalLanguageDescription,
       testDescription: testDescription.trim()
@@ -180,45 +125,10 @@ const App: React.FC = () => {
     if (hasMeaningfulDescription) {
       setIsGenerating(true);
       setGenerationProgress([]);
-      setCurrentPage('generating');
     }
 
     vscode.postMessage(message);
   };
-
-  const handleBack = () => {
-    if (currentPage === 'create_node') {
-      setCurrentPage('create_package');
-    } else if (currentPage === 'generating') {
-      setCurrentPage('create_node');
-    } else {
-      // On the first page, close the panel
-      vscode.postMessage({ command: 'cancel' });
-    }
-  };
-
-  // Hook into browser navigation
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      event.preventDefault();
-      handleBack();
-    };
-
-    // Set up initial state for navigation
-    if (typeof window !== 'undefined' && window.history) {
-      window.history.replaceState({ page: currentPage }, '', '');
-    }
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [currentPage]);
-
-  // Update browser history when page changes
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.history) {
-      window.history.pushState({ page: currentPage }, '', '');
-    }
-  }, [currentPage]);
 
   const renderCreatePackagePage = () => (
     <div id="create_package_page">
@@ -266,45 +176,6 @@ const App: React.FC = () => {
       </div>
       
       <div className="main-content">
-        <div className="component-container">
-          <h2>Package type</h2>
-          <div className="component-example">
-            <fieldset className="radio-group">
-              <legend>Package Type:</legend>
-              {isLoadingManifests ? (
-                <p>Loading package templates...</p>
-              ) : manifests.size === 0 ? (
-                <div>
-                  <p>No package templates found. Please check the extension installation.</p>
-                  <button 
-                    className="button" 
-                    onClick={() => {
-                      setIsLoadingManifests(true);
-                      setManifestLoadStartTime(Date.now());
-                      vscode.postMessage({ command: 'retryManifests' });
-                    }}
-                    style={{ marginTop: '1rem' }}
-                  >
-                    Retry Loading
-                  </button>
-                </div>
-              ) : (
-                Array.from(manifests.entries()).map(([key, manifest]) => (
-                  <label key={key} className="radio-option">
-                    <input
-                      type="radio"
-                      name="packageType"
-                      value={key}
-                      checked={selectedPackageType === key}
-                      onChange={(e) => setSelectedPackageType(e.target.value)}
-                    />
-                    {manifest.name}
-                  </label>
-                ))
-              )}
-            </fieldset>
-          </div>
-        </div>
         <div className="component-container">
           <h2>Package Metadata</h2>
           <div className="component-example">
@@ -371,132 +242,21 @@ const App: React.FC = () => {
       <div className="button-bar">
         <button 
           className="button secondary" 
-          onClick={handleBack}
+          onClick={() => vscode.postMessage({ command: 'cancel' })}
           title="Cancel"
         >
           Cancel
         </button>
         <button 
-          id="second_page_button" 
-          onClick={handleNextPage} 
-          className="button primary" 
-          disabled={isLoadingManifests || manifests.size === 0}
+          id="create_package_button" 
+          onClick={handleCreatePackage} 
+          className="button primary"
         >
-          {isLoadingManifests ? 'Loading...' : 'Next Page'}
+          {naturalLanguageDescription.trim() ? 'Generate with AI' : 'Create Package'}
         </button>
       </div>
     </div>
   );
-
-  const renderCreateNodePage = () => {
-    const selectedManifest = manifests.get(selectedPackageType);
-    const options = selectedManifest?.options || [];
-
-    return (
-      <div id="create_node_page">
-        <div className="header-bar">
-          <h1>Configure ROS 2 Package:</h1>
-        </div>
-        
-      {/* AI Generation Mode Section */}
-      <div className="component-container full-width">
-        <h2>AI-powered Generation:</h2>
-        <div className="component-example">
-          <div className="form-field">
-            <label htmlFor="naturalLanguageDescription">Describe your package</label>
-            <textarea
-              id="naturalLanguageDescription"
-              placeholder="Create a publisher node that publishes Raw and fused IMU data from a SparkFun 9DoF IMU Breakout - ISM330DHCX, MMC5983MA using a configurable rate using libi2c. The node should implement a calibration tooling which can be started independently and update calibration in the launch file."
-              rows={4}
-              cols={50}
-              value={naturalLanguageDescription}
-              onChange={(e) => setNaturalLanguageDescription(e.target.value)}
-              className="text-area"
-            />
-            <small>
-              Provide a detailed description of the ROS 2 node's functionality, topics, services, and behavior. 
-              You can also provide details in the Package Description field below.
-            </small>
-          </div>
-          
-          <div className="form-field">
-            <label htmlFor="testDescription">Describe your test cases</label>
-            <textarea
-              id="testDescription"
-              placeholder="Create unit tests that verify the IMU data publisher is working correctly, test the calibration functionality, and validate that the node handles sensor connection failures gracefully. Include integration tests for the launch file parameters."
-              rows={3}
-              cols={50}
-              value={testDescription}
-              onChange={(e) => setTestDescription(e.target.value)}
-              className="text-area"
-            />
-            <small>
-              Describe the test scenarios, edge cases, and validation requirements for your ROS 2 package.
-            </small>
-          </div>
-        </div>
-      </div>        {options.length > 0 && (
-          <div className="component-container full-width" id="IncludeContainer">
-            <h2>Include:</h2>
-            <div className="component-example">
-              <div className="includes-grid">
-                {options.map((option) => {
-                if (option.type === 'boolean') {
-                  return (
-                    <div key={option.variable} className="form-field">
-                      <label className="checkbox-label">
-                        <input
-                          type="checkbox"
-                          id={option.variable}
-                          checked={includeOptions[option.variable] || false}
-                          onChange={(e) => setIncludeOptions(prev => ({
-                            ...prev,
-                            [option.variable]: e.target.checked
-                          }))}
-                          className="checkbox"
-                        />
-                        {option.name}
-                      </label>
-                    </div>
-                  );
-                } else {
-                  return (
-                    <div key={option.variable} className="form-field">
-                      <label htmlFor={option.variable}>{option.name}</label>
-                      <input
-                        id={option.variable}
-                        type="text"
-                        placeholder={option.name}
-                        className="text-field"
-                      />
-                    </div>
-                  );
-                }
-              })}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <div className="button-bar">
-          <button 
-            className="button secondary" 
-            onClick={handleBack}
-            title="Previous Page"
-          >
-            Previous Page
-          </button>
-          <button 
-            id="create_node_button" 
-            onClick={handleCreatePackage} 
-            className="button primary"
-          >
-            {naturalLanguageDescription.trim() ? 'Generate with AI' : 'Create Package'}
-          </button>
-        </div>
-      </div>
-    );
-  };
 
   const renderGeneratingPage = () => (
     <div id="generating_page">
@@ -551,10 +311,9 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className={`app ${currentPage === 'create_package' ? '' : currentPage === 'create_node' ? 'node-page' : 'generating-page'}`}>
-      {currentPage === 'create_package' ? renderCreatePackagePage() : 
-       currentPage === 'create_node' ? renderCreateNodePage() : 
-       renderGeneratingPage()}
+    <div className={`app ${isGenerating ? 'generating-page' : ''}`}>
+      {renderCreatePackagePage()}
+      {isGenerating && renderGeneratingPage()}
     </div>
   );
 };

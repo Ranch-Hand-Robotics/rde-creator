@@ -15,7 +15,9 @@ ai_directive: |
   - Follow ROS 2 naming conventions for nodes, topics, services, and parameters
 
   NODE.JS-SPECIFIC GUIDELINES:
-  - Use modern JavaScript ES6+ syntax and features
+  - Use modern Typescript 5+ syntax and features
+  - Do not usr Javascript; use Typescript only
+  - Use ES6 modules and import/export syntax
   - Implement proper async/await patterns for asynchronous operations
   - Include JSDoc type annotations for better code maintainability
   - Use console logging with appropriate levels for debugging
@@ -38,64 +40,33 @@ ai_directive: |
   - Include example usage in JSDoc comments
   - Ensure proper cleanup and resource management
   - Add proper error handling for asynchronous operations
+  - Add Test cases using Jest framework if tests are prompted by the user.
 
-options:
-  - variable: "include_publisher"
-    name: "Include Publisher"
-    description: "Include a publisher that sends messages on a topic"
-    type: "boolean"
-  - variable: "include_subscriber"
-    name: "Include Subscriber"
-    description: "Include a subscriber that receives messages from a topic"
-    type: "boolean"
-  - variable: "include_service"
-    name: "Include Service"
-    description: "Include a service server that responds to requests"
-    type: "boolean"
-  - variable: "include_client"
-    name: "Include Service Client"
-    description: "Include a service client that makes requests"
-    type: "boolean"
-  - variable: "include_timer"
-    name: "Include Timer"
-    description: "Include a timer for periodic tasks"
-    type: "boolean"
-  - variable: "include_parameters"
-    name: "Include Parameters"
-    description: "Include dynamic parameter handling"
-    type: "boolean"
-  - variable: "include_launch"
-    name: "Include Launch File"
-    description: "Include a Python-based launch file for the node"
-    type: "boolean"
-  - variable: "node_name"
-    name: "Node Name"
-    description: "Name of the ROS 2 node"
-    type: "string"
-    default: "my_node"
-  - variable: "topic_name"
-    name: "Topic Name"
-    description: "Name of the topic for publisher/subscriber"
-    type: "string"
-    default: "my_topic"
-    condition: "include_publisher"
-  - variable: "service_name"
-    name: "Service Name"
-    description: "Name of the service for server/client"
-    type: "string"
-    default: "my_service"
-    condition: "include_service"
-  - variable: "timer_period"
-    name: "Timer Period (seconds)"
-    description: "Period for timer callbacks"
-    type: "string"
-    default: "1.0"
-    condition: "include_timer"
-file_mapping:
-  - "rclnodejs_node": "{{package_name}}"
-  - "launch":
-    condition: include_launch
-  - "launch/node.launch.py": "launch/{{package_name}}.launch.py"
-    condition: include_launch
-  - "test": "test"
-  - "resource/package_name": "resource/{{package_name}}"
+  Code structure should follow this layout:
+  replaced with actual package name and node name where applicable.
+
+  ```
+  package_name/
+  ├── package.xml
+  ├── CMakeLists.txt
+  ├── README.md
+  ├── LICENSE
+  ├── CONTRIBUTING.md
+  ├── Agents.md
+  ├── .gitignore
+  ├── resource/
+  │   └── package_name
+  ├── test/
+  │   ├── setup.ts              # Test entrypoint
+  │   └── package_name.test.ts  # Unit tests if specified; otherwise do not include.
+  ├── README.md
+  ├── LICENSE
+  ├── CONTRIBUTING.md
+  ├── Agents.md
+  ├── .gitignore
+  ├── launch/
+  │   └── node.launch.py  # One launch simple file for each node to facilitate debugging. If multiple nodes are included, create a launch file which calls each node's launch file.
+  ├── package_name/
+      ├── package.json
+      └── node.ts
+  ```

@@ -12,6 +12,8 @@ ai_directive: |
   - Add appropriate dependencies for the included resources
   - Follow ROS 2 naming conventions for all generated files
   - Include comprehensive documentation for the resource package
+  - Use python package best practices for any scripts included in the package
+  - Do not include test cases, unless specifically prompted by the user
   
   RESOURCE-SPECIFIC GUIDELINES:
   - URDF files should be well-formed XML with proper joint and link definitions
@@ -21,26 +23,52 @@ ai_directive: |
   - Add proper error handling for resource loading failures
   - If you need to generate more than just simple geometry, create OpenSCAD files for complex meshes. 
   - OpenSCAD files will be post processed to stl files, so reference the stl files in the URDF or Xacro.
-  
-options:
-  - variable: "include_urdf"
-    name: "Include URDF"
-    description: "Include a URDF file in the package"
-    type: "boolean"
-  - variable: "include_launch"
-    name: "Include Launch File"
-    description: "Include a Python Based Launch file in the package"
-    type: "boolean"
-  - variable: "include_meshes"
-    name: "Include Mesh"
-    description: "Include a Mesh directory with sample mesh in the package and URDF"
-    type: "boolean"
-file_mapping:
-  - "urdf":
-    condition: include_urdf
-  - "urdf/robot.urdf": "urdf/{{package_name_file}}.urdf"
-    condition: include_urdf
-  - "launch":
-    condition: include_launch
-  - "launch/robot.launch.py": "launch/{{package_name_file}}.launch.py"
-    condition: include_launch
+
+
+  ```
+  package_name/
+  ├── package.xml
+  ├── setup.py
+  ├── setup.cfg
+  ├── resource/package_name
+  ├── README.md
+  ├── LICENSE
+  ├── CONTRIBUTING.md
+  ├── Agents.md
+  ├── .gitignore
+  ├── launch/
+  │   └── node.launch.py  # One launch file for each top level URDF or Xacro File
+  └── urdf/
+      ├── robot.urdf  # Main URDF file
+      ├── robot.xacro # Optional Xacro file if needed
+      ├── meshes/     # Directory for mesh files (STL, DAE, OpenSCAD)
+      │   ├── part1.stl
+      │   └── part2.dae
+          └── complex_part.scad
+  ├── worlds/
+  │   ├── simulation.world          # Main Gazebo world file
+  │   └── objects/                  # Directory for custom world objects
+  │       └── custom_object.sdf     # Custom object definitions
+  ├── models/                       # Gazebo models directory
+  │   ├── robot_model/             # Directory for robot model
+  │   │   ├── model.sdf            # SDF model definition
+  │   │   ├── model.config         # Model configuration
+  │   │   └── meshes/              # Model-specific meshes
+  │   └── environment_models/      # Environment models
+  │       └── terrain/             # Example terrain model
+  │           ├── model.sdf
+  │           └── model.config
+  ├── config/
+  │   ├── gazebo_params.yaml       # Gazebo-specific parameters
+  │   └── controllers.yaml         # Controller configurations for simulation
+  └── rviz/
+    └── gazebo_simulation.rviz   # RViz configuration for visualizing simulation
+  ```
+
+  Setup.cfg must include:
+  ```ini
+    [develop]
+    script_dir=$base/lib/package_name
+    [install]
+    install_scripts=$base/lib/package_name
+  ```
