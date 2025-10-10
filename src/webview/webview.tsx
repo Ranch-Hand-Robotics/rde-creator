@@ -12,38 +12,61 @@ interface WebviewMessage {
   variables?: Record<string, string>;
   naturalLanguageDescription?: string;
   testDescription?: string;
+  manifests?: string;
+}
+
+interface PackageManifest {
+  name: string;
+  description: string;
+  icon?: string;
+  short_description?: string;
+  directory: string;
 }
 
 const App: React.FC = () => {
   const [packageName, setPackageName] = useState('');
   const [packageMaintainer, setPackageMaintainer] = useState('');
-  const [packageVersion, setPackageVersion] = useState('');
+  const [packageVersion, setPackageVersion] = useState('0.0.1');
   const [packageDescription, setPackageDescription] = useState('');
-  const [packageLicense, setPackageLicense] = useState('');
+  const [packageLicense, setPackageLicense] = useState('MIT');
+  const [packageType, setPackageType] = useState<string>('');
+  const [availableManifests, setAvailableManifests] = useState<PackageManifest[]>([]);
   const [naturalLanguageDescription, setNaturalLanguageDescription] = useState('');
   const [testDescription, setTestDescription] = useState('');
 
-  const [isLoadingManifests, setIsLoadingManifests] = useState(true);
   const [generationProgress, setGenerationProgress] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [manifestLoadStartTime, setManifestLoadStartTime] = useState<number | null>(null);
+  const [isLoadingManifests, setIsLoadingManifests] = useState(true);
 
   useEffect(() => {
-    // Notify the extension that the webview is loaded and ready
+    // Request manifests on load
     vscode.postMessage({ command: 'webviewLoaded' });
-    
-    setManifestLoadStartTime(Date.now());
-    
+
     const messageHandler = (event: MessageEvent) => {
       const message = event.data;
       switch (message.command) {
         case 'setManifests':
-          setIsLoadingManifests(false);
-          setManifestLoadStartTime(null);
-          break;
-        case 'error':
-          setIsLoadingManifests(false);
-          setManifestLoadStartTime(null);
+          try {
+            const manifestsData = JSON.parse(message.manifests);
+            const manifests: PackageManifest[] = Object.entries(manifestsData).map(([dir, data]: [string, any]) => ({
+              name: data.name || dir,
+              description: data.description || '',
+              icon: data.icon || '📦',
+              short_description: data.short_description || data.description || '',
+              directory: dir
+            }));
+            setAvailableManifests(manifests);
+            // Set default to first manifest if available (prefer python_node if exists)
+            if (manifests.length > 0) {
+              const pythonManifest = manifests.find(m => m.directory === 'python_node');
+              const defaultManifest = pythonManifest || manifests[0];
+              setPackageType(defaultManifest.directory);
+            }
+            setIsLoadingManifests(false);
+          } catch (error) {
+            console.error('Error parsing manifests:', error);
+            setIsLoadingManifests(false);
+          }
           break;
         case 'aiProgress':
           setGenerationProgress(prev => [...prev, message.text]);
@@ -58,59 +81,33 @@ const App: React.FC = () => {
     return () => window.removeEventListener('message', messageHandler);
   }, []);
 
-  // Add timeout for manifest loading
-  useEffect(() => {
-    if (manifestLoadStartTime && isLoadingManifests) {
-      const timeoutId = setTimeout(() => {
-        const elapsed = Date.now() - manifestLoadStartTime;
-        if (elapsed > 10000) { // 10 seconds timeout
-          setIsLoadingManifests(false);
-          setManifestLoadStartTime(null);
-          vscode.postMessage({ command: 'error', text: 'Manifest loading timed out. Please try reopening the panel.' });
-        }
-      }, 10000);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [manifestLoadStartTime, isLoadingManifests]);
-
   const handleCreatePackage = () => {
-    // Use placeholder values if fields are empty
-    const finalPackageName = packageName.trim() || "my_package";
-    const finalPackageMaintainer = packageMaintainer.trim() || "robots@example.com";
-    const finalPackageVersion = packageVersion.trim() || "0.0.0";
-    const finalPackageDescription = packageDescription.trim() || "This is a sample description";
+    const finalPackageName = packageName.trim();
+    const finalPackageMaintainer = packageMaintainer.trim() || "your.email@example.com";
+    const finalPackageVersion = packageVersion.trim() || "0.0.1";
+    const finalPackageDescription = packageDescription.trim();
     const finalPackageLicense = packageLicense.trim() || "MIT";
+    const finalNaturalLanguageDescription = naturalLanguageDescription.trim();
 
-    // Use package description as natural language description if it's been modified
-    let finalNaturalLanguageDescription = naturalLanguageDescription.trim();
-    
-    // If package description has been modified (not default), use it as natural language description
-    if (finalPackageDescription && finalPackageDescription !== "This is a sample description") {
-      if (!finalNaturalLanguageDescription) {
-        // Use package description if natural language is empty
-        finalNaturalLanguageDescription = finalPackageDescription;
-      } else {
-        // Combine both if both are provided
-        finalNaturalLanguageDescription = `${finalPackageDescription}\n\n${finalNaturalLanguageDescription}`;
-      }
-    } else if (!finalNaturalLanguageDescription) {
-      // Use default placeholder if both are empty
-      finalNaturalLanguageDescription = "Describe what you want your ROS 2 node to do. For example: 'Create a publisher node that publishes sensor data at 10Hz and subscribes to control commands'";
-    }
-
+    // Validation
     if (!finalPackageName) {
-      vscode.postMessage({ command: 'error', text: 'Package Name is required' });
+      vscode.postMessage({ command: 'error', text: 'Package name is required' });
       return;
     }
 
-    // Always try AI first if there's a meaningful description
-    const hasMeaningfulDescription = finalNaturalLanguageDescription.trim() !== "" && 
-                                   finalNaturalLanguageDescription.trim() !== "Describe what you want your ROS 2 node to do. For example: 'Create a publisher node that publishes sensor data at 10Hz and subscribes to control commands'";
+    if (!finalNaturalLanguageDescription) {
+      vscode.postMessage({ command: 'error', text: 'Please describe what you want your ROS 2 package to do' });
+      return;
+    }
+
+    if (!packageType) {
+      vscode.postMessage({ command: 'error', text: 'Please select a package type' });
+      return;
+    }
 
     const message: WebviewMessage = {
-      command: hasMeaningfulDescription ? 'createPackageWithAI' : 'createPackage',
-      type: 'ros2_package',
+      command: 'createPackageWithAI',
+      type: packageType,
       variables: {
         package_name: finalPackageName,
         package_maintainer: finalPackageMaintainer,
@@ -122,87 +119,98 @@ const App: React.FC = () => {
       testDescription: testDescription.trim()
     };
 
-    if (hasMeaningfulDescription) {
-      setIsGenerating(true);
-      setGenerationProgress([]);
-    }
-
+    setIsGenerating(true);
+    setGenerationProgress([]);
     vscode.postMessage(message);
   };
 
   const renderCreatePackagePage = () => (
     <div id="create_package_page">
       <div className="header-bar">
-        <h1>Create new ROS 2 Package:</h1>
+        <h1>🤖 AI-Powered ROS 2 Package Generator</h1>
+        <p className="subtitle">Describe your package and let AI generate production-ready ROS 2 code</p>
       </div>
       
-      {/* AI Generation Mode Section */}
-      <div className="component-container full-width">
-        <h2>AI-powered Generation:</h2>
-        <div className="component-example">
+      <div className="main-content">
+        {/* Package Type Selection */}
+        <div className="component-container">
+          <h2>📦 Package Type</h2>
+          {isLoadingManifests ? (
+            <div className="loading-manifests">
+              <div className="spinner"></div>
+              <p>Loading available package types...</p>
+            </div>
+          ) : availableManifests.length === 0 ? (
+            <div className="error-message">
+              <p>❌ No package templates found. Please check your installation.</p>
+            </div>
+          ) : (
+            <div className="package-type-selector">
+              {availableManifests.map((manifest) => (
+                <button 
+                  key={manifest.directory}
+                  className={`type-button ${packageType === manifest.directory ? 'active' : ''}`}
+                  onClick={() => setPackageType(manifest.directory)}
+                  title={manifest.description}
+                >
+                  <div className="type-icon">{manifest.icon}</div>
+                  <div className="type-label">{manifest.name}</div>
+                  <div className="type-description">{manifest.short_description}</div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Package Description */}
+        <div className="component-container">
+          <h2>✨ What should your package do?</h2>
           <div className="form-field">
-            <label htmlFor="naturalLanguageDescription">Describe your package</label>
             <textarea
               id="naturalLanguageDescription"
-              placeholder="Create a publisher node that publishes Raw and fused IMU data from a SparkFun 9DoF IMU Breakout - ISM330DHCX, MMC5983MA using a configurable rate using libi2c. The node should implement a calibration tooling which can be started independently and update calibration in the launch file."
-              rows={4}
-              cols={50}
+              placeholder="Example: Create a publisher node that reads IMU data from a SparkFun 9DoF sensor (ISM330DHCX, MMC5983MA) at 100Hz using i2c. Include a calibration service that can be triggered to update sensor offsets, and publish both raw and calibrated data on separate topics. Add parameter support for configuring the sample rate and i2c bus address."
+              rows={6}
               value={naturalLanguageDescription}
               onChange={(e) => setNaturalLanguageDescription(e.target.value)}
-              className="text-area"
+              className="text-area large"
+              required
             />
-            <small>
-              Provide a detailed description of the ROS 2 node's functionality, topics, services, and behavior. 
-              You can also provide details in the Package Description field below.
+            <small className="help-text">
+              💡 Be specific! Include details about topics, services, parameters, sensors, algorithms, and behaviors.
             </small>
           </div>
           
           <div className="form-field">
-            <label htmlFor="testDescription">Describe your test cases</label>
+            <label htmlFor="testDescription">🧪 Test Requirements (Optional; leave blank for no tests)</label>
             <textarea
               id="testDescription"
-              placeholder="Create unit tests that verify the IMU data publisher is working correctly, test the calibration functionality, and validate that the node handles sensor connection failures gracefully. Include integration tests for the launch file parameters."
+              placeholder="Example: Create unit tests for the IMU data processing, verify calibration service functionality, test error handling for disconnected sensors, and validate parameter updates."
               rows={3}
-              cols={50}
               value={testDescription}
               onChange={(e) => setTestDescription(e.target.value)}
               className="text-area"
             />
-            <small>
-              Describe the test scenarios, edge cases, and validation requirements for your ROS 2 package.
-            </small>
           </div>
         </div>
-      </div>
-      
-      <div className="main-content">
+
+        {/* Package Metadata */}
         <div className="component-container">
-          <h2>Package Metadata</h2>
-          <div className="component-example">
+          <h2>📋 Package Metadata</h2>
+          <div className="form-grid">
             <div className="form-field">
-              <label htmlFor="package_name">Name</label>
+              <label htmlFor="package_name">Package Name *</label>
               <input
                 id="package_name"
                 type="text"
-                placeholder="my_package"
+                placeholder="my_awesome_package"
                 value={packageName}
                 onChange={(e) => setPackageName(e.target.value)}
                 className="text-field"
+                required
               />
             </div>
             <div className="form-field">
-              <label htmlFor="package_maintainer">Maintainer</label>
-              <input
-                id="package_maintainer"
-                type="text"
-                placeholder="robots@example.com"
-                value={packageMaintainer}
-                onChange={(e) => setPackageMaintainer(e.target.value)}
-                className="text-field"
-              />
-            </div>
-            <div className="form-field">
-              <label htmlFor="package_version">Version</label>
+              <label htmlFor="package_version">Version *</label>
               <input
                 id="package_version"
                 type="text"
@@ -213,15 +221,14 @@ const App: React.FC = () => {
               />
             </div>
             <div className="form-field">
-              <label htmlFor="package_description">Description</label>
-              <textarea
-                id="package_description"
-                placeholder="This is a sample description"
-                rows={5}
-                cols={50}
-                value={packageDescription}
-                onChange={(e) => setPackageDescription(e.target.value)}
-                className="text-area"
+              <label htmlFor="package_maintainer">Maintainer Email *</label>
+              <input
+                id="package_maintainer"
+                type="email"
+                placeholder="your.email@example.com"
+                value={packageMaintainer}
+                onChange={(e) => setPackageMaintainer(e.target.value)}
+                className="text-field"
               />
             </div>
             <div className="form-field">
@@ -236,6 +243,17 @@ const App: React.FC = () => {
               />
             </div>
           </div>
+          <div className="form-field">
+            <label htmlFor="package_description">Description</label>
+            <textarea
+              id="package_description"
+              placeholder="A brief description for your package."
+              rows={2}
+              value={packageDescription}
+              onChange={(e) => setPackageDescription(e.target.value)}
+              className="text-area"
+            />
+          </div>
         </div>
       </div>
       
@@ -243,7 +261,6 @@ const App: React.FC = () => {
         <button 
           className="button secondary" 
           onClick={() => vscode.postMessage({ command: 'cancel' })}
-          title="Cancel"
         >
           Cancel
         </button>
@@ -251,8 +268,9 @@ const App: React.FC = () => {
           id="create_package_button" 
           onClick={handleCreatePackage} 
           className="button primary"
+          disabled={!packageName.trim() || !naturalLanguageDescription.trim() || !packageType || isLoadingManifests}
         >
-          {naturalLanguageDescription.trim() ? 'Generate with AI' : 'Create Package'}
+          🚀 Generate Package with AI
         </button>
       </div>
     </div>

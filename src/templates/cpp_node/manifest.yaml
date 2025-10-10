@@ -2,6 +2,8 @@ name: "C++ ROS 2 Node"
 version: 0.0.0
 description: A template for creating C++-based ROS 2 composable nodes with optional lifecycle support
 license: "MIT"
+icon: "⚡"
+short_description: "High performance, real-time"
 ai_directive: |
   This is a ROS 2 C++ composable node template. When generating code for this template:
 

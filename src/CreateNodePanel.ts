@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import { getNonce, getUri, getAllManifestMap, fileNameFromVariable } from './utils';
-import { ProcessCreateNode } from './ProcessCreateNode';
+import { getNonce, getUri, fileNameFromVariable, getAllManifestMap } from './utils';
 import { AIPackageGenerator } from './AIPackageGenerator';
 import * as extension from "./extension";
 
@@ -9,7 +8,6 @@ export class CreateNodePanel {
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
   private readonly _extensionUri: vscode.Uri;
-  private _isLoadingManifests: boolean = false;
   private _targetFolderUri?: vscode.Uri;
 
   
@@ -24,44 +22,23 @@ export class CreateNodePanel {
   }
 
   private async _loadManifests() {
-    // Prevent multiple simultaneous manifest loading operations
-    if (this._isLoadingManifests) {
-      extension.outputChannel.appendLine('Manifest loading already in progress, skipping...');
-      return;
-    }
-
-    this._isLoadingManifests = true;
-
     try {
       extension.outputChannel.appendLine('Loading manifests...');
-      
-      // Add a timeout to prevent infinite loading
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Manifest loading timed out after 30 seconds')), 30000);
-      });
-
-      const manifestPromise = getAllManifestMap(vscode.Uri.joinPath(this._extensionUri, 'dist', 'templates'));
-      
-      const manifests = await Promise.race([manifestPromise, timeoutPromise]) as Map<string, any>;
+      const manifests = await getAllManifestMap(vscode.Uri.joinPath(this._extensionUri, 'dist', 'templates'));
       const manifestString = JSON.stringify(Object.fromEntries(manifests));
-      const message = { command: "setManifests", manifests: manifestString };
-
-      // Debug logging
+      
       extension.outputChannel.appendLine(`Found ${manifests.size} manifests: ${Array.from(manifests.keys()).join(', ')}`);
-      extension.outputChannel.appendLine(`Manifest data: ${manifestString}`);
-
-      // Send message to webview
-      this._panel.webview.postMessage(message);
-      extension.outputChannel.appendLine('Manifests sent to webview');
+      
+      this._panel.webview.postMessage({ 
+        command: "setManifests", 
+        manifests: manifestString 
+      });
     } catch (error) {
       extension.outputChannel.appendLine(`Error loading manifests: ${error}`);
-      // Send error message to webview
       this._panel.webview.postMessage({ 
         command: "error", 
-        text: `Failed to load template manifests. Please consider reinstalling this extension: ${error}` 
+        text: `Failed to load package templates: ${error}` 
       });
-    } finally {
-      this._isLoadingManifests = false;
     }
   }
 
@@ -72,12 +49,8 @@ export class CreateNodePanel {
       if (targetFolderUri) {
         CreateNodePanel.currentPanel._targetFolderUri = targetFolderUri;
       }
-      // Reload manifests when panel is revealed (only if not already loading)
-      if (!CreateNodePanel.currentPanel._isLoadingManifests) {
-        CreateNodePanel.currentPanel._loadManifests();
-      }
     } else {
-      const panel = vscode.window.createWebviewPanel("robotics-templates", "Robotics Tempate", vscode.ViewColumn.One, {
+      const panel = vscode.window.createWebviewPanel("robotics-templates", "AI ROS 2 Package Generator", vscode.ViewColumn.One, {
         enableScripts: true,
         localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'dist')]
       });
@@ -106,70 +79,11 @@ export class CreateNodePanel {
 
         switch (command) {
           case "webviewLoaded":
-            // Webview is ready, now load manifests
-            this._loadManifests();
-            return;
-
-          case "retryManifests":
-            // User clicked retry button, reload manifests
+            // Webview is ready, load manifests
             this._loadManifests();
             return;
 
           case "createPackage":
-            // find the template source directory from the extension package
-            const resourceTemplateSource = vscode.Uri.joinPath(this._extensionUri, "dist", "templates", message.type).fsPath;
-
-            // Check if the variables came as a plain object
-            if (!message.variables || typeof message.variables !== 'object') {
-              vscode.window.showErrorMessage("No variables received from webview");
-              return;
-            }
-
-            const packageName = message.variables["package_name"];
-            if (packageName === undefined) {
-              vscode.window.showErrorMessage("Package Name is required");
-              return;
-            }
-
-            const processCreateNode = new ProcessCreateNode(resourceTemplateSource);
-            const variables = new Map<string, string>();
-
-            // Convert the plain object to a Map
-            Object.entries(message.variables).forEach(([key, value]) => {
-              variables.set(key, value as string);
-              
-              // add a _file for key
-              variables.set(key + "_file", fileNameFromVariable(value as string));
-            });
-
-            // Add the current year as a variable for copyright statements
-            variables.set("year", new Date().getFullYear().toString());
-
-            // Handle test description for test generation
-            const packageTestDescription = message.testDescription || "";
-            variables.set("test_description", packageTestDescription);
-
-            const packageFileName = fileNameFromVariable(packageName);
-            const workspaceFolder = this._targetFolderUri || vscode.workspace.workspaceFolders?.[0]?.uri;
-            if (!workspaceFolder) {
-              vscode.window.showErrorMessage("No workspace folder available");
-              return;
-            }
-            const newPackageDir = vscode.Uri.joinPath(workspaceFolder, packageFileName).fsPath;
-
-            extension.outputChannel.appendLine(`Creating package at ${newPackageDir} (target folder: ${this._targetFolderUri?.fsPath || 'workspace root'})`);
-            
-            try {
-              await processCreateNode.createResourcePackage(newPackageDir, variables);
-              vscode.window.showInformationMessage(`Package ${packageName} created successfully`);
-              this.dispose();
-            } catch (error) {
-              extension.outputChannel.appendLine(`Error creating package: ${error}`);
-              vscode.window.showErrorMessage(`Error creating package: ${error}`);
-            }
-
-            return;
-
           case "createPackageWithAI":
             // AI-powered package generation
             const aiTemplateSource = vscode.Uri.joinPath(this._extensionUri, "dist", "templates", message.type).fsPath;

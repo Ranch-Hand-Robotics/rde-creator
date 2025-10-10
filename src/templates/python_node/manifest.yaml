@@ -2,6 +2,8 @@ name: "Python ROS 2 Node"
 version: 0.0.0
 description: A template for creating Python-based ROS 2 nodes with various communication patterns
 license: "MIT"
+icon: "🐍"
+short_description: "Fast prototyping, rich libraries"
 ai_directive: |
   This is a ROS 2 Python node template. When generating code for this template:
 

@@ -21,6 +21,28 @@
         "category": "ROS"
       }
     ],
+    "configuration": {
+      "title": "ROS 2 Package Creator",
+      "properties": {
+        "rosPackageCreator.preferredModelFamily": {
+          "type": "string",
+          "default": "gpt-5-mini",
+          "enum": [
+            "gpt-4o",
+            "claude",
+            "gpt-4.1",
+            "gpt-5-mini"
+          ],
+          "enumDescriptions": [
+            "GPT-4o (recommended for most users)",
+            "Claude (Anthropic's model)",
+            "GPT-4.1 (latest GPT-4 variant)",
+            "GPT-5-Mini"
+          ],
+          "description": "Preferred AI model family for package generation. Uses Copilot vendor models."
+        }
+      }
+    },
     "menus": {
       "ros": [
         {
@@ -74,7 +96,6 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "handlebars": "^4.7.8",
     "memfs": "^4.9.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

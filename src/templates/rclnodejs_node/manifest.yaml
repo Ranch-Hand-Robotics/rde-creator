@@ -2,6 +2,8 @@ name: "Node.js ROS 2 Node"
 version: 0.0.0
 description: A template for creating Node.js-based ROS 2 nodes using rclnodejs with various communication patterns
 license: "MIT"
+icon: "🌐"
+short_description: "Web integration, async I/O"
 ai_directive: |
   This is a ROS 2 Node.js node template using rclnodejs. When generating code for this template:
 
