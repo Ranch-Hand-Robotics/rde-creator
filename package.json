@@ -28,16 +28,22 @@
           "type": "string",
           "default": "gpt-5-mini",
           "enum": [
+            "gpt-5-mini",
             "gpt-4o",
             "claude",
             "gpt-4.1",
-            "gpt-5-mini"
+            "xai",
+            "openrouter",
+            "ollama"
           ],
           "enumDescriptions": [
-            "GPT-4o (recommended for most users)",
+            "GPT-5-Mini (recommended for most users)",
+            "GPT-4o",
             "Claude (Anthropic's model)",
             "GPT-4.1 (latest GPT-4 variant)",
-            "GPT-5-Mini"
+            "Grok Code Fast 1 (xAI)",
+            "OpenRouter (various open models)",
+            "Ollama (local models)"
           ],
           "description": "Preferred AI model family for package generation. Uses Copilot vendor models."
         }

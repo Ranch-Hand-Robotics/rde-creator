@@ -64,7 +64,7 @@ ai_directive: |
   │   └── node.launch.py  # One launch simple file for each node to facilitate debugging. If multiple nodes are included, create a launch file which calls each node's launch file.
   └── package_name/
       ├── __init.py
-      └── node.py
+      └── node.py # If a simple implementation, name node.py for the name of the package. If the node has multiple publishers, subscribers, services, actions, etc., create a file for each and name the node file based on its primary function.
   ```
 
   Setup.cfg must include:
