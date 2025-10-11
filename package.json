@@ -22,30 +22,12 @@
       }
     ],
     "configuration": {
-      "title": "ROS 2 Package Creator",
+      "title": "Creator for ROS 2",
       "properties": {
-        "rosPackageCreator.preferredModelFamily": {
+        "rosPackageCreator.lastSelectedModel": {
           "type": "string",
-          "default": "gpt-5-mini",
-          "enum": [
-            "gpt-5-mini",
-            "gpt-4o",
-            "claude",
-            "gpt-4.1",
-            "xai",
-            "openrouter",
-            "ollama"
-          ],
-          "enumDescriptions": [
-            "GPT-5-Mini (recommended for most users)",
-            "GPT-4o",
-            "Claude (Anthropic's model)",
-            "GPT-4.1 (latest GPT-4 variant)",
-            "Grok Code Fast 1 (xAI)",
-            "OpenRouter (various open models)",
-            "Ollama (local models)"
-          ],
-          "description": "Preferred AI model family for package generation. Uses Copilot vendor models."
+          "default": "auto",
+          "description": "Last selected AI model for package generation. Set to 'auto' to use preferred model family."
         }
       }
     },

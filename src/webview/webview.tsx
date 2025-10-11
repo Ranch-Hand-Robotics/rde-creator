@@ -13,6 +13,7 @@ interface WebviewMessage {
   naturalLanguageDescription?: string;
   testDescription?: string;
   manifests?: string;
+  selectedModel?: string;
 }
 
 interface PackageManifest {
@@ -21,6 +22,14 @@ interface PackageManifest {
   icon?: string;
   short_description?: string;
   directory: string;
+}
+
+interface LanguageModel {
+  id: string;
+  name: string;
+  vendor: string;
+  family: string;
+  displayName: string;
 }
 
 const App: React.FC = () => {
@@ -37,6 +46,9 @@ const App: React.FC = () => {
   const [generationProgress, setGenerationProgress] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingManifests, setIsLoadingManifests] = useState(true);
+
+  const [availableModels, setAvailableModels] = useState<LanguageModel[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>('');
 
   useEffect(() => {
     // Request manifests on load
@@ -66,6 +78,29 @@ const App: React.FC = () => {
           } catch (error) {
             console.error('Error parsing manifests:', error);
             setIsLoadingManifests(false);
+          }
+          break;
+        case 'setAvailableModels':
+          try {
+            const models: LanguageModel[] = message.models;
+            const lastSelectedModel = message.lastSelectedModel || 'auto';
+            
+            // Add "Auto" option at the beginning
+            const modelsWithAuto = [
+              { id: 'auto', name: 'Auto', vendor: 'auto', family: 'auto', displayName: 'Auto (use preferred model)' },
+              ...models
+            ];
+            
+            setAvailableModels(modelsWithAuto);
+            
+            // Set default based on last selected model
+            if (lastSelectedModel === 'auto' || !modelsWithAuto.find(m => m.id === lastSelectedModel)) {
+              setSelectedModel('auto');
+            } else {
+              setSelectedModel(lastSelectedModel);
+            }
+          } catch (error) {
+            console.error('Error parsing models:', error);
           }
           break;
         case 'aiProgress':
@@ -105,6 +140,11 @@ const App: React.FC = () => {
       return;
     }
 
+    if (!selectedModel) {
+      vscode.postMessage({ command: 'error', text: 'Please select an AI model' });
+      return;
+    }
+
     const message: WebviewMessage = {
       command: 'createPackageWithAI',
       type: packageType,
@@ -116,7 +156,8 @@ const App: React.FC = () => {
         package_license: finalPackageLicense
       },
       naturalLanguageDescription: finalNaturalLanguageDescription,
-      testDescription: testDescription.trim()
+      testDescription: testDescription.trim(),
+      selectedModel: selectedModel
     };
 
     setIsGenerating(true);
@@ -190,6 +231,34 @@ const App: React.FC = () => {
               onChange={(e) => setTestDescription(e.target.value)}
               className="text-area"
             />
+          </div>
+        </div>
+
+        {/* AI Model Selection */}
+        <div className="component-container">
+          <h2>🤖 AI Model Selection</h2>
+          <div className="form-field">
+            <label htmlFor="modelSelect">Choose AI Model</label>
+            <select
+              id="modelSelect"
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className="select-field"
+              disabled={availableModels.length === 0}
+            >
+              {availableModels.length === 0 ? (
+                <option value="">Loading models...</option>
+              ) : (
+                availableModels.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.displayName}
+                  </option>
+                ))
+              )}
+            </select>
+            <small className="help-text">
+              💡 Select the AI model to use for generating your ROS 2 package. Different models may produce different results.
+            </small>
           </div>
         </div>
 
@@ -268,7 +337,7 @@ const App: React.FC = () => {
           id="create_package_button" 
           onClick={handleCreatePackage} 
           className="button primary"
-          disabled={!packageName.trim() || !naturalLanguageDescription.trim() || !packageType || isLoadingManifests}
+          disabled={!packageName.trim() || !naturalLanguageDescription.trim() || !packageType || !selectedModel || isLoadingManifests}
         >
           🚀 Generate Package with AI
         </button>

@@ -30,40 +30,35 @@ ai_directive: |
   ├── package.xml
   ├── setup.py
   ├── setup.cfg
-  ├── resource/package_name
+  ├── resource/
+  │   └── package_name  # This is a FILE (empty marker file for ament index)
   ├── README.md
   ├── LICENSE
   ├── CONTRIBUTING.md
   ├── Agents.md
   ├── .gitignore
   ├── launch/
-  │   └── node.launch.py  # One launch file for each top level URDF or Xacro File
+  │   └── robot.launch.py
   └── urdf/
-      ├── robot.urdf  # Main URDF file
-      ├── robot.xacro # Optional Xacro file if needed
-      ├── meshes/     # Directory for mesh files (STL, DAE, OpenSCAD)
-      │   ├── part1.stl
-      │   └── part2.dae
-          └── complex_part.scad
+      └── robot.urdf
   ├── worlds/
-  │   ├── simulation.world          # Main Gazebo world file
-  │   └── objects/                  # Directory for custom world objects
-  │       └── custom_object.sdf     # Custom object definitions
-  ├── models/                       # Gazebo models directory
-  │   ├── robot_model/             # Directory for robot model
-  │   │   ├── model.sdf            # SDF model definition
-  │   │   ├── model.config         # Model configuration
-  │   │   └── meshes/              # Model-specific meshes
-  │   └── environment_models/      # Environment models
-  │       └── terrain/             # Example terrain model
+  │   └── simulation.world
+  ├── models/
+  │   ├── robot_model/
+  │   │   ├── model.sdf
+  │   │   └── model.config
+  │   └── environment_models/
+  │       └── terrain/
   │           ├── model.sdf
   │           └── model.config
   ├── config/
-  │   ├── gazebo_params.yaml       # Gazebo-specific parameters
-  │   └── controllers.yaml         # Controller configurations for simulation
+  │   └── gazebo_params.yaml
   └── rviz/
-    └── gazebo_simulation.rviz   # RViz configuration for visualizing simulation
+      └── gazebo_simulation.rviz
   ```
+
+  IMPORTANT: The file "resource/package_name" must be an EMPTY FILE, not a directory.
+  This is a ROS 2 convention for ament resource indexing.
 
   Setup.cfg must include:
   ```ini

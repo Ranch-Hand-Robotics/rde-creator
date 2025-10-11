@@ -5,10 +5,10 @@ export let outputChannel: vscode.OutputChannel;
 
 export function activate(context: vscode.ExtensionContext) {
 
-  outputChannel = vscode.window.createOutputChannel("Robotics Templates");
+  outputChannel = vscode.window.createOutputChannel("RDE Creator");
   context.subscriptions.push(outputChannel);
 
-  outputChannel.appendLine('"Robotics Templates" is now active!');
+  outputChannel.appendLine('"RDE Creator" is now active!');
 
   const createNodeCommand = vscode.commands.registerCommand("robotics-templates.create", (uri?: vscode.Uri) => {
     outputChannel.appendLine(`Creating ROS package. Target folder: ${uri?.fsPath || 'workspace root'}`);

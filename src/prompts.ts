@@ -32,6 +32,14 @@ ${templateContent}
 ## Package Manifest (Metadata - Do not include manifest.yaml in generated package)
 ${JSON.stringify(manifest, null, 2)}
 
+## Important: File vs Directory Interpretation
+When reading the manifest structure:
+- Lines ending with '/' indicate directories (e.g., 'launch/', 'urdf/')
+- Lines with file extensions indicate files (e.g., 'package.xml', 'setup.py')  
+- Lines without extensions but with specific names indicate files (e.g., 'resource/package_name' is a FILE)
+- The 'resource/package_name' entry MUST be an empty file, not a directory
+- Do NOT create directories where files are specified
+
 ## User Parameters (Replace {{variable}} placeholders with these values)
 ${JSON.stringify(variablesObj, null, 2)}
 

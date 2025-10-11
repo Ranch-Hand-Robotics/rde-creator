@@ -21,7 +21,8 @@ export class AIPackageGenerator {
     variables: Map<string, string>,
     naturalLanguageDescription: string,
     targetDirectory: string,
-    testDescription?: string
+    testDescription?: string,
+    selectedModelId?: string
   ): Promise<void> {
     try {
       // Check if language model access is available
@@ -29,52 +30,24 @@ export class AIPackageGenerator {
         throw new Error('Language Model API is not available in this VS Code version');
       }
 
-      // Try to get user's preferred model from VS Code configuration
-      const config = vscode.workspace.getConfiguration('rosPackageCreator');
-      const preferredFamily = config.get<string>('preferredModelFamily', 'gpt-5-mini');
-      
-      this.outputChannel.appendLine(`User preferred model family: ${preferredFamily}`);
+      let model: vscode.LanguageModelChat | undefined;
+      let selectionMethod = 'default';
 
-      // Select models based on user preference, defaulting to Copilot vendor
-      let models: vscode.LanguageModelChat[] = [];
-      let selectionMethod = 'user configuration';
-
-      // Try to get models with preferred family from Copilot
-      models = await vscode.lm.selectChatModels({
-        vendor: 'copilot',
-        family: preferredFamily
-      });
-
-      if (models.length === 0) {
-        // Fallback: try any Copilot model
-        models = await vscode.lm.selectChatModels({
-          vendor: 'copilot'
-        });
-        selectionMethod = `fallback (requested ${preferredFamily} not available)`;
-      } else {
-        selectionMethod = `user preference (${preferredFamily})`;
+      // If a specific model was selected by the user, try to find it
+      if (selectedModelId && selectedModelId !== 'auto') {
+        const allModels = await vscode.lm.selectChatModels({});
+        model = allModels.find(m => `${m.vendor}-${m.family}-${allModels.indexOf(m)}` === selectedModelId);
+        if (model) {
+          selectionMethod = `user selected (${model.name})`;
+          this.outputChannel.appendLine(`Using user-selected model: ${model.name} (${model.vendor}, ${model.family})`);
+        }
       }
 
-      // Continue with existing fallback logic if still no models
-      if (models.length === 0) {
-        models = await vscode.lm.selectChatModels({
-          family: preferredFamily
-        });
-        selectionMethod = `any vendor (${preferredFamily})`;
+      // If no specific model was selected or found, use the configuration-based selection
+      if (!model) {
+          vscode.window.showErrorMessage("Unfortunately the selected language model is not available. Please select a different model and try again.");
+          return;
       }
-
-      if (models.length === 0) {
-        models = await vscode.lm.selectChatModels({});
-        selectionMethod = 'any available model';
-      }
-
-      if (models.length === 0) {
-        throw new Error('No language models available');
-      }
-
-      const model = models[0];
-      this.outputChannel.appendLine(`Available models: ${models.map(m => `${m.name} (${m.family})`).join(', ')}`);
-      this.outputChannel.appendLine(`Using language model: ${model.name} (${model.vendor}, ${model.family}) - Selected via: ${selectionMethod}`);
 
       // Read template files and manifest
       const templateContent = await this.readTemplateContent(templatePath);
@@ -260,6 +233,17 @@ export class AIPackageGenerator {
         // Validate variable replacement
         if (processedPath.includes('{{') || processedContent.includes('{{')) {
           this.outputChannel.appendLine(`WARNING: Unreplaced variables found in ${processedPath}`);
+        }
+
+        // Check if this path was already created as a directory
+        try {
+          const stats = await fs.stat(fullPath);
+          if (stats.isDirectory()) {
+            this.outputChannel.appendLine(`ERROR: Cannot create file at ${processedPath} - path already exists as directory`);
+            continue; // Skip this file
+          }
+        } catch (error) {
+          // Path doesn't exist, which is expected - continue with file creation
         }
 
         // Ensure directory exists
