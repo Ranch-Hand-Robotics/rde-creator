@@ -23,6 +23,17 @@ CRITICAL: Follow the directory structure and file organization specified in the 
 CRITICAL: Only include test files if explicitly requested by the user in the test requirements section.
 CRITICAL: Do not include any files not mentioned in the AI directive unless specifically requested.
 CRITICAL: Respond with VALID JSON only. Your response must be parseable as JSON and contain only the package structure.
+CRITICAL: Package.xml must be included in the root of the package and must have the following fields correctly filled out; if not supplied provide a best guess based on the user's natural language description:
+- name
+- version
+- description
+- maintainer
+- license
+- author
+- buildtool_depend
+- depend
+- test_depend (if tests are requested)
+- export
 
 
 ` : ''}## Template Information
