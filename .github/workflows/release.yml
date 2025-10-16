@@ -24,7 +24,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 22.x
+          node-version: 24.x
       - run: npm install
       - name: Build VSIX package
         run: |
@@ -33,7 +33,7 @@ jobs:
       - name: Build Prerelease VSIX package
         if: ${{ github.event.inputs.prerelease == 'true' }}
         run: |
-          vsce package --pre-release -o rde-ros-template-dev.vsix
+          vsce package --pre-release -o rde-creator.vsix
       - name: Create Prerelease
         if: ${{ github.event.inputs.prerelease == 'true'}}
         env:
@@ -45,11 +45,11 @@ jobs:
               --title="Prerelease ${{ github.event.inputs.tags }}" \
               --generate-notes \
               --prerelease \
-              rde-ros-template-dev.vsix
+              rde-creator.vsix
       - name: Build Release VSIX package
         if: ${{ github.event.inputs.prerelease == 'false' }}
         run: |
-          vsce package -o rde-ros-template-dev.vsix
+          vsce package -o rde-creator.vsix
       - name: Create Release
         if: ${{ github.event.inputs.prerelease == 'false' }}
         env:
@@ -60,4 +60,4 @@ jobs:
               --repo="$GITHUB_REPOSITORY" \
               --title="Release ${{ github.event.inputs.tags }}" \
               --generate-notes \
-              rde-ros-template-dev.vsix
+              rde-creator.vsix

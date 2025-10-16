@@ -5,7 +5,7 @@ on:
       - "*.md"
       - "media/documentation/**"
     branches:
-      - master
+      - main
   pull_request:
     paths-ignore:
       - "*.md"
@@ -28,7 +28,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 22.x
+          node-version: 24.x
       - run: npm install
   archive-vsix:
     runs-on: ubuntu-latest
@@ -39,14 +39,14 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 22.x
+          node-version: 24.x
       - run: npm install
       - name: Build VSIX package
         run: |
           npm install @vscode/vsce -g
           npm run build
-          vsce package -o rde-ros-template-dev.vsix
+          vsce package -o rde-creator-dev.vsix
       - uses: actions/upload-artifact@v4
         with:
-          name: rde-ros-template-dev-vsix
-          path: rde-ros-template-dev.vsix
+          name: rde-creator-dev-vsix
+          path: rde-creator-dev.vsix
