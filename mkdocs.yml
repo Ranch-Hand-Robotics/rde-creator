@@ -3,8 +3,13 @@ repo_url: https://github.com/ranch-hand-robotics/rde-ros-template
 edit_uri: edit/master/docs/
 nav:
   - Home: index.md
-  - Usage:
-      - usage.md
+  - User Guide:
+      - Getting Started: index.md
+      - C++ ROS 2 Node: cpp-node.md
+      - Python ROS 2 Node: python-node.md
+      - Node.js ROS 2 Node: nodejs-node.md
+      - Resource Package: resource-package.md
+  - Contributing: ../CONTRIBUTING.md
 
 theme: 
   name: readthedocs

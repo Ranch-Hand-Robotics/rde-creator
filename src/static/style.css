@@ -197,7 +197,7 @@ vscode-panels {
 }
 
 .text-area {
-  resize: vertical;
+  resize: both;
   min-height: 5rem;
   max-width: 100%;
 }

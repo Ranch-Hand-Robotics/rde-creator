@@ -1,66 +1,127 @@
-# Visual Studio Code ROS 2 Template extension
-From the maintainer of the [Visual Studio Code ROS Extension](http://aka.ms/ros/vscode), this extension adds the following fuctions for creating, modifying and maintaining ROS 2 Nodes:
+# ROS 2 Template Creator Extension
 
-* Initialize a ROS 2 workspace on an open folder
-  * `Optional` Set up Dev Containers
-  * `Optional` initialize repos file
-* Create a ROS 2 Node
-  * Create C++, Python, Rust, C# based ROS 2 Node
-  * Initialize from various Node templates including
-    * Basic
-      * `Optional` With Publisher
-      * `Optional` With Subscriber
-      * `Optional` With Action Server
-      * `Optional` With Service
-    * I2C Node
-    * GPIO Node
-    * Joint State Node
-    * `Optional` With Tests
-    * `Optional` With Launch file
-   
-## ROS Node Template Framework
-ROS 2 Node templates are based on [Handlebars.js](https://handlebarsjs.com/).
+An AI-powered Visual Studio Code extension for creating ROS 2 packages from intelligent templates. This extension leverages GitHub Copilot and Language Models to generate complete, functional ROS 2 packages in C++, Python, and Node.js.
 
-## Github Copilot Commenting
-ROS 2 Templates provided by this extension include [Github Copilot](https://github.com/features/copilot/) 'Prompt comments', which assist Copilot in generating appropriate code for the project. 
+## Features
 
+### 🤖 AI-Powered Package Generation
+- **Natural Language Descriptions**: Describe your ROS 2 node in plain English and let AI generate the complete implementation
+- **Template-Based Creation**: Choose from pre-built templates for common ROS 2 patterns
+- **Multi-Language Support**: Generate packages in C++, Python, and Node.js
+- **Intelligent Code Completion**: Templates include GitHub Copilot prompts for enhanced development
 
-## Templates
+### 📦 Available Templates
 
-### Manifest Format
+#### C++ ROS 2 Node ⚡
+High-performance, real-time ROS 2 composable nodes with:
+- Modern C++17+ standards
+- Proper visibility control for Windows/Linux compatibility
+- Component-based architecture with `rclcpp_components`
+- Optional lifecycle management
+- Comprehensive error handling and logging
 
-```yaml
-name: "template friendly name"
-version: 0.0.0
-repo: "http://github.com/..."
-description: A templateMapping package
-maintainers:
-email:
-license: "MIT"
-options:
-  - include_urdf:
-    name: "Include URDF",
-    description: "Include a URDF file in the package",
-    type: "boolean"
+#### Python ROS 2 Node 🐍
+Fast prototyping with rich libraries:
+- Modern Python 3.12+ syntax
+- Async/await patterns for concurrent operations
+- Comprehensive docstrings and type hints
+- Built-in test generation with pytest
 
-  - include_launch: 
-    name: "Include Launch",
-    description: "Include a launch file in the package",
-    type: "boolean"
+#### Node.js ROS 2 Node 🌐
+Web integration and async I/O:
+- Full rclnodejs integration
+- Promise-based asynchronous operations
+- Web-friendly development patterns
+- REST API integration capabilities
 
-  - include_meshes:
-    name: "Include Meshes",
-    description: "Include Meshes in the package",
-    type: "boolean"
+#### Resource Package 📁
+Configuration and asset management:
+- URDF files for robot descriptions
+- Launch configurations
+- Mesh files and assets
+- Configuration files and parameters
 
-  - robot_name:
-    name: "Robot Name",
-    description: "Name of the Robot",
-    type: "string",
-    default: "robot",
-    condition: include_urdf
-file_mapping:
-  - "urdf/robot.urdf":
-      name: "urdf/{robot_name}.urdf",
-      condition: include_urdf
-```
+## Quick Start
+
+### Installation
+1. Install the extension from the VS Code marketplace
+2. Ensure you have ROS 2 installed and sourced
+3. Install GitHub Copilot Chat extension for AI-powered generation
+
+### Creating Your First Package
+
+1. **Open Command Palette** (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+2. **Run Command**: "ROS 2: Create Package"
+3. **Choose Template**: Select from C++, Python, Node.js, or Resource templates
+4. **Configure Options**: Set package metadata and features
+5. **AI Generation** (Optional): Describe your node functionality in natural language
+6. **Generate**: The extension creates a complete, buildable ROS 2 package
+
+### Alternative: Context Menu Creation
+- **Right-click** in the Explorer panel on any folder
+- **Select**: "Create ROS 2 Package Here"
+- **Follow the same configuration steps**
+
+## Template Details
+
+### C++ Template Features
+- **Composable Nodes**: Full `rclcpp_components` support
+- **Visibility Control**: Cross-platform symbol visibility management
+- **Lifecycle Support**: Optional `rclcpp_lifecycle` integration
+- **Modern CMake**: Automatic ROS distribution detection
+- **Testing**: Integrated gtest framework with proper discovery
+
+### Python Template Features
+- **Async Support**: Native asyncio integration
+- **Type Hints**: Full type annotation support
+- **Testing**: pytest integration with ROS 2 fixtures
+- **Documentation**: Auto-generated docstrings
+
+### Node.js Template Features
+- **Promise-Based**: Modern async/await patterns
+- **Web Integration**: HTTP server capabilities
+- **Testing**: Jest integration with ROS 2 mocks
+
+## Development Workflow
+
+1. **Generate Package**: Use the extension to create your initial package structure
+2. **Customize**: Modify generated code to fit your specific requirements
+3. **Build & Test**: Use standard ROS 2 tools (`colcon build`, `colcon test`)
+4. **Iterate**: Leverage GitHub Copilot for code enhancements and debugging
+
+## Requirements
+
+- **VS Code**: Latest version recommended
+- **ROS 2**: Humble, Iron, Jazzy, or Kilted
+- **GitHub Copilot**: For AI-powered generation (optional but recommended)
+- **Node.js**: For the extension itself (comes with VS Code)
+
+## Troubleshooting
+
+### Common Issues
+
+**"Language Model API not available"**
+- Ensure GitHub Copilot Chat extension is installed and active
+- Check that you have a valid GitHub Copilot subscription
+
+**"Template generation failed"**
+- Verify ROS 2 environment is properly sourced
+- Check that target directory is writable
+- Ensure template manifests are valid
+
+**"Build failures after generation"**
+- Verify all ROS 2 dependencies are installed
+- Check that generated CMakeLists.txt matches your ROS distribution
+- Ensure visibility control headers are properly configured
+
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
+- Adding new templates
+- Modifying existing templates
+- Testing and validation
+- Code style guidelines
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details

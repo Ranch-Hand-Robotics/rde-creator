@@ -1,52 +1,204 @@
-# Welcome to your VS Code Extension
+# Contributing to ROS 2 Template Creator
 
-This extension uses React for the webview UI components, providing a modern and maintainable interface for creating ROS 2 packages.
+Thank you for your interest in contributing to the ROS 2 Template Creator extension! This document provides guidelines for contributors.
 
-## What's in the folder
+## Development Setup
 
-* This folder contains all of the files necessary for your extension.
-* `package.json` - this is the manifest file in which you declare your extension and command.
-  * The sample plugin registers a command and defines its title and command name. With this information VS Code can show the command in the command palette. It doesn't yet need to load the plugin.
-* `src/extension.ts` - this is the main file where you will provide the implementation of your command.
-  * The file exports one function, `activate`, which is called the very first time your extension is activated (in this case by executing the command). Inside the `activate` function we call `registerCommand`.
-  * We pass the function containing the implementation of the command as the second parameter to `registerCommand`.
-* `src/webview/webview.tsx` - this is the React-based webview implementation that provides the UI for creating ROS 2 packages.
-* `src/CreateNodePanel.ts` - handles the VS Code webview panel creation and communication with the React webview.
+### Prerequisites
+- Node.js 18+ and npm
+- VS Code with extension development dependencies
+- ROS 2 (any supported distribution)
+- GitHub Copilot (recommended for testing AI features)
 
-## Setup
+### Getting Started
+1. Fork and clone the repository
+2. Install dependencies: `npm install`
+3. Open in VS Code
+4. Run `npm run watch` to start development mode
+5. Press `F5` to launch extension development host
 
-* install the recommended extensions (amodio.tsl-problem-matcher, ms-vscode.extension-test-runner, and dbaeumer.vscode-eslint)
+## Architecture Overview
 
+The extension uses a React-based webview for the UI and TypeScript for the backend. Key components:
 
-## Get up and running straight away
+- `src/extension.ts`: Main extension entry point
+- `src/CreateNodePanel.ts`: Webview panel management
+- `src/AIPackageGenerator.ts`: AI-powered package generation
+- `src/webview/webview.tsx`: React UI components
+- `src/templates/`: Template definitions and manifests
 
-* Press `F5` to open a new window with your extension loaded.
-* Run your command from the command palette by pressing (`Ctrl+Shift+P` or `Cmd+Shift+P` on Mac) and typing `Hello World`.
-* Set breakpoints in your code inside `src/extension.ts` to debug your extension.
-* Find output from your extension in the debug console.
+## Adding New Templates
 
-## Make changes
+### Template Structure
 
-* You can relaunch the extension from the debug toolbar after changing code in `src/extension.ts`.
-* You can also reload (`Ctrl+R` or `Cmd+R` on Mac) the VS Code window with your extension to load your changes.
+Templates are located in `src/templates/` and consist of:
+- `manifest.yaml`: Template metadata and AI directives
+- Template files (optional): Reference implementations
 
+### Manifest Format
 
-## Explore the API
+```yaml
+name: "Template Display Name"
+version: 0.0.0
+description: "Detailed description of what this template creates"
+license: "MIT"
+icon: "🔧"  # Emoji icon for UI
+short_description: "Brief tagline"
+ai_directive: |
+  HIGH PRIORITY REQUIREMENTS:
+  - Specific instructions for AI generation
+  - Code structure requirements
+  - Best practices to follow
+  - Language-specific guidelines
 
-* You can open the full set of our API when you open the file `node_modules/@types/vscode/index.d.ts`.
+  # Include concrete code examples
+  REQUIRED CODE STRUCTURE EXAMPLE:
+  ```language
+  // Example code showing expected structure
+  ```
 
-## Run tests
+  # File organization
+  Code Layout:
+  package_name/
+  ├── required_file.ext
+  └── directory/
+      └── another_file.ext
+```
 
-* Install the [Extension Test Runner](https://marketplace.visualstudio.com/items?itemName=ms-vscode.extension-test-runner)
-* Run the "watch" task via the **Tasks: Run Task** command. Make sure this is running, or tests might not be discovered.
-* Open the Testing view from the activity bar and click the Run Test" button, or use the hotkey `Ctrl/Cmd + ; A`
-* See the output of the test result in the Test Results view.
-* Make changes to `src/test/extension.test.ts` or create new test files inside the `test` folder.
-  * The provided test runner will only consider files matching the name pattern `**.test.ts`.
-  * You can create folders inside the `test` folder to structure your tests any way you want.
+### Manifest Fields
 
-## Go further
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Display name shown in UI |
+| `version` | Yes | Template version |
+| `description` | Yes | Detailed description |
+| `license` | Yes | SPDX license identifier |
+| `icon` | Yes | Emoji icon for visual identification |
+| `short_description` | Yes | Brief tagline (under 50 chars) |
+| `ai_directive` | Yes | Instructions for AI code generation |
 
-* Reduce the extension size and improve the startup time by [bundling your extension](https://code.visualstudio.com/api/working-with-extensions/bundling-extension).
-* [Publish your extension](https://code.visualstudio.com/api/working-with-extensions/publishing-extension) on the VS Code extension marketplace.
-* Automate builds by setting up [Continuous Integration](https://code.visualstudio.com/api/working-with-extensions/continuous-integration).
+### AI Directive Best Practices
+
+1. **Be Specific**: Provide concrete code examples, not just descriptions
+2. **Include Structure**: Show exact file layouts and class hierarchies
+3. **Language Standards**: Specify version requirements (C++17+, Python 3.12+)
+4. **ROS 2 Patterns**: Include proper node lifecycle, error handling, logging
+5. **Cross-Platform**: Address Windows, Linux, macOS compatibility
+6. **Testing**: Include test generation guidelines when applicable
+
+### Template Validation
+
+Before submitting:
+1. Test template generation with various parameter combinations
+2. Verify generated code compiles and runs
+3. Check that tests pass (if included)
+4. Validate manifest YAML syntax
+5. Ensure AI directives produce consistent results
+
+### Example: Adding a C++ Template
+
+1. Create `src/templates/my_cpp_template/manifest.yaml`
+2. Define comprehensive AI directive with code examples
+3. Test generation with different configurations
+4. Update documentation
+
+## Code Style Guidelines
+
+### TypeScript
+- Use TypeScript strict mode
+- Prefer `const` over `let`
+- Use async/await over Promises
+- Include JSDoc comments for public APIs
+
+### React Components
+- Use functional components with hooks
+- Follow React best practices
+- Include PropTypes for component props
+- Use TypeScript interfaces for complex props
+
+### Error Handling
+- Use try/catch for async operations
+- Provide meaningful error messages
+- Log errors appropriately
+- Handle edge cases gracefully
+
+## Testing
+
+### Unit Tests
+- Located in `test/` directory
+- Use Mocha test framework
+- Run with `npm test`
+- Cover critical paths and error conditions
+
+### Integration Testing
+- Test template generation end-to-end
+- Verify generated packages build successfully
+- Test AI generation with various prompts
+
+### Manual Testing
+- Test in extension development host
+- Verify UI interactions
+- Test with different ROS 2 distributions
+- Validate generated code quality
+
+## Pull Request Process
+
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/your-feature`
+3. **Make** your changes following the guidelines above
+4. **Test** thoroughly (unit tests, integration tests, manual testing)
+5. **Update** documentation as needed
+6. **Commit** with clear, descriptive messages
+7. **Push** to your fork
+8. **Create** a Pull Request with:
+   - Clear title and description
+   - Reference to any related issues
+   - Screenshots/videos for UI changes
+   - Test results
+
+## Documentation
+
+### Updating Docs
+- User-facing docs: `docs/` directory (MkDocs format)
+- API docs: JSDoc comments in code
+- Template docs: Update relevant template documentation
+
+### Building Docs
+```bash
+# Install MkDocs if not already installed
+pip install mkdocs mkdocs-material
+
+# Serve docs locally
+mkdocs serve
+
+# Build docs
+mkdocs build
+```
+
+## Release Process
+
+### Version Bumping
+- Update `package.json` version
+- Update template versions in manifests
+- Update changelog
+
+### Publishing
+- Run full test suite
+- Build production extension: `npm run package`
+- Publish to VS Code marketplace
+- Create GitHub release
+
+## Community
+
+- **Issues**: Use GitHub issues for bugs and feature requests
+- **Discussions**: Use GitHub discussions for questions and ideas
+- **Code of Conduct**: Follow our community guidelines
+
+## Recognition
+
+Contributors will be recognized in:
+- CHANGELOG.md for significant contributions
+- GitHub repository contributors list
+- Release notes
+
+Thank you for contributing to the ROS 2 Template Creator!

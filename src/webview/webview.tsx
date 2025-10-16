@@ -169,7 +169,7 @@ const App: React.FC = () => {
     <div id="create_package_page">
       <div className="header-bar">
         <h1>🤖 AI-Powered ROS 2 Package Generator</h1>
-        <p className="subtitle">Describe your package and let AI generate production-ready ROS 2 code</p>
+        <p className="subtitle">Describe your package and let AI bootstrap ROS 2 packages</p>
       </div>
       
       <div className="main-content">

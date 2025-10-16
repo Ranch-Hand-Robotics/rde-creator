@@ -121,7 +121,15 @@ ai_directive: |
   #define MY_LIB_LOCAL
   #else
   // Linux visibility settings
+  #define MY_LIB_EXPORT __attribute__ ((visibility("default")))
+  #define MY_LIB_IMPORT
+  #ifdef MY_LIB_BUILDING_LIBRARY
+    #define MY_LIB_PUBLIC MY_LIB_EXPORT
+  #else
+    #define MY_LIB_PUBLIC MY_LIB_IMPORT
+  #endif
   #define MY_LIB_PUBLIC_TYPE
+  #define MY_LIB_LOCAL __attribute__ ((visibility("hidden")))
   #endif
   #endif  // MY_LIB__VISIBILITY_CONTROL_H_
   ```
@@ -161,7 +169,7 @@ ai_directive: |
       VERSION {{package_version}}
       SOVERSION 0
     )
-    target_compile_definitions(${PROJECT_NAME} PRIVATE "MY_LIB_BUILDING_LIBRARY")
+    target_compile_definitions({{node_name}}_component PRIVATE "MY_LIB_BUILDING_LIBRARY")
     set_target_properties(${LIB_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
     # Link dependencies
@@ -247,6 +255,7 @@ ai_directive: |
           # Modern CMake approach for ROS 2 Iron, Jazzy, Kilted and later
         # Modern CMake approach (support_humble disabled)
           target_link_libraries(test_{{package_name}}_node
+            {{node_name}}_component
             ${{std_msgs_TARGETS}}
             rclcpp::rclcpp
             rclcpp_components::component
