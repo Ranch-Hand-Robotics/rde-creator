@@ -2,10 +2,8 @@ site_name: Robot Developer Extensions for Creating ROS 2 Packages
 repo_url: https://github.com/ranch-hand-robotics/rde-creator
 edit_uri: edit/master/docs/
 nav:
-  - Home: index.md
-  - User Guide:
-      - Getting Started: index.md
-      - C++ ROS 2 Package: cpp-package.md
+  - Getting Started: index.md
+  - C++ ROS 2 Package: cpp-package.md
       - Python ROS 2 Package: python-package.md
       - Node.js ROS 2 Package: nodejs-package.md
       - Resource Package: resource-package.md
