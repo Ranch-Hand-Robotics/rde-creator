@@ -1,6 +1,6 @@
-# Node.js ROS 2 Node Template
+# Node.js ROS 2 Package Template
 
-The Node.js ROS 2 Node template generates ROS 2 nodes using the `rclnodejs` library, enabling web integration and asynchronous operations in JavaScript/TypeScript.
+The Node.js ROS 2 Package template generates ROS 2 nodes using the `rclnodejs` library, enabling web integration and asynchronous operations in JavaScript/TypeScript.
 
 ## Overview
 
@@ -905,6 +905,7 @@ Key differences when migrating from ROS 1 JavaScript nodes:
 ## Contributing
 
 To improve the Node.js template:
+
 1. Add more web integration examples
 2. Include additional testing patterns
 3. Enhance TypeScript support

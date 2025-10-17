@@ -1,6 +1,6 @@
-# Python ROS 2 Node Template
+# Python ROS 2 Package Template
 
-The Python ROS 2 Node template generates flexible, prototype-friendly ROS 2 nodes using modern Python practices and the `rclpy` library.
+The Python ROS 2 Package template generates flexible, prototype-friendly ROS 2 nodes using modern Python practices and the `rclpy` library.
 
 ## Overview
 
@@ -505,6 +505,7 @@ Key differences when migrating from ROS 1 Python nodes:
 ## Contributing
 
 To improve the Python template:
+
 1. Add more async operation examples
 2. Include additional testing patterns
 3. Enhance type hint coverage

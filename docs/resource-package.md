@@ -698,6 +698,7 @@ Key differences when migrating resource packages:
 ## Contributing
 
 To improve the resource template:
+
 1. Add more URDF examples for different robot types
 2. Include additional launch file patterns
 3. Add more RViz configuration examples

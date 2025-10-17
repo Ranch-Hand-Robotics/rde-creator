@@ -5,10 +5,11 @@ nav:
   - Home: index.md
   - User Guide:
       - Getting Started: index.md
-      - C++ ROS 2 Node: cpp-node.md
-      - Python ROS 2 Node: python-node.md
-      - Node.js ROS 2 Node: nodejs-node.md
+      - C++ ROS 2 Package: cpp-package.md
+      - Python ROS 2 Package: python-package.md
+      - Node.js ROS 2 Package: nodejs-package.md
       - Resource Package: resource-package.md
+      - Troubleshooting: troubleshooting.md
   - Contributing: CONTRIBUTING.md
 
 theme: 

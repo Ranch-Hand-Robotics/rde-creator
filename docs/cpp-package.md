@@ -1,10 +1,11 @@
-# C++ ROS 2 Node Template
+# C++ ROS 2 Package Template
 
-The C++ ROS 2 Node template generates high-performance, composable ROS 2 nodes using modern C++ standards and best practices.
+The C++ ROS 2 Package template generates high-performance, composable ROS 2 nodes using modern C++ standards and best practices.
 
 ## Overview
 
 This template creates production-ready ROS 2 nodes with:
+
 - **Modern C++**: C++17+ features with RAII principles
 - **Component Architecture**: Full `rclcpp_components` support
 - **Cross-Platform**: Windows, Linux, and macOS compatibility
@@ -16,7 +17,7 @@ This template creates production-ready ROS 2 nodes with:
 
 ```
 your_package/
-├── CMakeLists.txt                 # Modern CMake with ROS distro detection
+├── CMakeLists.txt                 # Modern Cmake with ROS distro detection
 ├── package.xml                    # ROS 2 package manifest
 ├── README.md                      # Package documentation
 ├── CONTRIBUTING.md               # Development guidelines
@@ -261,6 +262,7 @@ If migrating from ROS 1 C++ nodes:
 ## Contributing
 
 To improve this template:
+
 1. Test with different ROS 2 distributions
 2. Verify cross-platform compatibility
 3. Add performance benchmarks

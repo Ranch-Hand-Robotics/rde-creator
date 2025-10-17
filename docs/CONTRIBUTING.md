@@ -5,7 +5,7 @@ Thank you for your interest in contributing to the ROS 2 Template Creator extens
 ## Development Setup
 
 ### Prerequisites
-- Node.js 18+ and npm
+- Node.js 24+ and npm
 - VS Code with extension development dependencies
 - ROS 2 (any supported distribution)
 - GitHub Copilot (recommended for testing AI features)
@@ -53,9 +53,9 @@ ai_directive: |
 
   # Include concrete code examples
   REQUIRED CODE STRUCTURE EXAMPLE:
-  ```language
+  &grave;&grave;&grave;language
   // Example code showing expected structure
-  ```
+  &grave;&grave;&grave;
 
   # File organization
   Code Layout:
@@ -63,6 +63,7 @@ ai_directive: |
   ├── required_file.ext
   └── directory/
       └── another_file.ext
+
 ```
 
 ### Manifest Fields
