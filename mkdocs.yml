@@ -1,5 +1,5 @@
 site_name: Robot Developer Extensions for Creating ROS 2 Packages
-repo_url: https://github.com/ranch-hand-robotics/rde-ros-template
+repo_url: https://github.com/ranch-hand-robotics/rde-creator
 edit_uri: edit/master/docs/
 nav:
   - Home: index.md
