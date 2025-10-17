@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>C++ ROS 2 Package - Robot Developer Extensions for Creating ROS 2 Packages</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "C++ ROS 2 Package";
+        var mkdocs_page_input_path = "cpp-package.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> Robot Developer Extensions for Creating ROS 2 Packages
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="index.html">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="index.html">Home</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">C++ ROS 2 Package</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#generated-structure">Generated Structure</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#key-features">Key Features</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#component-based-architecture">Component-Based Architecture</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#visibility-control">Visibility Control</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#modern-cmake">Modern CMake</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage-examples">Usage Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#basic-publisher-node">Basic Publisher Node</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#service-server">Service Server</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration-options">Configuration Options</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#lifecycle-support">Lifecycle Support</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#communication-patterns">Communication Patterns</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#building-and-testing">Building and Testing</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#build-process">Build Process</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#running-tests">Running Tests</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#component-loading">Component Loading</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#performance-optimization">Performance Optimization</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#error-handling">Error Handling</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#thread-safety">Thread Safety</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#common-issues">Common Issues</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#visibility-errors">Visibility Errors</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#component-not-found">Component Not Found</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#test-discovery-fails">Test Discovery Fails</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#debug-tips">Debug Tips</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#advanced-usage">Advanced Usage</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#custom-message-types">Custom Message Types</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#parameter-management">Parameter Management</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#lifecycle-integration">Lifecycle Integration</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#migration-from-ros-1">Migration from ROS 1</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#contributing">Contributing</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="python-package.html">Python ROS 2 Package</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="nodejs-package.html">Node.js ROS 2 Package</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="resource-package.html">Resource Package</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">Robot Developer Extensions for Creating ROS 2 Packages</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">User Guide</li>
+      <li class="breadcrumb-item active">C++ ROS 2 Package</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/ranch-hand-robotics/rde-creator/edit/master/docs/cpp-package.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="c-ros-2-package-template">C++ ROS 2 Package Template</h1>
+<p>The C++ ROS 2 Package template generates high-performance, composable ROS 2 nodes using modern C++ standards and best practices.</p>
+<h2 id="overview">Overview</h2>
+<p>This template creates production-ready ROS 2 nodes with:</p>
+<ul>
+<li><strong>Modern C++</strong>: C++17+ features with RAII principles</li>
+<li><strong>Component Architecture</strong>: Full <code>rclcpp_components</code> support</li>
+<li><strong>Cross-Platform</strong>: Windows, Linux, and macOS compatibility</li>
+<li><strong>Lifecycle Management</strong>: Optional <code>rclcpp_lifecycle</code> integration</li>
+<li><strong>Testing</strong>: Integrated gtest framework</li>
+<li><strong>Visibility Control</strong>: Proper symbol visibility management</li>
+</ul>
+<h2 id="generated-structure">Generated Structure</h2>
+<div class="highlight"><pre><span></span><code>your_package/
+├── CMakeLists.txt                 # Modern Cmake with ROS distro detection
+├── package.xml                    # ROS 2 package manifest
+├── README.md                      # Package documentation
+├── CONTRIBUTING.md               # Development guidelines
+├── Agents.md                      # AI interaction guide
+├── include/
+│   └── your_package/
+│       ├── your_package.hpp       # Main node header
+│       └── your_package_visibility_control.h  # Visibility macros
+├── src/
+│   ├── your_package.cpp           # Main node implementation
+│   └── your_package_component.cpp # Component registration
+├── launch/
+│   └── your_package_node.launch.py # Launch configuration
+├── resource/
+│   └── your_package               # Ament index resource
+└── test/
+    └── test_your_package.cpp      # Unit tests
+</code></pre></div>
+<h2 id="key-features">Key Features</h2>
+<h3 id="component-based-architecture">Component-Based Architecture</h3>
+<p>Generated nodes are fully composable:
+<div class="highlight"><pre><span></span><code><span class="c1">// Component registration</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;rclcpp_components/register_node_macro.hpp&quot;</span>
+<span class="n">RCLCPP_COMPONENTS_REGISTER_NODE</span><span class="p">(</span><span class="n">your_package</span><span class="o">::</span><span class="n">YourPackageNode</span><span class="p">);</span>
+</code></pre></div></p>
+<h3 id="visibility-control">Visibility Control</h3>
+<p>Cross-platform symbol visibility management:
+<div class="highlight"><pre><span></span><code><span class="c1">// Visibility control header</span>
+<span class="cp">#ifndef YOUR_PACKAGE__VISIBILITY_CONTROL_H_</span>
+<span class="cp">#define YOUR_PACKAGE__VISIBILITY_CONTROL_H_</span>
+
+<span class="c1">// Platform-specific visibility macros</span>
+<span class="cp">#endif</span>
+
+<span class="c1">// Class declaration</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">YOUR_PACKAGE_PUBLIC</span><span class="w"> </span><span class="n">YourPackageNode</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">rclcpp</span><span class="o">::</span><span class="n">Node</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// ...</span>
+<span class="p">};</span>
+</code></pre></div></p>
+<h3 id="modern-cmake">Modern CMake</h3>
+<p>Automatic ROS distribution detection:
+<div class="highlight"><pre><span></span><code><span class="c"># Runtime ROS distro detection</span>
+<span class="nb">set</span><span class="p">(</span><span class="s">ROS_DISTRO</span><span class="w"> </span><span class="o">$ENV{</span><span class="nv">ROS_DISTRO</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">if</span><span class="p">(</span><span class="s">ROS_DISTRO</span><span class="w"> </span><span class="s">STREQUAL</span><span class="w"> </span><span class="s2">&quot;humble&quot;</span><span class="w"> </span><span class="s">OR</span><span class="w"> </span><span class="s">ROS_DISTRO</span><span class="w"> </span><span class="s">STREQUAL</span><span class="w"> </span><span class="s2">&quot;galactic&quot;</span><span class="w"> </span><span class="s">OR</span><span class="w"> </span><span class="s">ROS_DISTRO</span><span class="w"> </span><span class="s">STREQUAL</span><span class="w"> </span><span class="s2">&quot;foxy&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="c"># Legacy ament_target_dependencies approach</span>
+<span class="w">  </span><span class="nb">ament_target_dependencies</span><span class="p">(</span><span class="s">your_package_component</span><span class="w"> </span><span class="s">rclcpp</span><span class="w"> </span><span class="s">rclcpp_components</span><span class="p">)</span>
+<span class="nb">else</span><span class="p">()</span>
+<span class="w">  </span><span class="c"># Modern target_link_libraries approach</span>
+<span class="w">  </span><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">your_package_component</span><span class="w"> </span><span class="s">PUBLIC</span><span class="w"> </span><span class="s">rclcpp::rclcpp</span><span class="p">)</span>
+<span class="nb">endif</span><span class="p">()</span>
+</code></pre></div></p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-publisher-node">Basic Publisher Node</h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PublisherNode</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">rclcpp</span><span class="o">::</span><span class="n">Node</span><span class="w"> </span><span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="n">PublisherNode</span><span class="p">()</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Node</span><span class="p">(</span><span class="s">&quot;publisher_node&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">publisher_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_publisher</span><span class="o">&lt;</span><span class="n">std_msgs</span><span class="o">::</span><span class="n">msg</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;topic&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">);</span>
+<span class="w">    </span><span class="n">timer_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_wall_timer</span><span class="p">(</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">milliseconds</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">bind</span><span class="p">(</span><span class="o">&amp;</span><span class="n">PublisherNode</span><span class="o">::</span><span class="n">timer_callback</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">));</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">timer_callback</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std_msgs</span><span class="o">::</span><span class="n">msg</span><span class="o">::</span><span class="n">String</span><span class="p">();</span>
+<span class="w">    </span><span class="n">message</span><span class="p">.</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Hello, ROS 2!&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="n">RCLCPP_INFO</span><span class="p">(</span><span class="n">get_logger</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;Publishing: &#39;%s&#39;&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">message</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+<span class="w">    </span><span class="n">publisher_</span><span class="o">-&gt;</span><span class="n">publish</span><span class="p">(</span><span class="n">message</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">rclcpp</span><span class="o">::</span><span class="n">Publisher</span><span class="o">&lt;</span><span class="n">std_msgs</span><span class="o">::</span><span class="n">msg</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;::</span><span class="n">SharedPtr</span><span class="w"> </span><span class="n">publisher_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">rclcpp</span><span class="o">::</span><span class="n">TimerBase</span><span class="o">::</span><span class="n">SharedPtr</span><span class="w"> </span><span class="n">timer_</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+<h3 id="service-server">Service Server</h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServiceNode</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">rclcpp</span><span class="o">::</span><span class="n">Node</span><span class="w"> </span><span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="n">ServiceNode</span><span class="p">()</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Node</span><span class="p">(</span><span class="s">&quot;service_node&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">service_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_service</span><span class="o">&lt;</span><span class="n">example_interfaces</span><span class="o">::</span><span class="n">srv</span><span class="o">::</span><span class="n">AddTwoInts</span><span class="o">&gt;</span><span class="p">(</span>
+<span class="w">      </span><span class="s">&quot;add_two_ints&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">bind</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ServiceNode</span><span class="o">::</span><span class="n">handle_service</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">_1</span><span class="p">,</span><span class="w"> </span><span class="n">_2</span><span class="p">,</span><span class="w"> </span><span class="n">_3</span><span class="p">));</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">handle_service</span><span class="p">(</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">rmw_request_id_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">request_header</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">example_interfaces</span><span class="o">::</span><span class="n">srv</span><span class="o">::</span><span class="n">AddTwoInts</span><span class="o">::</span><span class="n">Request</span><span class="o">&gt;</span><span class="w"> </span><span class="n">request</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">example_interfaces</span><span class="o">::</span><span class="n">srv</span><span class="o">::</span><span class="n">AddTwoInts</span><span class="o">::</span><span class="n">Response</span><span class="o">&gt;</span><span class="w"> </span><span class="n">response</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="n">response</span><span class="o">-&gt;</span><span class="n">sum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">request</span><span class="o">-&gt;</span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">request</span><span class="o">-&gt;</span><span class="n">b</span><span class="p">;</span>
+<span class="w">    </span><span class="n">RCLCPP_INFO</span><span class="p">(</span><span class="n">get_logger</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;Incoming request: %ld + %ld = %ld&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="n">request</span><span class="o">-&gt;</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">request</span><span class="o">-&gt;</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">response</span><span class="o">-&gt;</span><span class="n">sum</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">rclcpp</span><span class="o">::</span><span class="n">Service</span><span class="o">&lt;</span><span class="n">example_interfaces</span><span class="o">::</span><span class="n">srv</span><span class="o">::</span><span class="n">AddTwoInts</span><span class="o">&gt;::</span><span class="n">SharedPtr</span><span class="w"> </span><span class="n">service_</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+<h2 id="configuration-options">Configuration Options</h2>
+<h3 id="lifecycle-support">Lifecycle Support</h3>
+<p>Enable lifecycle management for nodes that need state transitions:
+- <strong>Configure</strong>: Parameter validation and resource allocation
+- <strong>Activate</strong>: Start publishing/subscribing
+- <strong>Deactivate</strong>: Pause operations
+- <strong>Cleanup</strong>: Release resources
+- <strong>Shutdown</strong>: Final cleanup</p>
+<h3 id="communication-patterns">Communication Patterns</h3>
+<ul>
+<li><strong>Publishers</strong>: Data broadcasting</li>
+<li><strong>Subscribers</strong>: Data reception with callbacks</li>
+<li><strong>Services</strong>: Request-response communication</li>
+<li><strong>Actions</strong>: Long-running task coordination</li>
+<li><strong>Parameters</strong>: Dynamic configuration</li>
+</ul>
+<h2 id="building-and-testing">Building and Testing</h2>
+<h3 id="build-process">Build Process</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Standard colcon build</span>
+colcon<span class="w"> </span>build<span class="w"> </span>--packages-select<span class="w"> </span>your_package
+
+<span class="c1"># With tests</span>
+colcon<span class="w"> </span>build<span class="w"> </span>--packages-select<span class="w"> </span>your_package<span class="w"> </span>--cmake-args<span class="w"> </span>-DBUILD_TESTING<span class="o">=</span>ON
+</code></pre></div>
+<h3 id="running-tests">Running Tests</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Run tests</span>
+colcon<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--packages-select<span class="w"> </span>your_package
+
+<span class="c1"># View results</span>
+colcon<span class="w"> </span>test-result<span class="w"> </span>--verbose
+</code></pre></div>
+<h3 id="component-loading">Component Loading</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Load component at runtime</span>
+ros2<span class="w"> </span>component<span class="w"> </span>load<span class="w"> </span>/ComponentManager<span class="w"> </span>your_package<span class="w"> </span>YourPackageNode
+</code></pre></div>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="performance-optimization">Performance Optimization</h3>
+<ul>
+<li>Use appropriate QoS settings for your use case</li>
+<li>Minimize dynamic memory allocation in hot paths</li>
+<li>Use <code>std::chrono</code> for timing instead of deprecated methods</li>
+<li>Leverage C++17 features like <code>constexpr</code> and <code>if constexpr</code></li>
+</ul>
+<h3 id="error-handling">Error Handling</h3>
+<ul>
+<li>Use ROS 2 logging macros (<code>RCLCPP_*</code>)</li>
+<li>Check return values from ROS 2 APIs</li>
+<li>Implement proper exception safety</li>
+<li>Provide meaningful error messages</li>
+</ul>
+<h3 id="thread-safety">Thread Safety</h3>
+<ul>
+<li>ROS 2 nodes are generally single-threaded</li>
+<li>Use mutexes for shared data access</li>
+<li>Consider using <code>rclcpp::executors::MultiThreadedExecutor</code> for concurrent operations</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<h4 id="visibility-errors">Visibility Errors</h4>
+<p><strong>Symptoms:</strong> Linker errors about missing symbols
+<strong>Solution:</strong> Ensure <code>YOUR_PACKAGE_BUILDING_LIBRARY</code> is defined in CMakeLists.txt</p>
+<h4 id="component-not-found">Component Not Found</h4>
+<p><strong>Symptoms:</strong> <code>ros2 component list</code> doesn't show your component
+<strong>Solution:</strong> Check that <code>RCLCPP_COMPONENTS_REGISTER_NODE</code> is called and library is installed</p>
+<h4 id="test-discovery-fails">Test Discovery Fails</h4>
+<p><strong>Symptoms:</strong> Tests not found by <code>colcon test</code>
+<strong>Solution:</strong> Ensure test files contain proper <code>TEST()</code> or <code>TEST_F()</code> macros</p>
+<h3 id="debug-tips">Debug Tips</h3>
+<ul>
+<li>Use <code>RCLCPP_DEBUG</code> for detailed logging</li>
+<li>Enable ROS 2 debug logging: <code>ros2 run your_package your_node --ros-args --log-level debug</code></li>
+<li>Use <code>gdb</code> or <code>lldb</code> for native debugging</li>
+<li>Check component loading with verbose output</li>
+</ul>
+<h2 id="advanced-usage">Advanced Usage</h2>
+<h3 id="custom-message-types">Custom Message Types</h3>
+<p>Add custom message dependencies to <code>package.xml</code> and <code>CMakeLists.txt</code>:
+<div class="highlight"><pre><span></span><code><span class="cm">&lt;!-- package.xml --&gt;</span>
+<span class="nt">&lt;depend&gt;</span>your_custom_msgs<span class="nt">&lt;/depend&gt;</span>
+</code></pre></div></p>
+<div class="highlight"><pre><span></span><code><span class="c"># CMakeLists.txt</span>
+<span class="nb">find_package</span><span class="p">(</span><span class="s">your_custom_msgs</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
+<span class="nb">ament_target_dependencies</span><span class="p">(</span><span class="s">your_package_component</span><span class="w"> </span><span class="s">your_custom_msgs</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="parameter-management">Parameter Management</h3>
+<div class="highlight"><pre><span></span><code><span class="c1">// Declare parameters</span>
+<span class="n">declare_parameter</span><span class="p">(</span><span class="s">&quot;rate&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">10.0</span><span class="p">);</span>
+<span class="n">declare_parameter</span><span class="p">(</span><span class="s">&quot;topic_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;default_topic&quot;</span><span class="p">);</span>
+
+<span class="c1">// Use parameters</span>
+<span class="kt">double</span><span class="w"> </span><span class="n">rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_parameter</span><span class="p">(</span><span class="s">&quot;rate&quot;</span><span class="p">).</span><span class="n">as_double</span><span class="p">();</span>
+<span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">topic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_parameter</span><span class="p">(</span><span class="s">&quot;topic_name&quot;</span><span class="p">).</span><span class="n">as_string</span><span class="p">();</span>
+</code></pre></div>
+<h3 id="lifecycle-integration">Lifecycle Integration</h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LifecycleNode</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">rclcpp_lifecycle</span><span class="o">::</span><span class="n">LifecycleNode</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Implement lifecycle callbacks</span>
+<span class="w">  </span><span class="n">LifecycleNodeReturn</span><span class="w"> </span><span class="nf">on_configure</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">rclcpp_lifecycle</span><span class="o">::</span><span class="n">State</span><span class="w"> </span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">  </span><span class="n">LifecycleNodeReturn</span><span class="w"> </span><span class="nf">on_activate</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">rclcpp_lifecycle</span><span class="o">::</span><span class="n">State</span><span class="w"> </span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">  </span><span class="n">LifecycleNodeReturn</span><span class="w"> </span><span class="nf">on_deactivate</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">rclcpp_lifecycle</span><span class="o">::</span><span class="n">State</span><span class="w"> </span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">  </span><span class="n">LifecycleNodeReturn</span><span class="w"> </span><span class="nf">on_cleanup</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">rclcpp_lifecycle</span><span class="o">::</span><span class="n">State</span><span class="w"> </span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">  </span><span class="n">LifecycleNodeReturn</span><span class="w"> </span><span class="nf">on_shutdown</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">rclcpp_lifecycle</span><span class="o">::</span><span class="n">State</span><span class="w"> </span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+<h2 id="migration-from-ros-1">Migration from ROS 1</h2>
+<p>If migrating from ROS 1 C++ nodes:
+- Replace <code>ros::init()</code> with <code>rclcpp::init()</code>
+- Use <code>rclcpp::Node</code> instead of <code>ros::NodeHandle</code>
+- Replace ROS 1 message types with ROS 2 equivalents
+- Update CMakeLists.txt to use <code>ament_cmake</code>
+- Use modern C++ features and smart pointers</p>
+<h2 id="contributing">Contributing</h2>
+<p>To improve this template:</p>
+<ol>
+<li>Test with different ROS 2 distributions</li>
+<li>Verify cross-platform compatibility</li>
+<li>Add performance benchmarks</li>
+<li>Include more communication pattern examples</li>
+<li>Enhance error handling and logging</li>
+</ol>
+<p>See the <a href="CONTRIBUTING.html">contributing guide</a> for details on modifying templates.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="index.html" class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="python-package.html" class="btn btn-neutral float-right" title="Python ROS 2 Package">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/ranch-hand-robotics/rde-creator" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="index.html" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="python-package.html" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

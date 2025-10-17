@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>Resource Package - Robot Developer Extensions for Creating ROS 2 Packages</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Resource Package";
+        var mkdocs_page_input_path = "resource-package.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> Robot Developer Extensions for Creating ROS 2 Packages
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="index.html">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="index.html">Home</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="cpp-package.html">C++ ROS 2 Package</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="python-package.html">Python ROS 2 Package</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="nodejs-package.html">Node.js ROS 2 Package</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Resource Package</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#generated-structure">Generated Structure</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#key-features">Key Features</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#urdf-robot-description">URDF Robot Description</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#xacro-parameterized-descriptions">Xacro Parameterized Descriptions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#launch-files">Launch Files</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#rviz-configuration">RViz Configuration</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage-examples">Usage Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#basic-robot-description">Basic Robot Description</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#controller-configuration">Controller Configuration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#gazebo-simulation-launch">Gazebo Simulation Launch</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration-options">Configuration Options</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#robot-description-features">Robot Description Features</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#launch-configuration-options">Launch Configuration Options</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#asset-organization">Asset Organization</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#building-and-installation">Building and Installation</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#package-installation">Package Installation</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#testing-urdf">Testing URDF</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#launch-file-testing">Launch File Testing</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#urdf-design">URDF Design</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#launch-file-organization">Launch File Organization</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#file-organization">File Organization</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#integration-with-other-packages">Integration with Other Packages</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#using-resource-packages">Using Resource Packages</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#parameter-files">Parameter Files</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#common-issues">Common Issues</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#urdf-parsing-errors">URDF Parsing Errors</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#launch-file-failures">Launch File Failures</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#rviz-display-issues">RViz Display Issues</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#gazebo-spawn-failures">Gazebo Spawn Failures</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#debug-tips">Debug Tips</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#advanced-usage">Advanced Usage</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#modular-robot-descriptions">Modular Robot Descriptions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#dynamic-launch-configurations">Dynamic Launch Configurations</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#multi-robot-scenarios">Multi-Robot Scenarios</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#migration-from-ros-1">Migration from ROS 1</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#contributing">Contributing</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">Robot Developer Extensions for Creating ROS 2 Packages</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">User Guide</li>
+      <li class="breadcrumb-item active">Resource Package</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/ranch-hand-robotics/rde-creator/edit/master/docs/resource-package.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="resource-package-template">Resource Package Template</h1>
+<p>The Resource Package template generates ROS 2 packages focused on configuration files, URDF descriptions, launch files, and other non-executable resources.</p>
+<h2 id="overview">Overview</h2>
+<p>This template creates resource-focused ROS 2 packages containing:
+- <strong>URDF Robot Descriptions</strong>: XML files defining robot kinematics and properties
+- <strong>Launch Configurations</strong>: Python launch files for starting multiple nodes
+- <strong>Mesh Assets</strong>: 3D model files for visualization
+- <strong>Configuration Files</strong>: YAML/JSON parameter files
+- <strong>Documentation</strong>: README and configuration guides
+- <strong>RViz Configurations</strong>: View configurations for robot visualization</p>
+<h2 id="generated-structure">Generated Structure</h2>
+<div class="highlight"><pre><span></span><code>your_package/
+├── package.xml                    # ROS 2 package manifest
+├── CMakeLists.txt                # Minimal CMake configuration
+├── README.md                      # Package documentation
+├── CONTRIBUTING.md               # Development guidelines
+├── Agents.md                      # AI interaction guide
+├── urdf/
+│   ├── robot.urdf                # Robot description file
+│   └── robot.xacro               # Xacro parameterized description
+├── meshes/
+│   └── robot/
+│       ├── base_link.stl         # 3D mesh files
+│       └── link1.stl
+├── launch/
+│   ├── display.launch.py         # RViz display launch
+│   ├── gazebo.launch.py          # Gazebo simulation launch
+│   └── robot.launch.py           # Complete robot bringup
+├── config/
+│   ├── controllers.yaml          # Controller configurations
+│   ├── joint_limits.yaml         # Joint limit definitions
+│   └── rviz_config.rviz          # RViz visualization config
+├── resource/
+│   └── your_package              # Ament index resource
+└── docs/
+    └── setup.md                  # Setup and usage instructions
+</code></pre></div>
+<h2 id="key-features">Key Features</h2>
+<h3 id="urdf-robot-description">URDF Robot Description</h3>
+<p>Complete robot description with kinematics:
+<div class="highlight"><pre><span></span><code><span class="cp">&lt;?xml version=&quot;1.0&quot;?&gt;</span>
+<span class="nt">&lt;robot</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;your_robot&quot;</span><span class="nt">&gt;</span>
+
+<span class="w">  </span><span class="cm">&lt;!-- Links define the rigid bodies --&gt;</span>
+<span class="w">  </span><span class="nt">&lt;link</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;base_link&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;visual&gt;</span>
+<span class="w">      </span><span class="nt">&lt;origin</span><span class="w"> </span><span class="na">xyz=</span><span class="s">&quot;0 0 0&quot;</span><span class="w"> </span><span class="na">rpy=</span><span class="s">&quot;0 0 0&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;geometry&gt;</span>
+<span class="w">        </span><span class="nt">&lt;box</span><span class="w"> </span><span class="na">size=</span><span class="s">&quot;0.5 0.5 0.1&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/geometry&gt;</span>
+<span class="w">      </span><span class="nt">&lt;material</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;gray&quot;</span><span class="nt">&gt;</span>
+<span class="w">        </span><span class="nt">&lt;color</span><span class="w"> </span><span class="na">rgba=</span><span class="s">&quot;0.5 0.5 0.5 1.0&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/material&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/visual&gt;</span>
+<span class="w">    </span><span class="nt">&lt;collision&gt;</span>
+<span class="w">      </span><span class="nt">&lt;origin</span><span class="w"> </span><span class="na">xyz=</span><span class="s">&quot;0 0 0&quot;</span><span class="w"> </span><span class="na">rpy=</span><span class="s">&quot;0 0 0&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;geometry&gt;</span>
+<span class="w">        </span><span class="nt">&lt;box</span><span class="w"> </span><span class="na">size=</span><span class="s">&quot;0.5 0.5 0.1&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/geometry&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/collision&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/link&gt;</span>
+
+<span class="w">  </span><span class="cm">&lt;!-- Joints define the connections between links --&gt;</span>
+<span class="w">  </span><span class="nt">&lt;joint</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;joint1&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;revolute&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;parent</span><span class="w"> </span><span class="na">link=</span><span class="s">&quot;base_link&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;child</span><span class="w"> </span><span class="na">link=</span><span class="s">&quot;link1&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;origin</span><span class="w"> </span><span class="na">xyz=</span><span class="s">&quot;0 0 0.1&quot;</span><span class="w"> </span><span class="na">rpy=</span><span class="s">&quot;0 0 0&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;axis</span><span class="w"> </span><span class="na">xyz=</span><span class="s">&quot;0 0 1&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;limit</span><span class="w"> </span><span class="na">lower=</span><span class="s">&quot;-3.14159&quot;</span><span class="w"> </span><span class="na">upper=</span><span class="s">&quot;3.14159&quot;</span><span class="w"> </span><span class="na">effort=</span><span class="s">&quot;100&quot;</span><span class="w"> </span><span class="na">velocity=</span><span class="s">&quot;1.0&quot;</span><span class="nt">/&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/joint&gt;</span>
+
+<span class="w">  </span><span class="cm">&lt;!-- Additional links and joints --&gt;</span>
+<span class="w">  </span><span class="nt">&lt;link</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;link1&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;visual&gt;</span>
+<span class="w">      </span><span class="nt">&lt;origin</span><span class="w"> </span><span class="na">xyz=</span><span class="s">&quot;0 0 0&quot;</span><span class="w"> </span><span class="na">rpy=</span><span class="s">&quot;0 0 0&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;geometry&gt;</span>
+<span class="w">        </span><span class="nt">&lt;cylinder</span><span class="w"> </span><span class="na">radius=</span><span class="s">&quot;0.05&quot;</span><span class="w"> </span><span class="na">length=</span><span class="s">&quot;0.3&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/geometry&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/visual&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/link&gt;</span>
+
+<span class="nt">&lt;/robot&gt;</span>
+</code></pre></div></p>
+<h3 id="xacro-parameterized-descriptions">Xacro Parameterized Descriptions</h3>
+<p>Modular robot descriptions with parameters:
+<div class="highlight"><pre><span></span><code><span class="cp">&lt;?xml version=&quot;1.0&quot;?&gt;</span>
+<span class="nt">&lt;robot</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;your_robot&quot;</span><span class="w"> </span><span class="na">xmlns:xacro=</span><span class="s">&quot;http://www.ros.org/wiki/xacro&quot;</span><span class="nt">&gt;</span>
+
+<span class="w">  </span><span class="cm">&lt;!-- Property definitions --&gt;</span>
+<span class="w">  </span><span class="nt">&lt;xacro:property</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;robot_name&quot;</span><span class="w"> </span><span class="na">value=</span><span class="s">&quot;my_robot&quot;</span><span class="nt">/&gt;</span>
+<span class="w">  </span><span class="nt">&lt;xacro:property</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;base_link_length&quot;</span><span class="w"> </span><span class="na">value=</span><span class="s">&quot;0.5&quot;</span><span class="nt">/&gt;</span>
+<span class="w">  </span><span class="nt">&lt;xacro:property</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;joint_effort&quot;</span><span class="w"> </span><span class="na">value=</span><span class="s">&quot;100&quot;</span><span class="nt">/&gt;</span>
+<span class="w">  </span><span class="nt">&lt;xacro:property</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;joint_velocity&quot;</span><span class="w"> </span><span class="na">value=</span><span class="s">&quot;1.0&quot;</span><span class="nt">/&gt;</span>
+
+<span class="w">  </span><span class="cm">&lt;!-- Macro definitions --&gt;</span>
+<span class="w">  </span><span class="nt">&lt;xacro:macro</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;joint_with_limits&quot;</span><span class="w"> </span><span class="na">params=</span><span class="s">&quot;name type parent child xyz rpy axis&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;joint</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;${name}&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;${type}&quot;</span><span class="nt">&gt;</span>
+<span class="w">      </span><span class="nt">&lt;parent</span><span class="w"> </span><span class="na">link=</span><span class="s">&quot;${parent}&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;child</span><span class="w"> </span><span class="na">link=</span><span class="s">&quot;${child}&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;origin</span><span class="w"> </span><span class="na">xyz=</span><span class="s">&quot;${xyz}&quot;</span><span class="w"> </span><span class="na">rpy=</span><span class="s">&quot;${rpy}&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;axis</span><span class="w"> </span><span class="na">xyz=</span><span class="s">&quot;${axis}&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;limit</span><span class="w"> </span><span class="na">effort=</span><span class="s">&quot;${joint_effort}&quot;</span><span class="w"> </span><span class="na">velocity=</span><span class="s">&quot;${joint_velocity}&quot;</span><span class="w"> </span><span class="na">lower=</span><span class="s">&quot;-3.14159&quot;</span><span class="w"> </span><span class="na">upper=</span><span class="s">&quot;3.14159&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/joint&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/xacro:macro&gt;</span>
+
+<span class="w">  </span><span class="cm">&lt;!-- Base link --&gt;</span>
+<span class="w">  </span><span class="nt">&lt;link</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;base_link&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;visual&gt;</span>
+<span class="w">      </span><span class="nt">&lt;geometry&gt;</span>
+<span class="w">        </span><span class="nt">&lt;box</span><span class="w"> </span><span class="na">size=</span><span class="s">&quot;${base_link_length} ${base_link_length} 0.1&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/geometry&gt;</span>
+<span class="w">      </span><span class="nt">&lt;material</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;blue&quot;</span><span class="nt">&gt;</span>
+<span class="w">        </span><span class="nt">&lt;color</span><span class="w"> </span><span class="na">rgba=</span><span class="s">&quot;0.2 0.2 0.8 1.0&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/material&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/visual&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/link&gt;</span>
+
+<span class="w">  </span><span class="cm">&lt;!-- Use the macro --&gt;</span>
+<span class="w">  </span><span class="nt">&lt;xacro:joint_with_limits</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;joint1&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;revolute&quot;</span>
+<span class="w">                          </span><span class="na">parent=</span><span class="s">&quot;base_link&quot;</span><span class="w"> </span><span class="na">child=</span><span class="s">&quot;link1&quot;</span>
+<span class="w">                          </span><span class="na">xyz=</span><span class="s">&quot;0 0 0.1&quot;</span><span class="w"> </span><span class="na">rpy=</span><span class="s">&quot;0 0 0&quot;</span><span class="w"> </span><span class="na">axis=</span><span class="s">&quot;0 0 1&quot;</span><span class="nt">/&gt;</span>
+
+<span class="w">  </span><span class="cm">&lt;!-- Include other files --&gt;</span>
+<span class="w">  </span><span class="nt">&lt;xacro:include</span><span class="w"> </span><span class="na">filename=</span><span class="s">&quot;$(find your_package)/urdf/common_links.urdf.xacro&quot;</span><span class="nt">/&gt;</span>
+
+<span class="nt">&lt;/robot&gt;</span>
+</code></pre></div></p>
+<h3 id="launch-files">Launch Files</h3>
+<p>Python launch configurations for complex setups:
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">launch</span>
+<span class="kn">import</span> <span class="nn">launch_ros</span>
+<span class="kn">from</span> <span class="nn">launch</span> <span class="kn">import</span> <span class="n">LaunchDescription</span>
+<span class="kn">from</span> <span class="nn">launch.substitutions</span> <span class="kn">import</span> <span class="n">LaunchConfiguration</span>
+<span class="kn">from</span> <span class="nn">launch_ros.actions</span> <span class="kn">import</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">launch.actions</span> <span class="kn">import</span> <span class="n">DeclareLaunchArgument</span><span class="p">,</span> <span class="n">IncludeLaunchDescription</span>
+<span class="kn">from</span> <span class="nn">launch.launch_description_sources</span> <span class="kn">import</span> <span class="n">PythonLaunchDescriptionSource</span>
+
+<span class="k">def</span> <span class="nf">generate_launch_description</span><span class="p">():</span>
+    <span class="c1"># Declare launch arguments</span>
+    <span class="n">use_sim_time</span> <span class="o">=</span> <span class="n">DeclareLaunchArgument</span><span class="p">(</span>
+        <span class="s1">&#39;use_sim_time&#39;</span><span class="p">,</span>
+        <span class="n">default_value</span><span class="o">=</span><span class="s1">&#39;false&#39;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Use simulation time&#39;</span>
+    <span class="p">)</span>
+
+    <span class="n">robot_name</span> <span class="o">=</span> <span class="n">DeclareLaunchArgument</span><span class="p">(</span>
+        <span class="s1">&#39;robot_name&#39;</span><span class="p">,</span>
+        <span class="n">default_value</span><span class="o">=</span><span class="s1">&#39;your_robot&#39;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Name of the robot&#39;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Robot state publisher</span>
+    <span class="n">robot_state_publisher</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span>
+        <span class="n">package</span><span class="o">=</span><span class="s1">&#39;robot_state_publisher&#39;</span><span class="p">,</span>
+        <span class="n">executable</span><span class="o">=</span><span class="s1">&#39;robot_state_publisher&#39;</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;robot_state_publisher&#39;</span><span class="p">,</span>
+        <span class="n">output</span><span class="o">=</span><span class="s1">&#39;screen&#39;</span><span class="p">,</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[{</span>
+            <span class="s1">&#39;robot_description&#39;</span><span class="p">:</span> <span class="n">launch</span><span class="o">.</span><span class="n">substitutions</span><span class="o">.</span><span class="n">Command</span><span class="p">([</span>
+                <span class="s1">&#39;xacro &#39;</span><span class="p">,</span> <span class="n">launch</span><span class="o">.</span><span class="n">substitutions</span><span class="o">.</span><span class="n">FindPackageShare</span><span class="p">(</span><span class="s1">&#39;your_package&#39;</span><span class="p">),</span>
+                <span class="s1">&#39;/urdf/robot.urdf.xacro robot_name:=&#39;</span><span class="p">,</span> <span class="n">LaunchConfiguration</span><span class="p">(</span><span class="s1">&#39;robot_name&#39;</span><span class="p">)</span>
+            <span class="p">]),</span>
+            <span class="s1">&#39;use_sim_time&#39;</span><span class="p">:</span> <span class="n">LaunchConfiguration</span><span class="p">(</span><span class="s1">&#39;use_sim_time&#39;</span><span class="p">)</span>
+        <span class="p">}]</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Joint state publisher</span>
+    <span class="n">joint_state_publisher</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span>
+        <span class="n">package</span><span class="o">=</span><span class="s1">&#39;joint_state_publisher_gui&#39;</span><span class="p">,</span>
+        <span class="n">executable</span><span class="o">=</span><span class="s1">&#39;joint_state_publisher_gui&#39;</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;joint_state_publisher_gui&#39;</span><span class="p">,</span>
+        <span class="n">output</span><span class="o">=</span><span class="s1">&#39;screen&#39;</span><span class="p">,</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[{</span>
+            <span class="s1">&#39;use_sim_time&#39;</span><span class="p">:</span> <span class="n">LaunchConfiguration</span><span class="p">(</span><span class="s1">&#39;use_sim_time&#39;</span><span class="p">)</span>
+        <span class="p">}]</span>
+    <span class="p">)</span>
+
+    <span class="c1"># RViz</span>
+    <span class="n">rviz</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span>
+        <span class="n">package</span><span class="o">=</span><span class="s1">&#39;rviz2&#39;</span><span class="p">,</span>
+        <span class="n">executable</span><span class="o">=</span><span class="s1">&#39;rviz2&#39;</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rviz2&#39;</span><span class="p">,</span>
+        <span class="n">output</span><span class="o">=</span><span class="s1">&#39;screen&#39;</span><span class="p">,</span>
+        <span class="n">arguments</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="n">launch</span><span class="o">.</span><span class="n">substitutions</span><span class="o">.</span><span class="n">PathJoinSubstitution</span><span class="p">([</span>
+            <span class="n">launch</span><span class="o">.</span><span class="n">substitutions</span><span class="o">.</span><span class="n">FindPackageShare</span><span class="p">(</span><span class="s1">&#39;your_package&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;config&#39;</span><span class="p">,</span> <span class="s1">&#39;rviz_config.rviz&#39;</span>
+        <span class="p">])]</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">LaunchDescription</span><span class="p">([</span>
+        <span class="n">use_sim_time</span><span class="p">,</span>
+        <span class="n">robot_name</span><span class="p">,</span>
+        <span class="n">robot_state_publisher</span><span class="p">,</span>
+        <span class="n">joint_state_publisher</span><span class="p">,</span>
+        <span class="n">rviz</span>
+    <span class="p">])</span>
+</code></pre></div></p>
+<h3 id="rviz-configuration">RViz Configuration</h3>
+<p>Visualization setup for robot monitoring:
+<div class="highlight"><pre><span></span><code><span class="c1"># RViz configuration for robot visualization</span>
+<span class="nt">Panels</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rviz_common/Displays</span>
+<span class="w">    </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Displays</span>
+<span class="w">    </span><span class="nt">Property Tree Widget</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Splitter Ratio</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rviz_common/Views</span>
+<span class="w">    </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Views</span>
+<span class="w">    </span><span class="nt">Property Tree Widget</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Splitter Ratio</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
+
+<span class="nt">Visualization Manager</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Class</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+<span class="w">  </span><span class="nt">Displays</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rviz_default_plugins/RobotModel</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RobotModel</span>
+<span class="w">      </span><span class="nt">Value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">Robot Description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">robot_description</span>
+<span class="w">      </span><span class="nt">TF Prefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rviz_default_plugins/TF</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TF</span>
+<span class="w">      </span><span class="nt">Value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">Show Names</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">Show Axes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">Show Arrows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">Marker Scale</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rviz_default_plugins/LaserScan</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LaserScan</span>
+<span class="w">      </span><span class="nt">Value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">Topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/scan</span>
+<span class="w">      </span><span class="nt">Size (m)</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
+<span class="w">      </span><span class="nt">Color</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">255; 0; 0</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rviz_default_plugins/Grid</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Grid</span>
+<span class="w">      </span><span class="nt">Value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">Cell Size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">      </span><span class="nt">Color</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">160; 160; 164</span>
+<span class="w">  </span><span class="nt">Global Options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">Background Color</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">48; 48; 48</span>
+<span class="w">    </span><span class="nt">Frame Rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<span class="w">    </span><span class="nt">Fixed Frame</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">base_link</span>
+<span class="w">  </span><span class="nt">Tools</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rviz_default_plugins/Interact</span>
+<span class="w">      </span><span class="nt">Value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rviz_default_plugins/MoveCamera</span>
+<span class="w">      </span><span class="nt">Value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rviz_default_plugins/Select</span>
+<span class="w">      </span><span class="nt">Value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">Views</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Class</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Current View</span>
+<span class="w">      </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rviz_default_plugins/Orbit</span>
+<span class="w">      </span><span class="nt">Value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">Distance</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+<span class="w">      </span><span class="nt">Focal Point</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">X</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="w">        </span><span class="nt">Y</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="w">        </span><span class="nt">Z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="w">      </span><span class="nt">Pitch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="w">      </span><span class="nt">Yaw</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+</code></pre></div></p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-robot-description">Basic Robot Description</h3>
+<div class="highlight"><pre><span></span><code><span class="cp">&lt;?xml version=&quot;1.0&quot;?&gt;</span>
+<span class="nt">&lt;robot</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;simple_robot&quot;</span><span class="nt">&gt;</span>
+
+<span class="w">  </span><span class="cm">&lt;!-- Base link --&gt;</span>
+<span class="w">  </span><span class="nt">&lt;link</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;base_link&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;visual&gt;</span>
+<span class="w">      </span><span class="nt">&lt;geometry&gt;</span>
+<span class="w">        </span><span class="nt">&lt;cylinder</span><span class="w"> </span><span class="na">radius=</span><span class="s">&quot;0.1&quot;</span><span class="w"> </span><span class="na">length=</span><span class="s">&quot;0.2&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/geometry&gt;</span>
+<span class="w">      </span><span class="nt">&lt;material</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;red&quot;</span><span class="nt">&gt;</span>
+<span class="w">        </span><span class="nt">&lt;color</span><span class="w"> </span><span class="na">rgba=</span><span class="s">&quot;1.0 0.0 0.0 1.0&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/material&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/visual&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/link&gt;</span>
+
+<span class="w">  </span><span class="cm">&lt;!-- Wheel links --&gt;</span>
+<span class="w">  </span><span class="nt">&lt;link</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;wheel_left&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;visual&gt;</span>
+<span class="w">      </span><span class="nt">&lt;geometry&gt;</span>
+<span class="w">        </span><span class="nt">&lt;cylinder</span><span class="w"> </span><span class="na">radius=</span><span class="s">&quot;0.05&quot;</span><span class="w"> </span><span class="na">length=</span><span class="s">&quot;0.05&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/geometry&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/visual&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/link&gt;</span>
+
+<span class="w">  </span><span class="nt">&lt;link</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;wheel_right&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;visual&gt;</span>
+<span class="w">      </span><span class="nt">&lt;geometry&gt;</span>
+<span class="w">        </span><span class="nt">&lt;cylinder</span><span class="w"> </span><span class="na">radius=</span><span class="s">&quot;0.05&quot;</span><span class="w"> </span><span class="na">length=</span><span class="s">&quot;0.05&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/geometry&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/visual&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/link&gt;</span>
+
+<span class="w">  </span><span class="cm">&lt;!-- Joints --&gt;</span>
+<span class="w">  </span><span class="nt">&lt;joint</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;wheel_left_joint&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;continuous&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;parent</span><span class="w"> </span><span class="na">link=</span><span class="s">&quot;base_link&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;child</span><span class="w"> </span><span class="na">link=</span><span class="s">&quot;wheel_left&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;origin</span><span class="w"> </span><span class="na">xyz=</span><span class="s">&quot;-0.1 0.1 0&quot;</span><span class="w"> </span><span class="na">rpy=</span><span class="s">&quot;1.5708 0 0&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;axis</span><span class="w"> </span><span class="na">xyz=</span><span class="s">&quot;0 1 0&quot;</span><span class="nt">/&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/joint&gt;</span>
+
+<span class="w">  </span><span class="nt">&lt;joint</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;wheel_right_joint&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;continuous&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;parent</span><span class="w"> </span><span class="na">link=</span><span class="s">&quot;base_link&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;child</span><span class="w"> </span><span class="na">link=</span><span class="s">&quot;wheel_right&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;origin</span><span class="w"> </span><span class="na">xyz=</span><span class="s">&quot;-0.1 -0.1 0&quot;</span><span class="w"> </span><span class="na">rpy=</span><span class="s">&quot;1.5708 0 0&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;axis</span><span class="w"> </span><span class="na">xyz=</span><span class="s">&quot;0 1 0&quot;</span><span class="nt">/&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/joint&gt;</span>
+
+<span class="nt">&lt;/robot&gt;</span>
+</code></pre></div>
+<h3 id="controller-configuration">Controller Configuration</h3>
+<p>YAML configuration for robot controllers:
+<div class="highlight"><pre><span></span><code><span class="nt">controller_manager</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ros__parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">update_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span><span class="w">  </span><span class="c1"># Hz</span>
+
+<span class="w">    </span><span class="nt">joint_state_broadcaster</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">joint_state_broadcaster/JointStateBroadcaster</span>
+
+<span class="w">    </span><span class="nt">diff_drive_controller</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">diff_drive_controller/DiffDriveController</span>
+
+<span class="nt">diff_drive_controller</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ros__parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">left_wheel_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;wheel_left_joint&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">right_wheel_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;wheel_right_joint&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="w">    </span><span class="nt">wheel_separation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.2</span>
+<span class="w">    </span><span class="nt">wheel_radius</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span>
+
+<span class="w">    </span><span class="nt">use_stamped_vel</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">publish_limited_velocity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">velocity_rolling_window_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">publish_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50.0</span>
+<span class="w">    </span><span class="nt">open_loop</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">enable_odom_tf</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">    </span><span class="nt">cmd_vel_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
+<span class="w">    </span><span class="nt">publish_tf</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">    </span><span class="nt">odom_frame_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;odom&quot;</span>
+<span class="w">    </span><span class="nt">base_frame_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;base_link&quot;</span>
+<span class="w">    </span><span class="nt">pose_covariance_diagonal </span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">twist_covariance_diagonal</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">]</span>
+
+<span class="w">    </span><span class="c1"># Limits</span>
+<span class="w">    </span><span class="nt">linear.x.has_velocity_limits</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">linear.x.has_acceleration_limits</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">linear.x.has_jerk_limits</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">linear.x.max_velocity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">    </span><span class="nt">linear.x.min_velocity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-1.0</span>
+<span class="w">    </span><span class="nt">linear.x.max_acceleration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.0</span>
+<span class="w">    </span><span class="nt">linear.x.min_acceleration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-2.0</span>
+
+<span class="w">    </span><span class="nt">angular.z.has_velocity_limits</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">angular.z.has_acceleration_limits</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">angular.z.has_jerk_limits</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">angular.z.max_velocity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.0</span>
+<span class="w">    </span><span class="nt">angular.z.min_velocity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-3.0</span>
+<span class="w">    </span><span class="nt">angular.z.max_acceleration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6.0</span>
+<span class="w">    </span><span class="nt">angular.z.min_acceleration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-6.0</span>
+</code></pre></div></p>
+<h3 id="gazebo-simulation-launch">Gazebo Simulation Launch</h3>
+<p>Launch file for Gazebo simulation:
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">launch</span>
+<span class="kn">import</span> <span class="nn">launch_ros</span>
+<span class="kn">from</span> <span class="nn">launch</span> <span class="kn">import</span> <span class="n">LaunchDescription</span>
+<span class="kn">from</span> <span class="nn">launch.actions</span> <span class="kn">import</span> <span class="n">DeclareLaunchArgument</span><span class="p">,</span> <span class="n">ExecuteProcess</span><span class="p">,</span> <span class="n">IncludeLaunchDescription</span>
+<span class="kn">from</span> <span class="nn">launch.conditions</span> <span class="kn">import</span> <span class="n">IfCondition</span>
+<span class="kn">from</span> <span class="nn">launch.substitutions</span> <span class="kn">import</span> <span class="n">LaunchConfiguration</span><span class="p">,</span> <span class="n">PathJoinSubstitution</span>
+<span class="kn">from</span> <span class="nn">launch_ros.actions</span> <span class="kn">import</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">launch_ros.substitutions</span> <span class="kn">import</span> <span class="n">FindPackageShare</span>
+
+<span class="k">def</span> <span class="nf">generate_launch_description</span><span class="p">():</span>
+    <span class="c1"># Declare arguments</span>
+    <span class="n">world</span> <span class="o">=</span> <span class="n">DeclareLaunchArgument</span><span class="p">(</span>
+        <span class="s1">&#39;world&#39;</span><span class="p">,</span>
+        <span class="n">default_value</span><span class="o">=</span><span class="s1">&#39;worlds/empty.world&#39;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Gazebo world file&#39;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Gazebo launch</span>
+    <span class="n">gazebo</span> <span class="o">=</span> <span class="n">IncludeLaunchDescription</span><span class="p">(</span>
+        <span class="n">PathJoinSubstitution</span><span class="p">([</span>
+            <span class="n">FindPackageShare</span><span class="p">(</span><span class="s1">&#39;gazebo_ros&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;launch&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;gazebo.launch.py&#39;</span>
+        <span class="p">]),</span>
+        <span class="n">launch_arguments</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;world&#39;</span><span class="p">:</span> <span class="n">LaunchConfiguration</span><span class="p">(</span><span class="s1">&#39;world&#39;</span><span class="p">)</span>
+        <span class="p">}</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Robot state publisher</span>
+    <span class="n">robot_state_publisher</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span>
+        <span class="n">package</span><span class="o">=</span><span class="s1">&#39;robot_state_publisher&#39;</span><span class="p">,</span>
+        <span class="n">executable</span><span class="o">=</span><span class="s1">&#39;robot_state_publisher&#39;</span><span class="p">,</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[{</span>
+            <span class="s1">&#39;robot_description&#39;</span><span class="p">:</span> <span class="n">launch</span><span class="o">.</span><span class="n">substitutions</span><span class="o">.</span><span class="n">Command</span><span class="p">([</span>
+                <span class="s1">&#39;xacro &#39;</span><span class="p">,</span>
+                <span class="n">PathJoinSubstitution</span><span class="p">([</span>
+                    <span class="n">FindPackageShare</span><span class="p">(</span><span class="s1">&#39;your_package&#39;</span><span class="p">),</span>
+                    <span class="s1">&#39;urdf&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;robot.urdf.xacro&#39;</span>
+                <span class="p">])</span>
+            <span class="p">])</span>
+        <span class="p">}]</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Spawn robot in Gazebo</span>
+    <span class="n">spawn_entity</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span>
+        <span class="n">package</span><span class="o">=</span><span class="s1">&#39;gazebo_ros&#39;</span><span class="p">,</span>
+        <span class="n">executable</span><span class="o">=</span><span class="s1">&#39;spawn_entity.py&#39;</span><span class="p">,</span>
+        <span class="n">arguments</span><span class="o">=</span><span class="p">[</span>
+            <span class="s1">&#39;-topic&#39;</span><span class="p">,</span> <span class="s1">&#39;/robot_description&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;-entity&#39;</span><span class="p">,</span> <span class="s1">&#39;my_robot&#39;</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Controller manager</span>
+    <span class="n">controller_manager</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span>
+        <span class="n">package</span><span class="o">=</span><span class="s1">&#39;controller_manager&#39;</span><span class="p">,</span>
+        <span class="n">executable</span><span class="o">=</span><span class="s1">&#39;ros2_control_node&#39;</span><span class="p">,</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">PathJoinSubstitution</span><span class="p">([</span>
+                <span class="n">FindPackageShare</span><span class="p">(</span><span class="s1">&#39;your_package&#39;</span><span class="p">),</span>
+                <span class="s1">&#39;config&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;controllers.yaml&#39;</span>
+            <span class="p">])</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Load controllers</span>
+    <span class="n">load_joint_state_controller</span> <span class="o">=</span> <span class="n">ExecuteProcess</span><span class="p">(</span>
+        <span class="n">cmd</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;ros2&#39;</span><span class="p">,</span> <span class="s1">&#39;control&#39;</span><span class="p">,</span> <span class="s1">&#39;load_controller&#39;</span><span class="p">,</span> <span class="s1">&#39;--set-state&#39;</span><span class="p">,</span> <span class="s1">&#39;active&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;joint_state_broadcaster&#39;</span><span class="p">],</span>
+        <span class="n">output</span><span class="o">=</span><span class="s1">&#39;screen&#39;</span>
+    <span class="p">)</span>
+
+    <span class="n">load_diff_drive_controller</span> <span class="o">=</span> <span class="n">ExecuteProcess</span><span class="p">(</span>
+        <span class="n">cmd</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;ros2&#39;</span><span class="p">,</span> <span class="s1">&#39;control&#39;</span><span class="p">,</span> <span class="s1">&#39;load_controller&#39;</span><span class="p">,</span> <span class="s1">&#39;--set-state&#39;</span><span class="p">,</span> <span class="s1">&#39;active&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;diff_drive_controller&#39;</span><span class="p">],</span>
+        <span class="n">output</span><span class="o">=</span><span class="s1">&#39;screen&#39;</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">LaunchDescription</span><span class="p">([</span>
+        <span class="n">world</span><span class="p">,</span>
+        <span class="n">gazebo</span><span class="p">,</span>
+        <span class="n">robot_state_publisher</span><span class="p">,</span>
+        <span class="n">spawn_entity</span><span class="p">,</span>
+        <span class="n">controller_manager</span><span class="p">,</span>
+        <span class="n">load_joint_state_controller</span><span class="p">,</span>
+        <span class="n">load_diff_drive_controller</span>
+    <span class="p">])</span>
+</code></pre></div></p>
+<h2 id="configuration-options">Configuration Options</h2>
+<h3 id="robot-description-features">Robot Description Features</h3>
+<ul>
+<li><strong>Links</strong>: Define rigid bodies with visual, collision, and inertial properties</li>
+<li><strong>Joints</strong>: Specify connections between links (revolute, prismatic, fixed, etc.)</li>
+<li><strong>Materials</strong>: Define colors and textures for visualization</li>
+<li><strong>Transmissions</strong>: Configure actuator interfaces</li>
+<li><strong>Gazebo Extensions</strong>: Simulation-specific properties</li>
+</ul>
+<h3 id="launch-configuration-options">Launch Configuration Options</h3>
+<ul>
+<li><strong>Composable Nodes</strong>: Load components into existing processes</li>
+<li><strong>Lifecycle Management</strong>: Control node startup sequences</li>
+<li><strong>Parameter Files</strong>: Load YAML configuration files</li>
+<li><strong>Event Handlers</strong>: Respond to process events</li>
+<li><strong>Conditional Execution</strong>: Enable/disable components based on arguments</li>
+</ul>
+<h3 id="asset-organization">Asset Organization</h3>
+<ul>
+<li><strong>Meshes</strong>: STL, OBJ, DAE files for 3D visualization</li>
+<li><strong>Textures</strong>: Image files for material properties</li>
+<li><strong>CAD Files</strong>: Source files for mesh generation</li>
+<li><strong>Documentation</strong>: Setup guides and configuration references</li>
+</ul>
+<h2 id="building-and-installation">Building and Installation</h2>
+<h3 id="package-installation">Package Installation</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Build the package</span>
+colcon<span class="w"> </span>build<span class="w"> </span>--packages-select<span class="w"> </span>your_package
+
+<span class="c1"># Source the workspace</span>
+<span class="nb">source</span><span class="w"> </span>install/setup.bash
+
+<span class="c1"># Verify installation</span>
+ros2<span class="w"> </span>pkg<span class="w"> </span>list<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>your_package
+</code></pre></div>
+<h3 id="testing-urdf">Testing URDF</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Check URDF syntax</span>
+check_urdf<span class="w"> </span>urdf/robot.urdf
+
+<span class="c1"># View in RViz</span>
+ros2<span class="w"> </span>launch<span class="w"> </span>your_package<span class="w"> </span>display.launch.py
+
+<span class="c1"># Validate Xacro</span>
+xacro<span class="w"> </span>urdf/robot.urdf.xacro
+</code></pre></div>
+<h3 id="launch-file-testing">Launch File Testing</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Test launch file syntax</span>
+ros2<span class="w"> </span>launch<span class="w"> </span>your_package<span class="w"> </span>robot.launch.py<span class="w"> </span>--show-args
+
+<span class="c1"># Dry run (don&#39;t actually start processes)</span>
+ros2<span class="w"> </span>launch<span class="w"> </span>your_package<span class="w"> </span>robot.launch.py<span class="w"> </span>--non-interactive
+</code></pre></div>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="urdf-design">URDF Design</h3>
+<ul>
+<li>Use consistent naming conventions</li>
+<li>Include collision geometries for navigation</li>
+<li>Define appropriate joint limits</li>
+<li>Use Xacro for complex robots</li>
+<li>Include inertial properties for simulation</li>
+</ul>
+<h3 id="launch-file-organization">Launch File Organization</h3>
+<ul>
+<li>Use descriptive argument names</li>
+<li>Include default values for all arguments</li>
+<li>Group related nodes logically</li>
+<li>Use conditional includes for optional components</li>
+<li>Document launch arguments</li>
+</ul>
+<h3 id="file-organization">File Organization</h3>
+<ul>
+<li>Keep related files together</li>
+<li>Use descriptive directory names</li>
+<li>Include README files for complex configurations</li>
+<li>Version control large assets appropriately</li>
+</ul>
+<h2 id="integration-with-other-packages">Integration with Other Packages</h2>
+<h3 id="using-resource-packages">Using Resource Packages</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># In another package&#39;s launch file</span>
+<span class="kn">from</span> <span class="nn">launch_ros.substitutions</span> <span class="kn">import</span> <span class="n">FindPackageShare</span>
+
+<span class="c1"># Include robot description</span>
+<span class="n">robot_description_launch</span> <span class="o">=</span> <span class="n">IncludeLaunchDescription</span><span class="p">(</span>
+    <span class="n">PathJoinSubstitution</span><span class="p">([</span>
+        <span class="n">FindPackageShare</span><span class="p">(</span><span class="s1">&#39;robot_description_package&#39;</span><span class="p">),</span>
+        <span class="s1">&#39;launch&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;description.launch.py&#39;</span>
+    <span class="p">])</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="parameter-files">Parameter Files</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Load parameters from resource package</span>
+<span class="n">config_file</span> <span class="o">=</span> <span class="n">PathJoinSubstitution</span><span class="p">([</span>
+    <span class="n">FindPackageShare</span><span class="p">(</span><span class="s1">&#39;robot_config_package&#39;</span><span class="p">),</span>
+    <span class="s1">&#39;config&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;robot_config.yaml&#39;</span>
+<span class="p">])</span>
+
+<span class="n">node</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span>
+    <span class="n">package</span><span class="o">=</span><span class="s1">&#39;robot_control&#39;</span><span class="p">,</span>
+    <span class="n">executable</span><span class="o">=</span><span class="s1">&#39;robot_controller&#39;</span><span class="p">,</span>
+    <span class="n">parameters</span><span class="o">=</span><span class="p">[</span><span class="n">config_file</span><span class="p">]</span>
+<span class="p">)</span>
+</code></pre></div>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<h4 id="urdf-parsing-errors">URDF Parsing Errors</h4>
+<p><strong>Symptoms:</strong> <code>check_urdf</code> reports syntax errors
+<strong>Solution:</strong> Validate XML syntax and check for missing required attributes</p>
+<h4 id="launch-file-failures">Launch File Failures</h4>
+<p><strong>Symptoms:</strong> Launch fails with import errors
+<strong>Solution:</strong> Check Python path and ensure all dependencies are installed</p>
+<h4 id="rviz-display-issues">RViz Display Issues</h4>
+<p><strong>Symptoms:</strong> Robot not showing in RViz
+<strong>Solution:</strong> Verify TF tree and robot_description parameter</p>
+<h4 id="gazebo-spawn-failures">Gazebo Spawn Failures</h4>
+<p><strong>Symptoms:</strong> Robot not appearing in Gazebo
+<strong>Solution:</strong> Check model format and spawn arguments</p>
+<h3 id="debug-tips">Debug Tips</h3>
+<ul>
+<li>Use <code>ros2 launch --debug</code> for detailed launch output</li>
+<li>Enable Gazebo verbose logging: <code>gzserver --verbose</code></li>
+<li>Use <code>ros2 doctor</code> to check system health</li>
+<li>Validate URDF with <code>urdf_to_graphiz</code> for visualization</li>
+</ul>
+<h2 id="advanced-usage">Advanced Usage</h2>
+<h3 id="modular-robot-descriptions">Modular Robot Descriptions</h3>
+<div class="highlight"><pre><span></span><code><span class="cm">&lt;!-- common_links.urdf.xacro --&gt;</span>
+<span class="nt">&lt;xacro:macro</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;wheel_link&quot;</span><span class="w"> </span><span class="na">params=</span><span class="s">&quot;name radius length color&quot;</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nt">&lt;link</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;${name}&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;visual&gt;</span>
+<span class="w">      </span><span class="nt">&lt;geometry&gt;</span>
+<span class="w">        </span><span class="nt">&lt;cylinder</span><span class="w"> </span><span class="na">radius=</span><span class="s">&quot;${radius}&quot;</span><span class="w"> </span><span class="na">length=</span><span class="s">&quot;${length}&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/geometry&gt;</span>
+<span class="w">      </span><span class="nt">&lt;material</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;${color}_material&quot;</span><span class="nt">&gt;</span>
+<span class="w">        </span><span class="nt">&lt;color</span><span class="w"> </span><span class="na">rgba=</span><span class="s">&quot;${color}&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/material&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/visual&gt;</span>
+<span class="w">    </span><span class="nt">&lt;collision&gt;</span>
+<span class="w">      </span><span class="nt">&lt;geometry&gt;</span>
+<span class="w">        </span><span class="nt">&lt;cylinder</span><span class="w"> </span><span class="na">radius=</span><span class="s">&quot;${radius}&quot;</span><span class="w"> </span><span class="na">length=</span><span class="s">&quot;${length}&quot;</span><span class="nt">/&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/geometry&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/collision&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/link&gt;</span>
+<span class="nt">&lt;/xacro:macro&gt;</span>
+</code></pre></div>
+<h3 id="dynamic-launch-configurations">Dynamic Launch Configurations</h3>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_launch_description</span><span class="p">():</span>
+    <span class="c1"># Dynamic node creation based on configuration</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Load configuration</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">load_yaml_config</span><span class="p">(</span><span class="s1">&#39;robot_config.yaml&#39;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">sensor</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;sensors&#39;</span><span class="p">]:</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span>
+            <span class="n">package</span><span class="o">=</span><span class="n">sensor</span><span class="p">[</span><span class="s1">&#39;package&#39;</span><span class="p">],</span>
+            <span class="n">executable</span><span class="o">=</span><span class="n">sensor</span><span class="p">[</span><span class="s1">&#39;executable&#39;</span><span class="p">],</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">sensor</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
+            <span class="n">parameters</span><span class="o">=</span><span class="p">[</span><span class="n">sensor</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]]</span>
+        <span class="p">)</span>
+        <span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">LaunchDescription</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="multi-robot-scenarios">Multi-Robot Scenarios</h3>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_launch_description</span><span class="p">():</span>
+    <span class="n">robots</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;robot2&#39;</span><span class="p">,</span> <span class="s1">&#39;robot3&#39;</span><span class="p">]</span>
+
+    <span class="n">nodes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">robot</span> <span class="ow">in</span> <span class="n">robots</span><span class="p">:</span>
+        <span class="c1"># Robot state publisher for each robot</span>
+        <span class="n">rsp</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span>
+            <span class="n">package</span><span class="o">=</span><span class="s1">&#39;robot_state_publisher&#39;</span><span class="p">,</span>
+            <span class="n">executable</span><span class="o">=</span><span class="s1">&#39;robot_state_publisher&#39;</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;rsp_</span><span class="si">{</span><span class="n">robot</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="n">namespace</span><span class="o">=</span><span class="n">robot</span><span class="p">,</span>
+            <span class="n">parameters</span><span class="o">=</span><span class="p">[{</span>
+                <span class="s1">&#39;robot_description&#39;</span><span class="p">:</span> <span class="n">get_robot_description</span><span class="p">(</span><span class="n">robot</span><span class="p">),</span>
+                <span class="s1">&#39;frame_prefix&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">robot</span><span class="si">}</span><span class="s1">/&#39;</span>
+            <span class="p">}]</span>
+        <span class="p">)</span>
+        <span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rsp</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">LaunchDescription</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="migration-from-ros-1">Migration from ROS 1</h2>
+<p>Key differences when migrating resource packages:
+- Update URDF syntax for ROS 2 conventions
+- Convert launch files from XML to Python
+- Update parameter file formats
+- Use new RViz configuration format
+- Update Gazebo integration methods
+- Use ament instead of catkin</p>
+<h2 id="contributing">Contributing</h2>
+<p>To improve the resource template:</p>
+<ol>
+<li>Add more URDF examples for different robot types</li>
+<li>Include additional launch file patterns</li>
+<li>Add more RViz configuration examples</li>
+<li>Include simulation-specific configurations</li>
+<li>Add validation tools and best practices</li>
+</ol>
+<p>See the <a href="CONTRIBUTING.html">contributing guide</a> for details on modifying templates.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="nodejs-package.html" class="btn btn-neutral float-left" title="Node.js ROS 2 Package"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="troubleshooting.html" class="btn btn-neutral float-right" title="Troubleshooting">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/ranch-hand-robotics/rde-creator" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="nodejs-package.html" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="troubleshooting.html" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

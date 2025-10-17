@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>Python ROS 2 Package - Robot Developer Extensions for Creating ROS 2 Packages</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Python ROS 2 Package";
+        var mkdocs_page_input_path = "python-package.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> Robot Developer Extensions for Creating ROS 2 Packages
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="index.html">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User Guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="index.html">Home</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="cpp-package.html">C++ ROS 2 Package</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Python ROS 2 Package</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#generated-structure">Generated Structure</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#key-features">Key Features</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#asyncawait-support">Async/Await Support</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#type-hints-and-documentation">Type Hints and Documentation</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#pytest-integration">pytest Integration</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage-examples">Usage Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#basic-publisher">Basic Publisher</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#service-server">Service Server</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#async-operations">Async Operations</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration-options">Configuration Options</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#communication-patterns">Communication Patterns</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#quality-of-service-qos">Quality of Service (QoS)</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#building-and-testing">Building and Testing</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#installation">Installation</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#running-tests">Running Tests</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#running-the-node">Running the Node</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#performance-optimization">Performance Optimization</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#error-handling">Error Handling</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#logging">Logging</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#parameter-management">Parameter Management</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#integration-examples">Integration Examples</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#numpy-integration">NumPy Integration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#web-framework-integration">Web Framework Integration</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#common-issues">Common Issues</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#import-errors">Import Errors</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#async-operation-issues">Async Operation Issues</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#parameter-access-fails">Parameter Access Fails</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#debug-tips">Debug Tips</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#advanced-usage">Advanced Usage</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#multi-threaded-executors">Multi-Threaded Executors</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#custom-message-types">Custom Message Types</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#lifecycle-management">Lifecycle Management</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#migration-from-ros-1">Migration from ROS 1</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#contributing">Contributing</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="nodejs-package.html">Node.js ROS 2 Package</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="resource-package.html">Resource Package</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="CONTRIBUTING.html">Contributing</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">Robot Developer Extensions for Creating ROS 2 Packages</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">User Guide</li>
+      <li class="breadcrumb-item active">Python ROS 2 Package</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/ranch-hand-robotics/rde-creator/edit/master/docs/python-package.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="python-ros-2-package-template">Python ROS 2 Package Template</h1>
+<p>The Python ROS 2 Package template generates flexible, prototype-friendly ROS 2 nodes using modern Python practices and the <code>rclpy</code> library.</p>
+<h2 id="overview">Overview</h2>
+<p>This template creates Python-based ROS 2 nodes with:
+- <strong>Modern Python</strong>: Python 3.12+ with type hints and async support
+- <strong>Async/Await</strong>: Native asyncio integration for concurrent operations
+- <strong>Rich Ecosystem</strong>: Easy integration with scientific computing, ML, and web frameworks
+- <strong>Testing</strong>: Comprehensive pytest integration
+- <strong>Documentation</strong>: Auto-generated docstrings and type annotations</p>
+<h2 id="generated-structure">Generated Structure</h2>
+<div class="highlight"><pre><span></span><code>your_package/
+├── package.xml                    # ROS 2 package manifest
+├── setup.py                       # Python package configuration
+├── setup.cfg                      # Python packaging metadata
+├── README.md                      # Package documentation
+├── CONTRIBUTING.md               # Development guidelines
+├── Agents.md                      # AI interaction guide
+├── your_package/
+│   ├── __init__.py               # Package initialization
+│   ├── your_package_node.py      # Main node implementation
+│   └── utils.py                  # Utility functions
+├── launch/
+│   └── your_package_node.launch.py # Launch configuration
+├── resource/
+│   └── your_package               # Ament index resource
+├── test/
+│   ├── __init__.py               # Test package
+│   └── test_your_package_node.py # Unit tests
+└── docs/
+    └── index.md                  # Package documentation
+</code></pre></div>
+<h2 id="key-features">Key Features</h2>
+<h3 id="asyncawait-support">Async/Await Support</h3>
+<p>Native asyncio integration for concurrent operations:
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">rclpy</span>
+<span class="kn">from</span> <span class="nn">rclpy.node</span> <span class="kn">import</span> <span class="n">Node</span>
+
+<span class="k">class</span> <span class="nc">AsyncNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;async_node&#39;</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">run_async_operation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Example async method&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Async operation completed&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">timer_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Timer callback that can spawn async tasks&quot;&quot;&quot;</span>
+        <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run_async_operation</span><span class="p">())</span>
+</code></pre></div></p>
+<h3 id="type-hints-and-documentation">Type Hints and Documentation</h3>
+<p>Comprehensive type annotations and docstrings:
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">import</span> <span class="nn">rclpy</span>
+<span class="kn">from</span> <span class="nn">rclpy.node</span> <span class="kn">import</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">std_msgs.msg</span> <span class="kn">import</span> <span class="n">String</span>
+
+<span class="k">class</span> <span class="nc">PublisherNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A ROS 2 node that publishes string messages.</span>
+
+<span class="sd">    This node demonstrates basic publishing functionality with</span>
+<span class="sd">    configurable message content and publishing rate.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;chatter&#39;</span><span class="p">,</span>
+                 <span class="n">publish_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the publisher node.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            topic_name: Name of the topic to publish to</span>
+<span class="sd">            publish_rate: Publishing frequency in Hz</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;publisher_node&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">publisher</span><span class="p">:</span> <span class="n">rclpy</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="n">Publisher</span><span class="p">[</span><span class="n">String</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_publisher</span><span class="p">(</span>
+            <span class="n">String</span><span class="p">,</span> <span class="n">topic_name</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="p">:</span> <span class="n">rclpy</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">Timer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_timer</span><span class="p">(</span>
+            <span class="mf">1.0</span> <span class="o">/</span> <span class="n">publish_rate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timer_callback</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">timer_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Publish a message on timer trigger.&quot;&quot;&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">String</span><span class="p">()</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Hello ROS 2! Message #</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">message_count</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">publisher</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Publishing: &quot;</span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">data</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_count</span> <span class="o">+=</span> <span class="mi">1</span>
+</code></pre></div></p>
+<h3 id="pytest-integration">pytest Integration</h3>
+<p>Comprehensive testing with ROS 2 fixtures:
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">pytest</span>
+<span class="kn">import</span> <span class="nn">rclpy</span>
+<span class="kn">from</span> <span class="nn">rclpy.node</span> <span class="kn">import</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">your_package.your_package_node</span> <span class="kn">import</span> <span class="n">PublisherNode</span>
+
+<span class="k">class</span> <span class="nc">TestPublisherNode</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test cases for PublisherNode.&quot;&quot;&quot;</span>
+
+    <span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+    <span class="k">def</span> <span class="nf">node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fixture providing a PublisherNode instance.&quot;&quot;&quot;</span>
+        <span class="n">rclpy</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">PublisherNode</span><span class="p">()</span>
+        <span class="k">yield</span> <span class="n">node</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">destroy_node</span><span class="p">()</span>
+        <span class="n">rclpy</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">test_node_creation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test that node is created successfully.&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">node</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;publisher_node&#39;</span>
+        <span class="k">assert</span> <span class="n">node</span><span class="o">.</span><span class="n">publisher</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">test_parameter_declaration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test parameter handling.&quot;&quot;&quot;</span>
+        <span class="c1"># Test parameter access and modification</span>
+        <span class="k">pass</span>
+</code></pre></div></p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-publisher">Basic Publisher</h3>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
+
+<span class="kn">import</span> <span class="nn">rclpy</span>
+<span class="kn">from</span> <span class="nn">rclpy.node</span> <span class="kn">import</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">std_msgs.msg</span> <span class="kn">import</span> <span class="n">String</span>
+
+<span class="k">class</span> <span class="nc">MinimalPublisher</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;minimal_publisher&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">publisher_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_publisher</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="s1">&#39;topic&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+        <span class="n">timer_period</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># seconds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_timer</span><span class="p">(</span><span class="n">timer_period</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timer_callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">timer_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">String</span><span class="p">()</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Hello World: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">publisher_</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Publishing: &quot;</span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">data</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">rclpy</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">minimal_publisher</span> <span class="o">=</span> <span class="n">MinimalPublisher</span><span class="p">()</span>
+    <span class="n">rclpy</span><span class="o">.</span><span class="n">spin</span><span class="p">(</span><span class="n">minimal_publisher</span><span class="p">)</span>
+    <span class="n">minimal_publisher</span><span class="o">.</span><span class="n">destroy_node</span><span class="p">()</span>
+    <span class="n">rclpy</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="service-server">Service Server</h3>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
+
+<span class="kn">import</span> <span class="nn">rclpy</span>
+<span class="kn">from</span> <span class="nn">rclpy.node</span> <span class="kn">import</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">example_interfaces.srv</span> <span class="kn">import</span> <span class="n">AddTwoInts</span>
+
+<span class="k">class</span> <span class="nc">MinimalService</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;minimal_service&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">srv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_service</span><span class="p">(</span>
+            <span class="n">AddTwoInts</span><span class="p">,</span> <span class="s1">&#39;add_two_ints&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_two_ints_callback</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">add_two_ints_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">sum</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">a</span> <span class="o">+</span> <span class="n">request</span><span class="o">.</span><span class="n">b</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;Incoming request: </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">a</span><span class="si">}</span><span class="s1"> + </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">b</span><span class="si">}</span><span class="s1"> = </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">sum</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">rclpy</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">minimal_service</span> <span class="o">=</span> <span class="n">MinimalService</span><span class="p">()</span>
+    <span class="n">rclpy</span><span class="o">.</span><span class="n">spin</span><span class="p">(</span><span class="n">minimal_service</span><span class="p">)</span>
+    <span class="n">minimal_service</span><span class="o">.</span><span class="n">destroy_node</span><span class="p">()</span>
+    <span class="n">rclpy</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="async-operations">Async Operations</h3>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">rclpy</span>
+<span class="kn">from</span> <span class="nn">rclpy.node</span> <span class="kn">import</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">std_msgs.msg</span> <span class="kn">import</span> <span class="n">String</span>
+
+<span class="k">class</span> <span class="nc">AsyncPublisher</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;async_publisher&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">publisher_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_publisher</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="s1">&#39;topic&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_timer</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timer_callback</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">timer_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Timer callback that demonstrates async operations.&quot;&quot;&quot;</span>
+        <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">publish_async</span><span class="p">())</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">publish_async</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Async publishing method.&quot;&quot;&quot;</span>
+        <span class="c1"># Simulate async I/O operation</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">String</span><span class="p">()</span>
+        <span class="n">msg</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="s1">&#39;Async message&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">publisher_</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Published async message&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">rclpy</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">node</span> <span class="o">=</span> <span class="n">AsyncPublisher</span><span class="p">()</span>
+    <span class="n">rclpy</span><span class="o">.</span><span class="n">spin</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+    <span class="n">node</span><span class="o">.</span><span class="n">destroy_node</span><span class="p">()</span>
+    <span class="n">rclpy</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</code></pre></div>
+<h2 id="configuration-options">Configuration Options</h2>
+<h3 id="communication-patterns">Communication Patterns</h3>
+<ul>
+<li><strong>Publishers</strong>: Data broadcasting with configurable QoS</li>
+<li><strong>Subscribers</strong>: Data reception with callback functions</li>
+<li><strong>Services</strong>: Synchronous request-response communication</li>
+<li><strong>Actions</strong>: Long-running task coordination</li>
+<li><strong>Parameters</strong>: Dynamic configuration management</li>
+</ul>
+<h3 id="quality-of-service-qos">Quality of Service (QoS)</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">rclpy.qos</span> <span class="kn">import</span> <span class="n">QoSProfile</span><span class="p">,</span> <span class="n">ReliabilityPolicy</span><span class="p">,</span> <span class="n">DurabilityPolicy</span>
+
+<span class="c1"># Best effort, volatile QoS for sensor data</span>
+<span class="n">sensor_qos</span> <span class="o">=</span> <span class="n">QoSProfile</span><span class="p">(</span>
+    <span class="n">reliability</span><span class="o">=</span><span class="n">ReliabilityPolicy</span><span class="o">.</span><span class="n">BEST_EFFORT</span><span class="p">,</span>
+    <span class="n">durability</span><span class="o">=</span><span class="n">DurabilityPolicy</span><span class="o">.</span><span class="n">VOLATILE</span><span class="p">,</span>
+    <span class="n">depth</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span>
+
+<span class="c1"># Reliable, transient local QoS for state data</span>
+<span class="n">state_qos</span> <span class="o">=</span> <span class="n">QoSProfile</span><span class="p">(</span>
+    <span class="n">reliability</span><span class="o">=</span><span class="n">ReliabilityPolicy</span><span class="o">.</span><span class="n">RELIABLE</span><span class="p">,</span>
+    <span class="n">durability</span><span class="o">=</span><span class="n">DurabilityPolicy</span><span class="o">.</span><span class="n">TRANSIENT_LOCAL</span><span class="p">,</span>
+    <span class="n">depth</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">)</span>
+</code></pre></div>
+<h2 id="building-and-testing">Building and Testing</h2>
+<h3 id="installation">Installation</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Install the package</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+
+<span class="c1"># Or using colcon</span>
+colcon<span class="w"> </span>build<span class="w"> </span>--packages-select<span class="w"> </span>your_package
+<span class="nb">source</span><span class="w"> </span>install/setup.bash
+</code></pre></div>
+<h3 id="running-tests">Running Tests</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Using pytest directly</span>
+pytest
+
+<span class="c1"># Using colcon</span>
+colcon<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--packages-select<span class="w"> </span>your_package
+colcon<span class="w"> </span>test-result<span class="w"> </span>--verbose
+</code></pre></div>
+<h3 id="running-the-node">Running the Node</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Direct execution</span>
+python<span class="w"> </span>-m<span class="w"> </span>your_package.your_package_node
+
+<span class="c1"># Using ROS 2 launch</span>
+ros2<span class="w"> </span>launch<span class="w"> </span>your_package<span class="w"> </span>your_package_node.launch.py
+
+<span class="c1"># Using ros2 run (if executable entry point is configured)</span>
+ros2<span class="w"> </span>run<span class="w"> </span>your_package<span class="w"> </span>your_package_node
+</code></pre></div>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="performance-optimization">Performance Optimization</h3>
+<ul>
+<li>Minimize global interpreter lock (GIL) impact</li>
+<li>Use numpy for numerical computations</li>
+<li>Consider multiprocessing for CPU-intensive tasks</li>
+<li>Use async operations for I/O-bound tasks</li>
+</ul>
+<h3 id="error-handling">Error Handling</h3>
+<div class="highlight"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
+    <span class="c1"># ROS 2 operations</span>
+    <span class="k">pass</span>
+<span class="k">except</span> <span class="n">rclpy</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ROSInterruptException</span><span class="p">:</span>
+    <span class="k">pass</span>  <span class="c1"># Expected during shutdown</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unexpected error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">raise</span>
+</code></pre></div>
+<h3 id="logging">Logging</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Use appropriate log levels</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Detailed debugging information&#39;</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;General information messages&#39;</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Warning conditions&#39;</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Error conditions&#39;</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s1">&#39;Fatal error conditions&#39;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="parameter-management">Parameter Management</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Declare parameters with defaults</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">declare_parameter</span><span class="p">(</span><span class="s1">&#39;rate&#39;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">declare_parameter</span><span class="p">(</span><span class="s1">&#39;topic_name&#39;</span><span class="p">,</span> <span class="s1">&#39;default_topic&#39;</span><span class="p">)</span>
+
+<span class="c1"># Access parameters</span>
+<span class="n">rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s1">&#39;rate&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+<span class="n">topic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s1">&#39;topic_name&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+<span class="c1"># Parameter callbacks for dynamic reconfiguration</span>
+<span class="k">def</span> <span class="nf">parameter_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;rate&#39;</span><span class="p">:</span>
+            <span class="c1"># Update rate logic</span>
+            <span class="k">pass</span>
+    <span class="k">return</span> <span class="n">SetParametersResult</span><span class="p">(</span><span class="n">successful</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="bp">self</span><span class="o">.</span><span class="n">add_on_set_parameters_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter_callback</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="integration-examples">Integration Examples</h2>
+<h3 id="numpy-integration">NumPy Integration</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sensor_msgs.msg</span> <span class="kn">import</span> <span class="n">PointCloud2</span>
+
+<span class="k">class</span> <span class="nc">PointCloudProcessor</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;pointcloud_processor&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subscription</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_subscription</span><span class="p">(</span>
+            <span class="n">PointCloud2</span><span class="p">,</span> <span class="s1">&#39;pointcloud&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_pointcloud</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">process_pointcloud</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process point cloud data using NumPy.&quot;&quot;&quot;</span>
+        <span class="c1"># Convert ROS message to numpy array</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointcloud2_to_numpy</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># Perform computations</span>
+        <span class="n">centroids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Centroid: </span><span class="si">{</span><span class="n">centroids</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="web-framework-integration">Web Framework Integration</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+
+<span class="k">class</span> <span class="nc">WebEnabledNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;web_node&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="nd">@self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/status&#39;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">status</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;node_name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;running&#39;</span><span class="p">}</span>
+
+        <span class="c1"># Run Flask in separate thread</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">web_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">web_thread</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">web_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</code></pre></div>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<h4 id="import-errors">Import Errors</h4>
+<p><strong>Symptoms:</strong> <code>ModuleNotFoundError</code> when running
+<strong>Solution:</strong> Ensure package is installed and Python path is correct</p>
+<h4 id="async-operation-issues">Async Operation Issues</h4>
+<p><strong>Symptoms:</strong> Async operations not working as expected
+<strong>Solution:</strong> Ensure proper event loop management and avoid blocking operations</p>
+<h4 id="parameter-access-fails">Parameter Access Fails</h4>
+<p><strong>Symptoms:</strong> Parameter values not updating
+<strong>Solution:</strong> Check parameter declaration and callback registration</p>
+<h3 id="debug-tips">Debug Tips</h3>
+<ul>
+<li>Use <code>rclpy.logging</code> for detailed logging configuration</li>
+<li>Enable debug logging: <code>ros2 run your_package your_node --ros-args --log-level debug</code></li>
+<li>Use Python debugger: <code>import pdb; pdb.set_trace()</code></li>
+<li>Profile performance with <code>cProfile</code></li>
+</ul>
+<h2 id="advanced-usage">Advanced Usage</h2>
+<h3 id="multi-threaded-executors">Multi-Threaded Executors</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">rclpy</span>
+<span class="kn">from</span> <span class="nn">rclpy.executors</span> <span class="kn">import</span> <span class="n">MultiThreadedExecutor</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">rclpy</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="c1"># Create nodes</span>
+    <span class="n">node1</span> <span class="o">=</span> <span class="n">Node1</span><span class="p">()</span>
+    <span class="n">node2</span> <span class="o">=</span> <span class="n">Node2</span><span class="p">()</span>
+
+    <span class="c1"># Use multi-threaded executor</span>
+    <span class="n">executor</span> <span class="o">=</span> <span class="n">MultiThreadedExecutor</span><span class="p">(</span><span class="n">num_threads</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">executor</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">node1</span><span class="p">)</span>
+    <span class="n">executor</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">node2</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">executor</span><span class="o">.</span><span class="n">spin</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">executor</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+        <span class="n">node1</span><span class="o">.</span><span class="n">destroy_node</span><span class="p">()</span>
+        <span class="n">node2</span><span class="o">.</span><span class="n">destroy_node</span><span class="p">()</span>
+        <span class="n">rclpy</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="custom-message-types">Custom Message Types</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># In setup.py, add message dependencies</span>
+<span class="c1"># In package.xml, add &lt;depend&gt;your_custom_msgs&lt;/depend&gt;</span>
+
+<span class="kn">from</span> <span class="nn">your_custom_msgs.msg</span> <span class="kn">import</span> <span class="n">CustomMessage</span>
+
+<span class="k">class</span> <span class="nc">CustomMessageNode</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;custom_node&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">publisher_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_publisher</span><span class="p">(</span><span class="n">CustomMessage</span><span class="p">,</span> <span class="s1">&#39;custom_topic&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="lifecycle-management">Lifecycle Management</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">rclpy.lifecycle</span> <span class="kn">import</span> <span class="n">LifecycleNode</span><span class="p">,</span> <span class="n">LifecycleState</span><span class="p">,</span> <span class="n">TransitionCallbackReturn</span>
+
+<span class="k">class</span> <span class="nc">LifecycleExampleNode</span><span class="p">(</span><span class="n">LifecycleNode</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;lifecycle_node&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">on_configure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">LifecycleState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransitionCallbackReturn</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Configuring...&#39;</span><span class="p">)</span>
+        <span class="c1"># Initialize resources</span>
+        <span class="k">return</span> <span class="n">TransitionCallbackReturn</span><span class="o">.</span><span class="n">SUCCESS</span>
+
+    <span class="k">def</span> <span class="nf">on_activate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">LifecycleState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransitionCallbackReturn</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Activating...&#39;</span><span class="p">)</span>
+        <span class="c1"># Start operations</span>
+        <span class="k">return</span> <span class="n">TransitionCallbackReturn</span><span class="o">.</span><span class="n">SUCCESS</span>
+
+    <span class="k">def</span> <span class="nf">on_deactivate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">LifecycleState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransitionCallbackReturn</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Deactivating...&#39;</span><span class="p">)</span>
+        <span class="c1"># Stop operations</span>
+        <span class="k">return</span> <span class="n">TransitionCallbackReturn</span><span class="o">.</span><span class="n">SUCCESS</span>
+
+    <span class="k">def</span> <span class="nf">on_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">LifecycleState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransitionCallbackReturn</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Cleaning up...&#39;</span><span class="p">)</span>
+        <span class="c1"># Release resources</span>
+        <span class="k">return</span> <span class="n">TransitionCallbackReturn</span><span class="o">.</span><span class="n">SUCCESS</span>
+
+    <span class="k">def</span> <span class="nf">on_shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">LifecycleState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransitionCallbackReturn</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Shutting down...&#39;</span><span class="p">)</span>
+        <span class="c1"># Final cleanup</span>
+        <span class="k">return</span> <span class="n">TransitionCallbackReturn</span><span class="o">.</span><span class="n">SUCCESS</span>
+</code></pre></div>
+<h2 id="migration-from-ros-1">Migration from ROS 1</h2>
+<p>Key differences when migrating from ROS 1 Python nodes:
+- Replace <code>rospy</code> with <code>rclpy</code>
+- Use <code>Node</code> instead of node handles
+- Update message/service type imports
+- Use <code>rclpy.spin()</code> instead of <code>rospy.spin()</code>
+- Update parameter access methods
+- Use modern Python features and async patterns</p>
+<h2 id="contributing">Contributing</h2>
+<p>To improve the Python template:</p>
+<ol>
+<li>Add more async operation examples</li>
+<li>Include additional testing patterns</li>
+<li>Enhance type hint coverage</li>
+<li>Add performance benchmarking</li>
+<li>Include more integration examples</li>
+</ol>
+<p>See the <a href="CONTRIBUTING.html">contributing guide</a> for details on modifying templates.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="cpp-package.html" class="btn btn-neutral float-left" title="C++ ROS 2 Package"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="nodejs-package.html" class="btn btn-neutral float-right" title="Node.js ROS 2 Package">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/ranch-hand-robotics/rde-creator" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="cpp-package.html" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="nodejs-package.html" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
