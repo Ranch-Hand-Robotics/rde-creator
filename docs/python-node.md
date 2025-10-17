@@ -511,4 +511,4 @@ To improve the Python template:
 4. Add performance benchmarking
 5. Include more integration examples
 
-See the [contributing guide](../CONTRIBUTING.md) for details on modifying templates.
+See the [contributing guide](CONTRIBUTING.md) for details on modifying templates.

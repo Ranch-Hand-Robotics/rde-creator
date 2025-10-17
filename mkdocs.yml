@@ -9,7 +9,7 @@ nav:
       - Python ROS 2 Node: python-node.md
       - Node.js ROS 2 Node: nodejs-node.md
       - Resource Package: resource-package.md
-  - Contributing: ../CONTRIBUTING.md
+  - Contributing: CONTRIBUTING.md
 
 theme: 
   name: readthedocs

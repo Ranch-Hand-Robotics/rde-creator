@@ -172,7 +172,7 @@ Configuration and asset management for ROS 2 packages.
 ## Advanced Usage
 
 ### Custom Templates
-Create your own templates by following the [template development guide](../CONTRIBUTING.md#adding-new-templates).
+Create your own templates by following the [template development guide](CONTRIBUTING.md#adding-new-templates).
 
 ### AI Prompt Engineering
 For best AI generation results:
@@ -210,7 +210,7 @@ For best AI generation results:
 - Examine generated code comments for guidance
 
 ## Contributing
-We welcome contributions! See our [contributing guide](../CONTRIBUTING.md) for details on:
+We welcome contributions! See our [contributing guide](CONTRIBUTING.md) for details on:
 - Adding new templates
 - Improving existing templates
 - Bug reports and feature requests

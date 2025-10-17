@@ -704,4 +704,4 @@ To improve the resource template:
 4. Include simulation-specific configurations
 5. Add validation tools and best practices
 
-See the [contributing guide](../CONTRIBUTING.md) for details on modifying templates.
+See the [contributing guide](CONTRIBUTING.md) for details on modifying templates.

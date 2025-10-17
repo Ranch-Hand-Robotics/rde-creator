@@ -114,14 +114,6 @@ Configuration and asset management:
 - Check that generated CMakeLists.txt matches your ROS distribution
 - Ensure visibility control headers are properly configured
 
-## Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
-- Adding new templates
-- Modifying existing templates
-- Testing and validation
-- Code style guidelines
-
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details

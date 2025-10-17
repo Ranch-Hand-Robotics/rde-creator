@@ -911,4 +911,4 @@ To improve the Node.js template:
 4. Add performance benchmarks
 5. Include more database integration examples
 
-See the [contributing guide](../CONTRIBUTING.md) for details on modifying templates.
+See the [contributing guide](CONTRIBUTING.md) for details on modifying templates.

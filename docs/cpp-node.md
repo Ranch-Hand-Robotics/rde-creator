@@ -267,4 +267,4 @@ To improve this template:
 4. Include more communication pattern examples
 5. Enhance error handling and logging
 
-See the [contributing guide](../CONTRIBUTING.md) for details on modifying templates.
+See the [contributing guide](CONTRIBUTING.md) for details on modifying templates.
