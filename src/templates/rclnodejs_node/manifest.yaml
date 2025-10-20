@@ -36,6 +36,116 @@ ai_directive: |
   - Parameter nodes: Include dynamic parameter handling
   - Timer-based nodes: Include periodic task execution
 
+  ROS2_CONTROL PATTERNS (when user requests motor control, hardware interface, or controller functionality):
+  - Node.js primarily supports controller nodes and monitoring tools (not hardware interfaces which require C++)
+  - For controller nodes: Create a node that interfaces with ros2_control via topics and services
+  - For controller nodes: Subscribe to joint state topics from hardware interfaces
+  - For controller nodes: Publish command messages to command topics
+  - Use async/await patterns for asynchronous control operations
+  - Implement control algorithms (PID, trajectory following, etc.) in TypeScript
+  - Include parameter handling for control gains and limits with type safety
+  - Implement safety checks and bounds checking for commands
+  - Add comprehensive logging for control loop performance
+  - Include example configuration files for controller parameters
+  - Note: For hardware interface implementation, recommend C++ template instead
+  - Support reading from and writing to ros2_control topics/services
+  - Include proper QoS settings for real-time control communication
+  - Use TypeScript interfaces for type-safe message handling
+
+  MOVEIT2 PATTERNS (when user requests motion planning, manipulation, or MoveIt2 functionality):
+  - Use MoveGroup action client for motion planning requests
+  - Implement planning scene monitoring via topics
+  - Use geometry_msgs for pose targets and trajectory waypoints
+  - Support collision object management via planning scene interface
+  - Implement cartesian path planning
+  - Use moveit_msgs action clients with TypeScript type safety
+  - Support multiple planning groups
+  - Implement custom constraints (orientation, position, joint)
+  - Add real-time feedback handling for planning status
+  - Use async/await for non-blocking motion execution
+  - Include proper error handling for planning failures
+  - Support trajectory execution monitoring
+
+  NAV2 PATTERNS (when user requests navigation, path planning, or Nav2 functionality):
+  - Use Nav2 action clients (NavigateToPose, FollowPath) with TypeScript
+  - Implement navigation goal management
+  - Support waypoint following and waypoint management
+  - Include costmap monitoring via topics
+  - Use action clients with comprehensive feedback handling
+  - Implement goal preemption and recovery behaviors
+  - Include pose estimation monitoring
+  - Support path planning and trajectory following
+  - Add geofence checking and safety boundaries
+  - Include sensor data processing (laser scans, odometry)
+  - Implement multi-robot coordination when applicable
+  - Create navigation performance logging
+
+  MAVLINK PATTERNS (when user requests drone control, PX4/ArduPilot integration, or MAVLink functionality):
+  - Use mavros topics and services via rclnodejs
+  - Implement telemetry monitoring (altitude, speed, battery, GPS, attitude)
+  - Support mission upload and execution via mavros services
+  - Include flight mode switching with proper safety checks
+  - Implement arming/disarming sequences with validation
+  - Support camera trigger and gimbal control
+  - Include parameter get/set via mavros services
+  - Implement geofence and rally point management
+  - Support multi-vehicle coordination
+  - Add ADSB traffic monitoring when requested
+  - Include coordinate transformation utilities (ENU, NED, LLA)
+  - Create comprehensive flight data logging
+  - Implement proper error handling for MAVLink timeouts
+
+  WEB DASHBOARD PATTERNS (when user requests a dashboard, web interface, visualization tool, or monitoring system):
+  
+  For ROS2_CONTROL web interfaces:
+  - Create web-based visualization dashboards for control monitoring
+  - Support WebSocket or HTTP APIs for remote control and monitoring
+  - Include real-time joint state visualization
+  - Implement control parameter tuning via web UI
+  - Add performance graphs and metrics display
+  - Create safety status indicators and alerts
+  
+  For MoveIt2 web interfaces:
+  - Create web-based interfaces for pick and place operations
+  - Implement interactive planning scene visualization using Three.js
+  - Include inverse kinematics visualization tools
+  - Support multiple planning groups with web-based selection
+  - Implement custom constraints input via web forms
+  - Add real-time feedback visualization for planning status
+  - Create interactive RViz-like web visualization
+  - Support trajectory playback and analysis tools
+  
+  For Nav2 web interfaces:
+  - Create web-based navigation control interfaces
+  - Implement interactive map visualization and goal setting
+  - Support waypoint management via web dashboard
+  - Include real-time costmap visualization
+  - Create behavior tree monitoring and debugging tools
+  - Implement goal preemption and recovery via web UI
+  - Support path planning visualization with Three.js or Canvas
+  - Implement multi-robot fleet management dashboard
+  - Add geofence editing and safety zone configuration
+  - Include sensor data visualization (laser scans, camera feeds)
+  - Create navigation performance analytics dashboards
+  - Support SLAM map viewing and editing
+  
+  For MAVLink web interfaces (Ground Control Station):
+  - Create web-based ground control station interface
+  - Implement real-time telemetry dashboard (altitude, speed, battery, GPS)
+  - Support mission planning and upload via web interface
+  - Include interactive map with drone position and waypoints
+  - Create flight mode switching controls with safety confirmations
+  - Implement arming/disarming with web-based safety checks
+  - Use WebSocket for real-time telemetry streaming to browsers
+  - Support camera feed integration and video streaming
+  - Include parameter management via web UI
+  - Create geofence visualization and editing tools
+  - Implement multi-vehicle coordination dashboard
+  - Add ADSB traffic display and collision warnings
+  - Support FPV view in browser
+  - Implement REST API for external control systems
+  - Create comprehensive flight logging and playback interface
+
   QUALITY ASSURANCE:
   - Include proper imports and rclnodejs dependencies
   - Add input validation for parameters and messages
@@ -66,9 +176,35 @@ ai_directive: |
   ├── CONTRIBUTING.md
   ├── Agents.md
   ├── .gitignore
+  ├── config/
+  │   ├── controller_params.yaml  # Controller parameters (ros2_control only)
+  │   ├── moveit_config/          # MoveIt2 configuration (moveit2 only)
+  │   │   ├── joint_limits.yaml
+  │   │   ├── kinematics.yaml
+  │   │   └── ompl_planning.yaml
+  │   ├── nav2_params.yaml        # Nav2 navigation parameters (nav2 only)
+  │   └── mavlink_config.yaml     # MAVLink configuration (mavlink only)
   ├── launch/
-  │   └── node.launch.py  # One launch simple file for each node to facilitate debugging. If multiple nodes are included, create a launch file which calls each node's launch file.
+  │   ├── node.launch.py  # One launch simple file for each node to facilitate debugging. If multiple nodes are included, create a launch file which calls each node's launch file.
+  │   ├── control.launch.py  # Controller launch file (ros2_control only)
+  │   ├── moveit.launch.py   # MoveIt2 launch file (moveit2 only)
+  │   ├── navigation.launch.py  # Nav2 launch file (nav2 only)
+  │   └── mavlink.launch.py     # MAVLink launch file (mavlink only)
   ├── package_name/
       ├── package.json
-      └── node.ts
+      ├── node.ts
+      ├── controller.ts  # Controller implementation (ros2_control only)
+      ├── move_group.ts     # MoveIt2 implementation (moveit2 only)
+      ├── navigator.ts      # Nav2 implementation (nav2 only)
+      ├── mavlink_interface.ts  # MAVLink implementation (mavlink only)
+      └── web/              # Web interface files (only if user requests dashboard/web UI)
+          ├── web_server.ts     # Express/Fastify web server
+          ├── control_dashboard.ts  # ros2_control web UI (if requested)
+          ├── moveit_dashboard.ts   # MoveIt2 web interface (if requested)
+          ├── nav_dashboard.ts      # Nav2 web dashboard (if requested)
+          ├── gcs_dashboard.ts      # MAVLink ground control station (if requested)
+          └── public/           # Static web assets (HTML, CSS, JS)
+              ├── index.html
+              ├── styles.css
+              └── client.js
   ```

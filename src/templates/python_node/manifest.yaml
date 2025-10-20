@@ -37,6 +37,76 @@ ai_directive: |
   - Lifecycle nodes: Include state transitions and callbacks if required
   - Create Composable nodes when possible
 
+  ROS2_CONTROL PATTERNS (when user requests motor control, hardware interface, or controller functionality):
+  - Python primarily supports controller nodes (not hardware interfaces which require C++)
+  - For controller nodes: Create a node that interfaces with ros2_control via topics and services
+  - For controller nodes: Subscribe to joint state topics from hardware interfaces
+  - For controller nodes: Publish command messages to command topics
+  - Use dynamic_reconfigure for runtime parameter adjustments
+  - Implement control algorithms (PID, trajectory following, etc.) in Python
+  - Use asyncio for concurrent control operations where needed
+  - Include parameter validation for control gains and limits
+  - Implement safety checks and bounds checking for commands
+  - Add comprehensive logging for control loop performance
+  - Include example configuration files for controller parameters
+  - Create visualization tools for debugging control performance
+  - Note: For hardware interface implementation, recommend C++ template instead
+  - Support reading from and writing to ros2_control topics/services
+  - Include proper QoS settings for real-time control communication
+
+  MOVEIT2 PATTERNS (when user requests motion planning, manipulation, or MoveIt2 functionality):
+  - Use moveit_py or pymoveit2 for Python MoveIt2 interface
+  - Create motion planning requests using MoveGroupInterface
+  - Implement pick and place sequences with planning scene management
+  - Use geometry_msgs for pose targets and trajectory generation
+  - Include collision object management for scene updates
+  - Support cartesian path planning with waypoint following
+  - Implement grasp generation and manipulation primitives
+  - Use moveit_msgs action clients (MoveGroup, ExecuteTrajectory)
+  - Include inverse kinematics solving with configurable solvers
+  - Support multiple planning groups and end effectors
+  - Implement custom constraints (orientation, position, visibility)
+  - Add comprehensive error handling for planning failures
+  - Include visualization utilities for RViz debugging
+  - Use asyncio for non-blocking motion execution
+  - Support trajectory scaling and timing adjustments
+
+  NAV2 PATTERNS (when user requests navigation, path planning, or Nav2 functionality):
+  - Use nav2_simple_commander for Python navigation interface
+  - Implement NavigateToPose and NavigateThroughPoses actions
+  - Create custom behavior tree nodes in Python
+  - Support waypoint following with nav2_waypoint_follower
+  - Implement goal preemption and recovery behaviors
+  - Use action clients for navigation feedback and status
+  - Include costmap monitoring and obstacle detection
+  - Support dynamic parameter reconfiguration
+  - Implement pose estimation updates and localization
+  - Use tf2_py for coordinate transformations
+  - Include sensor data processing (laser scans, odometry)
+  - Support multi-robot coordination when applicable
+  - Add path smoothing and trajectory optimization
+  - Implement geofence checking and safety boundaries
+  - Include comprehensive logging for navigation events
+
+  MAVLINK PATTERNS (when user requests drone control, PX4/ArduPilot integration, or MAVLink functionality):
+  - Use pymavlink library for MAVLink protocol communication
+  - Implement offboard control for position/velocity commands
+  - Use mavros for ROS 2 to MAVLink bridge
+  - Subscribe to telemetry topics (pose, velocity, battery, GPS)
+  - Implement mission upload via mavros mission services
+  - Support flight mode changes (GUIDED, AUTO, etc.)
+  - Include RC override and manual control
+  - Implement arming/disarming sequences with safety checks
+  - Use asyncio for concurrent MAVLink communication
+  - Support multiple vehicle coordination
+  - Include parameter get/set via mavros services
+  - Implement geofence and rally point management
+  - Add camera trigger and gimbal control
+  - Support ADSB traffic awareness
+  - Include coordinate frame transformations (ENU, NED)
+  - Implement heartbeat monitoring and connection management
+  - Add comprehensive safety checks and failsafes
+
   QUALITY ASSURANCE:
   - Include proper imports and dependencies
   - Add input validation for parameters and messages
@@ -60,11 +130,27 @@ ai_directive: |
   ├── CONTRIBUTING.md
   ├── Agents.md
   ├── .gitignore
+  ├── config/
+  │   ├── controller_params.yaml  # Controller parameters (ros2_control only)
+  │   ├── moveit_config/          # MoveIt2 configuration (moveit2 only)
+  │   │   ├── joint_limits.yaml
+  │   │   ├── kinematics.yaml
+  │   │   └── ompl_planning.yaml
+  │   ├── nav2_params.yaml        # Nav2 navigation parameters (nav2 only)
+  │   └── mavlink_config.yaml     # MAVLink configuration (mavlink only)
   ├── launch/
-  │   └── node.launch.py  # One launch simple file for each node to facilitate debugging. If multiple nodes are included, create a launch file which calls each node's launch file.
+  │   ├── node.launch.py  # One launch simple file for each node to facilitate debugging. If multiple nodes are included, create a launch file which calls each node's launch file.
+  │   ├── control.launch.py  # Controller launch file (ros2_control only)
+  │   ├── moveit.launch.py   # MoveIt2 launch file (moveit2 only)
+  │   ├── navigation.launch.py  # Nav2 launch file (nav2 only)
+  │   └── mavlink.launch.py     # MAVLink launch file (mavlink only)
   └── package_name/
       ├── __init.py
-      └── node.py # If a simple implementation, name node.py for the name of the package. If the node has multiple publishers, subscribers, services, actions, etc., create a file for each and name the node file based on its primary function.
+      ├── node.py # If a simple implementation, name node.py for the name of the package. If the node has multiple publishers, subscribers, services, actions, etc., create a file for each and name the node file based on its primary function.
+      ├── controller.py  # Controller implementation (ros2_control only)
+      ├── move_group.py  # MoveIt2 implementation (moveit2 only)
+      ├── navigator.py   # Nav2 implementation (nav2 only)
+      └── mavlink_interface.py  # MAVLink implementation (mavlink only)
   ```
 
   Setup.cfg must include:

@@ -1,6 +1,8 @@
 name: "Resource"
 version: 0.0.0
 description: A template for representing resources like launch files, urdf files, meshes, etc.
+icon: "📦"
+short_description: "Resource Package for ROS 2"
 license: "MIT"
 ai_directive: |
   This is a ROS 2 resource package template. When generating code for this template:

@@ -49,5 +49,6 @@
         "C:\\opt\\ros\\humble\\x64\\lib\\python3.10\\dist-packages",
         "c:\\opt\\ros\\humble\\x64\\Lib\\site-packages"
     ],
-    "github.copilot.chat.codeGeneration.useInstructionFiles": true
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "ROS2.distro": "kilted"
 }

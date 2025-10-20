@@ -42,6 +42,82 @@ ai_directive: |
   - Use lifecycle publishers and subscriptions
   - Include proper error handling for state transitions
 
+  ROS2_CONTROL PATTERNS (when user requests motor control, hardware interface, or controller functionality):
+  - Determine if implementing a hardware interface (SystemInterface, ActuatorInterface, SensorInterface) or a controller node
+  - For hardware interfaces: Inherit from hardware_interface::SystemInterface (or ActuatorInterface/SensorInterface)
+  - For hardware interfaces: Implement on_init, on_configure, on_activate, on_deactivate, on_cleanup, on_shutdown, on_error
+  - For hardware interfaces: Implement export_state_interfaces and export_command_interfaces
+  - For hardware interfaces: Implement read(time, period) and write(time, period) methods
+  - For hardware interfaces: Use hardware_interface::return_type for return values
+  - For hardware interfaces: Register as pluginlib plugin with proper export macro
+  - For controller nodes: Use controller_interface::ControllerInterface as base class
+  - For controller nodes: Implement update() method for control loop logic
+  - For controller nodes: Use realtime_tools for thread-safe communication
+  - Include proper parameter handling for hardware configurations (CAN bus, GPIO pins, PWM settings, etc.)
+  - Follow ros2_control naming conventions for joints, sensors, and command interfaces
+  - Implement thread-safe hardware access with proper locking mechanisms
+  - Include example YAML configuration files for controller_manager
+  - Add dependencies: controller_interface, hardware_interface, pluginlib, realtime_tools
+  - Use appropriate state and command interface types (position, velocity, effort, etc.)
+  - Implement proper error handling and recovery for hardware communication failures
+  - Include comprehensive documentation on hardware setup and configuration
+
+  MOVEIT2 PATTERNS (when user requests motion planning, manipulation, or MoveIt2 functionality):
+  - Use moveit::planning_interface::MoveGroupInterface for motion planning
+  - Create planning scenes for collision checking and environment representation
+  - Implement pick and place operations using moveit::planning_interface::PlanningSceneInterface
+  - Use moveit_visual_tools for visualization in RViz
+  - Implement trajectory execution with proper error handling and replanning
+  - Support multiple planning groups (arm, gripper, whole body, etc.)
+  - Include cartesian path planning for end-effector motions
+  - Implement collision object management and scene updates
+  - Use moveit_msgs for action/service interfaces (MoveGroup, ExecuteTrajectory, etc.)
+  - Support custom constraints (orientation, position, joint constraints)
+  - Include inverse kinematics solving with IKFast or KDL
+  - Implement grasp planning and manipulation primitives
+  - Add dependencies: moveit_ros_planning_interface, moveit_visual_tools, moveit_msgs, geometric_shapes
+  - Include example SRDF and MoveIt config files
+  - Support multi-arm coordination when applicable
+  - Implement proper timeout and error recovery for planning failures
+
+  NAV2 PATTERNS (when user requests navigation, path planning, or Nav2 functionality):
+  - Use nav2 action clients for navigation goals (NavigateToPose, FollowPath, etc.)
+  - Implement behavior tree nodes for custom navigation behaviors
+  - Create costmap plugins for custom obstacle detection or path modification
+  - Use nav2_msgs for navigation interfaces and status feedback
+  - Implement waypoint following with nav2_waypoint_follower
+  - Support dynamic reconfiguration of navigation parameters
+  - Include recovery behaviors (backup, spin, wait)
+  - Implement goal preemption and cancellation handling
+  - Use tf2 for coordinate frame transformations
+  - Include sensor data publishers (laser scans, point clouds, odometry)
+  - Support localization interfaces (AMCL, particle filter updates)
+  - Implement path smoothing and trajectory optimization
+  - Add dependencies: nav2_msgs, nav2_core, nav2_costmap_2d, nav2_util, nav2_behavior_tree
+  - Include example navigation parameter YAML files
+  - Support multi-robot navigation coordination when applicable
+  - Implement proper QoS settings for sensor data (best effort, transient local, etc.)
+
+  MAVLINK PATTERNS (when user requests drone control, PX4/ArduPilot integration, or MAVLink functionality):
+  - Use MAVSDK C++ library for MAVLink communication
+  - Implement offboard control mode for position/velocity/attitude commands
+  - Support mission upload and execution via MAVLink mission protocol
+  - Include telemetry subscribers (position, attitude, battery, GPS, etc.)
+  - Implement RC override and manual control passthrough
+  - Use mavros for ROS 2 to MAVLink bridge when appropriate
+  - Support multiple MAVLink systems (multi-vehicle coordination)
+  - Implement proper heartbeat and connection monitoring
+  - Include parameter get/set via MAVLink parameter protocol
+  - Support camera trigger and gimbal control commands
+  - Implement geofence and rally point management
+  - Include flight mode switching (GUIDED, AUTO, STABILIZE, etc.)
+  - Add dependencies: mavros, mavros_msgs, geographic_msgs, sensor_msgs
+  - Support both serial and UDP MAVLink connections
+  - Include example launch files for different vehicle types (copter, plane, rover)
+  - Implement proper coordinate frame transformations (ENU, NED, ECEF)
+  - Support ADSB and traffic awareness integration
+  - Include safety checks and failsafe monitoring
+
   CMAKE AND BUILD REQUIREMENTS:
   - When support_humble is enabled: Runtime detection of ROS_DISTRO environment variable
   - Automatically uses ament_target_dependencies for Humble/Galactic/Foxy
@@ -83,20 +159,50 @@ ai_directive: |
   ├── include/
   │   └── package_name/
   │       ├── package_name.hpp          # Main node header
-  │       └── package_name_visibility_control.h  # Visibility control for Windows
+  │       ├── package_name_visibility_control.h  # Visibility control for Windows
+  │       ├── package_name_hardware_interface.hpp  # Hardware interface header (ros2_control only)
+  │       ├── package_name_controller.hpp          # Controller header (ros2_control only)
+  │       ├── package_name_move_group.hpp          # MoveIt2 interface header (moveit2 only)
+  │       ├── package_name_navigator.hpp           # Nav2 interface header (nav2 only)
+  │       └── package_name_mavlink.hpp             # MAVLink interface header (mavlink only)
   ├── src/
   │   ├── package_name.cpp              # Main node implementation
   │   ├── package_name_publisher_name.cpp    # Publisher implementation if required
   │   ├── package_name_subscriber_name.cpp   # Subscriber implementation if required
   │   ├── package_name_service_name.cpp      # Service server implementation if required
   │   ├── package_name_client_name.cpp       # Service client implementation if required
-  │   └── package_name_component.cpp         # Component registration
+  │   ├── package_name_component.cpp         # Component registration
+  │   ├── package_name_hardware_interface.cpp  # Hardware interface implementation (ros2_control only)
+  │   ├── package_name_controller.cpp          # Controller implementation (ros2_control only)
+  │   ├── package_name_move_group.cpp          # MoveIt2 implementation (moveit2 only)
+  │   ├── package_name_navigator.cpp           # Nav2 implementation (nav2 only)
+  │   └── package_name_mavlink.cpp             # MAVLink implementation (mavlink only)
+  ├── config/
+  │   ├── controllers.yaml              # Controller configuration (ros2_control only)
+  │   ├── hardware.yaml                 # Hardware interface configuration (ros2_control only)
+  │   ├── moveit_config/                # MoveIt2 configuration directory (moveit2 only)
+  │   │   ├── config/
+  │   │   │   ├── joint_limits.yaml
+  │   │   │   ├── kinematics.yaml
+  │   │   │   └── ompl_planning.yaml
+  │   │   └── package_name.srdf         # Semantic robot description
+  │   ├── nav2_params.yaml              # Nav2 navigation parameters (nav2 only)
+  │   └── mavlink_config.yaml           # MAVLink connection configuration (mavlink only)
   ├── launch/
-  │   └── package_name_node.launch.py   # Launch file for debugging
+  │   ├── package_name_node.launch.py   # Launch file for debugging
+  │   ├── package_name_control.launch.py  # Control system launch file (ros2_control only)
+  │   ├── package_name_moveit.launch.py   # MoveIt2 launch file (moveit2 only)
+  │   ├── package_name_navigation.launch.py  # Nav2 launch file (nav2 only)
+  │   └── package_name_mavlink.launch.py    # MAVLink launch file (mavlink only)
   ├── resource/
   │   └── package_name                  # Resource file for ament index
   └── test/
-    └── test_package_name.cpp         # Unit tests if specified
+    ├── test_package_name.cpp         # Unit tests if specified
+    ├── test_hardware_interface.cpp   # Hardware interface tests (ros2_control only)
+    ├── test_controller.cpp           # Controller tests (ros2_control only)
+    ├── test_move_group.cpp           # MoveIt2 tests (moveit2 only)
+    ├── test_navigator.cpp            # Nav2 tests (nav2 only)
+    └── test_mavlink.cpp              # MAVLink tests (mavlink only)
   ```
 
   Visibility Control Header (for Windows compatibility):
@@ -122,13 +228,13 @@ ai_directive: |
   #else
   // Linux visibility settings
   #define MY_LIB_EXPORT __attribute__ ((visibility("default")))
-  #define MY_LIB_IMPORT
+  #define MY_LIB_IMPORT __attribute__ ((visibility("default")))
   #ifdef MY_LIB_BUILDING_LIBRARY
     #define MY_LIB_PUBLIC MY_LIB_EXPORT
   #else
     #define MY_LIB_PUBLIC MY_LIB_IMPORT
   #endif
-  #define MY_LIB_PUBLIC_TYPE
+  #define MY_LIB_PUBLIC_TYPE MY_LIB_IMPORT
   #define MY_LIB_LOCAL __attribute__ ((visibility("hidden")))
   #endif
   #endif  // MY_LIB__VISIBILITY_CONTROL_H_
@@ -182,6 +288,33 @@ ai_directive: |
         std_msgs
         rclcpp_lifecycle
         std_srvs
+        {{#if include_ros2_control}}
+        controller_interface
+        hardware_interface
+        pluginlib
+        realtime_tools
+        {{/if}}
+        {{#if include_moveit2}}
+        moveit_ros_planning_interface
+        moveit_visual_tools
+        moveit_msgs
+        geometric_shapes
+        {{/if}}
+        {{#if include_nav2}}
+        nav2_msgs
+        nav2_core
+        nav2_costmap_2d
+        nav2_util
+        nav2_behavior_tree
+        tf2
+        tf2_ros
+        {{/if}}
+        {{#if include_mavlink}}
+        mavros
+        mavros_msgs
+        geographic_msgs
+        sensor_msgs
+        {{/if}}
       )
     else()
       message(STATUS "Using modern target_link_libraries for ROS 2 ${ROS_DISTRO}")
@@ -195,6 +328,33 @@ ai_directive: |
         {{/if}}
         {{#if include_service}}
         ${{std_srvs_TARGETS}}
+        {{/if}}
+        {{#if include_ros2_control}}
+        controller_interface::controller_interface
+        hardware_interface::hardware_interface
+        pluginlib::pluginlib
+        realtime_tools::realtime_tools
+        {{/if}}
+        {{#if include_moveit2}}
+        moveit_ros_planning_interface::moveit_ros_planning_interface
+        moveit_visual_tools::moveit_visual_tools
+        ${{moveit_msgs_TARGETS}}
+        ${{geometric_shapes_TARGETS}}
+        {{/if}}
+        {{#if include_nav2}}
+        ${{nav2_msgs_TARGETS}}
+        nav2_core::nav2_core
+        nav2_costmap_2d::nav2_costmap_2d_client
+        nav2_util::nav2_util_core
+        ${{nav2_behavior_tree_TARGETS}}
+        tf2::tf2
+        tf2_ros::tf2_ros
+        {{/if}}
+        {{#if include_mavlink}}
+        ${{mavros_TARGETS}}
+        ${{mavros_msgs_TARGETS}}
+        ${{geographic_msgs_TARGETS}}
+        ${{sensor_msgs_TARGETS}}
         {{/if}}
       )
     endif()
