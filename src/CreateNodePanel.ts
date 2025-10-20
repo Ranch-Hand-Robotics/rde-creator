@@ -157,7 +157,7 @@ export class CreateNodePanel {
             }
 
             const aiPackageName = message.variables["package_name"];
-            if aiPackageName === undefined) {
+            if (aiPackageName === undefined) {
               vscode.window.showErrorMessage("Package Name is required");
               return;
             }
