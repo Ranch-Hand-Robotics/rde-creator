@@ -1,3 +1,6 @@
+// Copyright (c) Ranch Hand Robotics, LLC. All rights reserved.
+// Licensed under the MIT License.
+
 import * as vscode from 'vscode';
 import { getNonce, getUri, fileNameFromVariable, getAllManifestMap } from './utils';
 import { AIPackageGenerator } from './AIPackageGenerator';
@@ -154,7 +157,7 @@ export class CreateNodePanel {
             }
 
             const aiPackageName = message.variables["package_name"];
-            if (aiPackageName === undefined) {
+            if aiPackageName === undefined) {
               vscode.window.showErrorMessage("Package Name is required");
               return;
             }

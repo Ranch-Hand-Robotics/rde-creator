@@ -1,3 +1,6 @@
+// Copyright (c) Ranch Hand Robotics, LLC. All rights reserved.
+// Licensed under the MIT License.
+
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 

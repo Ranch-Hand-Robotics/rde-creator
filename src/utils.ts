@@ -1,3 +1,6 @@
+// Copyright (c) Ranch Hand Robotics, LLC. All rights reserved.
+// Licensed under the MIT License.
+
 import { Uri, Webview, workspace, RelativePattern } from "vscode";
 import * as extension from "./extension";
 

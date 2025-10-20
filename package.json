@@ -4,6 +4,7 @@
   "description": "Create ROS 2 Packages using AI",
   "publisher": "Ranch-Hand-Robotics",
   "icon": "media/icon.png",
+  "license": "https://github.com/Ranch-Hand-Robotics/rde-creator/blob/main/LICENSE",
   "repository": {
     "type": "git",
     "url": "https://github.com/Ranch-Hand-Robotics/rde-creator"

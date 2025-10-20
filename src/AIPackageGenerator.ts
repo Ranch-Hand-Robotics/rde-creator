@@ -1,3 +1,6 @@
+// Copyright (c) Ranch Hand Robotics, LLC. All rights reserved.
+// Licensed under the MIT License.
+
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';

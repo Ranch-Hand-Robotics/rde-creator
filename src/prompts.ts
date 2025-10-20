@@ -1,3 +1,6 @@
+// Copyright (c) Ranch Hand Robotics, LLC. All rights reserved.
+// Licensed under the MIT License.
+
 /**
  * Constructs an AI prompt for ROS 2 package generation based on template and user requirements
  */
