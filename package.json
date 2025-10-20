@@ -3,6 +3,7 @@
   "displayName": "Robotics Package Creation Tool",
   "description": "Create ROS 2 Packages using AI",
   "publisher": "Ranch-Hand-Robotics",
+  "icon": "media/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/Ranch-Hand-Robotics/rde-creator"
