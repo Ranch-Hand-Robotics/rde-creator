@@ -2,6 +2,8 @@
 
 An AI-powered Visual Studio Code extension for creating ROS 2 packages from intelligent templates. This extension leverages GitHub Copilot and Language Models to generate complete, functional ROS 2 packages in C++, Python, and Node.js.
 
+![Creator](https://raw.githubusercontent.com/Ranch-Hand-Robotics/rde-creator/refs/heads/main/media/screenshot.png)
+
 ## Features
 
 ### 🤖 AI-Powered Package Generation
