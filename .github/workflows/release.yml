@@ -46,10 +46,17 @@ jobs:
               --generate-notes \
               --prerelease \
               rde-creator.vsix
+
+      - name: Publish Prerelease to Marketplace
+        if: ${{ github.event.inputs.prerelease == 'true' }}
+        run: |
+          vsce publish --pre-release -p ${{ secrets.VSCE_PAT }}      
+
       - name: Build Release VSIX package
         if: ${{ github.event.inputs.prerelease == 'false' }}
         run: |
           vsce package -o rde-creator.vsix
+
       - name: Create Release
         if: ${{ github.event.inputs.prerelease == 'false' }}
         env:
@@ -61,3 +68,8 @@ jobs:
               --title="Release ${{ github.event.inputs.tags }}" \
               --generate-notes \
               rde-creator.vsix
+      - name: Publish Release to Marketplace
+        if: ${{ github.event.inputs.prerelease == 'false' }}
+        run: |
+          vsce publish -p ${{ secrets.VSCE_PAT }}
+      
