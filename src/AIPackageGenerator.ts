@@ -10,10 +10,20 @@ import { constructAIPrompt } from './prompts';
 export class AIPackageGenerator {
   private outputChannel: vscode.OutputChannel;
   private webview: vscode.Webview | undefined;
+  
+  // Maximum AI response size in characters (configurable)
+  // Default: 50KB - increase if you need larger/more complex packages
+  // Decrease if you're hitting memory issues
+  private readonly maxResponseSize: number;
 
-  constructor(outputChannel: vscode.OutputChannel, webview?: vscode.Webview) {
+  constructor(
+    outputChannel: vscode.OutputChannel, 
+    webview?: vscode.Webview,
+    maxResponseSize: number = 50000
+  ) {
     this.outputChannel = outputChannel;
     this.webview = webview;
+    this.maxResponseSize = maxResponseSize;
   }
 
   /**
@@ -60,8 +70,15 @@ export class AIPackageGenerator {
       const manifest = yaml.parse(manifestContent);
       this.sendProgress('Package manifest parsed');
 
-      // Construct the AI prompt
-      const prompt = constructAIPrompt(templateContent, manifest, variables, naturalLanguageDescription, testDescription);
+      // Construct the AI prompt with the configured max response size
+      const prompt = constructAIPrompt(
+        templateContent, 
+        manifest, 
+        variables, 
+        naturalLanguageDescription, 
+        testDescription,
+        this.maxResponseSize
+      );
       this.sendProgress('AI prompt constructed with template and user requirements');
 
       // Send request to language model
@@ -133,12 +150,17 @@ export class AIPackageGenerator {
   private async processAIResponse(response: vscode.LanguageModelChatResponse): Promise<any> {
     let fullResponse = '';
     let lastLoggedLength = 0;
-    const logInterval = 5000; // Log every 1000 characters
+    const logInterval = 5000; // Log every 5000 characters
 
     for await (const part of response.text) {
       fullResponse += part;
       
-      // Only log progress every 1000 characters to reduce spam
+      // Check if response is getting too large
+      if (fullResponse.length > this.maxResponseSize) {
+        throw new Error(`Response too long (${fullResponse.length} characters). The AI generated more than ${this.maxResponseSize} characters. Try simplifying your request or increase the maxResponseSize limit.`);
+      }
+      
+      // Only log progress every 5000 characters to reduce spam
       if (fullResponse.length - lastLoggedLength >= logInterval) {
         this.sendProgress(`Receiving AI response... (${fullResponse.length} characters so far)`);
         lastLoggedLength = fullResponse.length;

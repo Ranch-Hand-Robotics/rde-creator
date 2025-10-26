@@ -87,6 +87,22 @@ export class CreateNodePanel {
     }
   }
 
+  private _sendMaxResponseSize() {
+    try {
+      const config = vscode.workspace.getConfiguration('rosPackageCreator');
+      const maxResponseSize = config.get<number>('maxAIResponseSize', 50000);
+      
+      this._panel.webview.postMessage({
+        command: "setMaxResponseSize",
+        maxResponseSize: maxResponseSize
+      });
+      
+      extension.outputChannel.appendLine(`Sent maxResponseSize to webview: ${maxResponseSize}`);
+    } catch (error) {
+      extension.outputChannel.appendLine(`Error sending maxResponseSize: ${error}`);
+    }
+  }
+
   public static async render(extensionUri: vscode.Uri, targetFolderUri?: vscode.Uri) {
     // Check if AI models are available before showing the webview
     if (!vscode.lm) {
@@ -144,6 +160,7 @@ export class CreateNodePanel {
             // Webview is ready, load manifests and models
             this._loadManifests();
             this._loadAvailableModels();
+            this._sendMaxResponseSize();
             return;
 
           case "createPackage":
@@ -199,7 +216,14 @@ export class CreateNodePanel {
             // Run AI generation asynchronously without blocking the UI
             (async () => {
               try {
-                const aiGenerator = new AIPackageGenerator(extension.outputChannel, this._panel.webview);
+                // Use maxResponseSize from webview message (user may have overridden it)
+                const maxResponseSize = message.maxResponseSize || 50000;
+                
+                const aiGenerator = new AIPackageGenerator(
+                  extension.outputChannel, 
+                  this._panel.webview,
+                  maxResponseSize
+                );
                 await aiGenerator.generatePackageWithAI(
                   aiTemplateSource,
                   aiVariables,
