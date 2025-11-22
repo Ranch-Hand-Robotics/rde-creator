@@ -133,7 +133,7 @@ Please generate comprehensive test cases that:
 Generate the ROS 2 package now:
 ## Output Format (MUST be valid JSON only - no prose, no explanations)
 **CRITICAL**: Your response must START with { and END with }. Nothing before or after.
-**CRITICAL**: Response MUST be under ${maxResponseSize} characters total - optimize for brevity
+**CRITICAL**: Response MUST NOT exceed ${maxResponseSize} characters total - optimize for brevity
 **CRITICAL**: Escape all special characters in file content (quotes, newlines, backslashes)
 **CRITICAL**: Use \n for newlines in file content, not actual line breaks
 **CRITICAL**: All function bodies must contain actual implementation code, not comments
