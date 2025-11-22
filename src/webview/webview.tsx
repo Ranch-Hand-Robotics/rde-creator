@@ -17,6 +17,7 @@ interface WebviewMessage {
   testDescription?: string;
   manifests?: string;
   selectedModel?: string;
+  maxResponseSize?: number;
 }
 
 interface PackageManifest {
@@ -52,6 +53,7 @@ const App: React.FC = () => {
 
   const [availableModels, setAvailableModels] = useState<LanguageModel[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('');
+  const [maxResponseSize, setMaxResponseSize] = useState<number>(50000);
 
   useEffect(() => {
     // Request manifests on load
@@ -112,6 +114,9 @@ const App: React.FC = () => {
         case 'aiComplete':
           setIsGenerating(false);
           break;
+        case 'setMaxResponseSize':
+          setMaxResponseSize(message.maxResponseSize || 50000);
+          break;
       }
     };
 
@@ -160,7 +165,8 @@ const App: React.FC = () => {
       },
       naturalLanguageDescription: finalNaturalLanguageDescription,
       testDescription: testDescription.trim(),
-      selectedModel: selectedModel
+      selectedModel: selectedModel,
+      maxResponseSize: maxResponseSize
     };
 
     setIsGenerating(true);
@@ -261,6 +267,28 @@ const App: React.FC = () => {
             </select>
             <small className="help-text">
               💡 Select the AI model to use for generating your ROS 2 package. Different models may produce different results.
+            </small>
+          </div>
+          
+          <div className="form-field">
+            <label htmlFor="maxResponseSize">Max AI Response Size (characters)</label>
+            <input
+              id="maxResponseSize"
+              type="number"
+              min="10000"
+              value={maxResponseSize}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                if (!isNaN(val)) {
+                  setMaxResponseSize(val);
+                } else if (e.target.value === "") {
+                  setMaxResponseSize(0); // Or keep previous value, or set to default
+                }
+              }}
+              className="text-field"
+            />
+            <small className="help-text">
+              💡 Maximum size of AI-generated response. Increase for larger/more complex packages. Current: {(maxResponseSize / 1000).toFixed(0)}KB
             </small>
           </div>
         </div>

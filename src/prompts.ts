@@ -9,7 +9,8 @@ export function constructAIPrompt(
   manifest: any,
   variables: Map<string, string>,
   naturalLanguageDescription: string,
-  testDescription?: string
+  testDescription?: string,
+  maxResponseSize: number = 50000
 ): string {
   const variablesObj = Object.fromEntries(variables);
 
@@ -82,11 +83,23 @@ Please generate comprehensive test cases that:
 
 ` : 'IMPORTANT: No tests were requested by the user. Do NOT include any test files or test directories in the generated package.'}
 
+## RESPONSE SIZE OPTIMIZATION (CRITICAL)
+**WARNING**: Your response has a strict size limit. To stay within limits:
+- Use concise but complete implementations
+- Avoid verbose comments and excessive whitespace
+- Keep documentation focused and brief
+- Use single-line function signatures where possible
+- Minimize boilerplate code while maintaining functionality
+- Keep CONTRIBUTING.md and Agents.md brief but informative
+- Prioritize essential functionality over comprehensive examples
+
 ## Instructions
 1. **CRITICAL**: Follow the exact directory structure and file layout specified in the AI directive
 2. **CRITICAL**: Create files as needed to support the request
 3. **CRITICAL**: Do not include manifest.yaml or any metadata files in the generated package
-4. Analyze the user's natural language description and adapt the package accordingly
+4. **CRITICAL**: ALL function implementations must be COMPLETE - no placeholder comments, no "TODO", no "implement this" comments
+5. **CRITICAL**: Include ALL required plugin descriptor XML files, configuration files, and dependencies
+6. Analyze the user's natural language description and adapt the package accordingly
 5. Use the provided parameters to customize the package (replace ALL {{variable}} placeholders)
 6. Generate a complete, functional ROS 2 package that meets the user's requirements
 7. Ensure all generated files follow ROS 2 best practices and conventions
@@ -99,26 +112,10 @@ Please generate comprehensive test cases that:
 14. Include launch files with proper parameter handling
 15. ${testDescription && testDescription.trim() ? 'Generate comprehensive test suites based on test requirements' : '**DO NOT generate any test files** - no tests were requested'}
 16. Ensure test files follow language-specific testing conventions and ROS 2 patterns
-17. **IMPORTANT:** Generate a comprehensive CONTRIBUTING.md file that documents:
-    - Complete package architecture with Mermaid diagrams showing:
-      * Node architecture and communication patterns
-      * Data flow between components
-      * Service/action interfaces
-      * Parameter dependencies
-      * Launch file structure
-    - Detailed explanation of each node's purpose and responsibilities
-    - Communication patterns (publishers, subscribers, services, actions)
-    - Parameter documentation with defaults and valid ranges
-    - Build and installation instructions
-    - Testing strategy and how to run tests
-    - Development guidelines and code organization
-    - Dependencies and their purposes
-    - Troubleshooting common issues
-    - The original user requirements that generated this package
-    - AI generation metadata (date, model, user prompt summary)
-
-    AI:
-  - Agents.md must be included in the package root with instructions for future AI agents that may interact with this package.
+17. **IMPORTANT:** Generate CONCISE documentation files:
+    - CONTRIBUTING.md: Brief overview with ONE simple Mermaid diagram, build steps, testing instructions
+    - Agents.md: Short instructions for AI agents (key commands, parameter info)
+    - Keep both files under 100 lines total to save space
 
 
 ## Important ROS 2 Requirements
@@ -126,11 +123,22 @@ Please generate comprehensive test cases that:
 - Use appropriate message types from standard ROS 2 packages
 - Include proper exception handling
 - Add docstrings and comments for maintainability
-- Do not include any placeholder text like "TODO" or "FIXME".
-- If you are confused about any requirement, make a reasonable assumption and proceed, but add a comment explaining your confusion and decisions used to move forward.
+- **CRITICAL**: Do not include any placeholder text like "TODO", "FIXME", or "Implement this here"
+- **CRITICAL**: All function bodies must contain working code, not comments saying what should be implemented
+- **CRITICAL**: Include ALL plugin descriptor XML files (e.g., hardware_interface plugins, controller plugins)
+- **CRITICAL**: Include ALL dependencies in package.xml (e.g., jsoncpp if using JSON, serial libraries, etc.)
+- **CRITICAL**: All lifecycle methods (on_init, on_configure, on_activate, etc.) must have complete implementations
+- If you are confused about any requirement, make a reasonable assumption and proceed with a WORKING implementation, adding explanatory comments about your decisions
 
 Generate the ROS 2 package now:
-## Output Format (JSON only)
+## Output Format (MUST be valid JSON only - no prose, no explanations)
+**CRITICAL**: Your response must START with { and END with }. Nothing before or after.
+**CRITICAL**: Response MUST NOT exceed ${maxResponseSize} characters total - optimize for brevity
+**CRITICAL**: Escape all special characters in file content (quotes, newlines, backslashes)
+**CRITICAL**: Use \n for newlines in file content, not actual line breaks
+**CRITICAL**: All function bodies must contain actual implementation code, not comments
+**CRITICAL**: Minimize whitespace and verbose comments to reduce size
+
 {
   "directories": ["dir1", "dir2"],
   "files": {

@@ -34,6 +34,12 @@
           "type": "string",
           "default": "auto",
           "description": "Last selected AI model for package generation. Set to 'auto' to use preferred model family."
+        },
+        "rosPackageCreator.maxAIResponseSize": {
+          "type": "number",
+          "default": 50000,
+          "minimum": 10000,
+          "description": "Maximum AI response size in characters (default: 50000). Increase for larger/more complex packages. Decrease if you encounter memory issues."
         }
       }
     },
