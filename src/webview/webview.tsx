@@ -277,7 +277,14 @@ const App: React.FC = () => {
               type="number"
               min="10000"
               value={maxResponseSize}
-              onChange={(e) => setMaxResponseSize(parseInt(e.target.value) || 50000)}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                if (!isNaN(val)) {
+                  setMaxResponseSize(val);
+                } else if (e.target.value === "") {
+                  setMaxResponseSize(0); // Or keep previous value, or set to default
+                }
+              }}
               className="text-field"
             />
             <small className="help-text">
