@@ -177,8 +177,8 @@ export class AIPackageGenerator {
               vscode.LanguageModelChatMessage.User(chunkPrompt + '\n' + followupInstr)
             ], { justification: `Request file chunk ${i}/${total} for ${f.path}` });
             const chunkObj = await this.processAIResponse(chunkResp);
-            if (!chunkObj || chunkObj.file !== f.path) {
-              throw new Error(`Unexpected chunk response for ${f.path}`);
+            if (!chunkObj || chunkObj.file !== processedPath) {
+              throw new Error(`Unexpected chunk response for ${processedPath}`);
             }
             
             // Unescape and process chunk content
