@@ -9,6 +9,9 @@
     "type": "git",
     "url": "https://github.com/Ranch-Hand-Robotics/rde-creator"
   },
+  "sponsor": {
+    "url": "https://github.com/sponsors/Ranch-Hand-Robotics"
+  },
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.101.0"
@@ -34,6 +37,11 @@
           "type": "string",
           "default": "auto",
           "description": "Last selected AI model for package generation. Set to 'auto' to use preferred model family."
+        },
+        "rosPackageCreator.lastSelectedTestModel": {
+          "type": "string",
+          "default": "auto",
+          "description": "Last selected AI model for test generation. Set to 'auto' to use preferred model family."
         },
         "rosPackageCreator.maxAIResponseSize": {
           "type": "number",

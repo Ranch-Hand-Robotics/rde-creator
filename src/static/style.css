@@ -29,8 +29,11 @@
 
 /* Button positioning - legacy support */
 .component-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .node-page .component-row:last-child {
@@ -38,14 +41,6 @@
   justify-content: center;
   margin-top: 2rem;
   padding: 1rem;
-}
-
-.generating-page .component-row {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  margin: 0;
-  padding: 0;
 }
 
 #data-grid-row,
@@ -334,23 +329,73 @@ h2 {
   margin-top: 2rem;
 }
 
+.progress-steps h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--vscode-foreground, #cccccc);
+  font-size: 1rem;
+}
+
+.current-step {
+  padding: 0.75rem;
+  background-color: var(--vscode-list-hoverBackground, #2a2d2e);
+  border-left: 3px solid var(--vscode-progressBar-background, #0e639c);
+  margin-bottom: 1.5rem;
+  border-radius: 4px;
+}
+
+.current-step strong {
+  color: var(--vscode-progressBar-background, #0e639c);
+  margin-right: 0.5rem;
+}
+
 .step {
   display: flex;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.25rem 0;
 }
 
 .step-indicator {
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background-color: var(--vscode-progressBar-background, #3c3c3c);
+  background-color: var(--vscode-input-background, #3c3c3c);
+  border: 2px solid var(--vscode-panel-border, #3c3c3c);
   margin-right: 0.75rem;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: bold;
+  flex-shrink: 0;
 }
 
 .step-indicator.active {
   background-color: var(--vscode-progressBar-background, #0e639c);
+  border-color: var(--vscode-progressBar-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+}
+
+.step-indicator.active.spinning {
+  animation: spin 1s linear infinite;
+}
+
+.step-indicator.completed {
+  background-color: var(--vscode-terminal-ansiGreen, #4ec9b0);
+  border-color: var(--vscode-terminal-ansiGreen, #4ec9b0);
+  color: var(--vscode-button-foreground, #ffffff);
+}
+
+.step span {
+  color: var(--vscode-foreground, #cccccc);
+  font-size: 0.95rem;
+}
+
+.step span.completed-text {
+  color: var(--vscode-descriptionForeground, #8c8c8c);
+  text-decoration: line-through;
 }
 
 .generating-page {

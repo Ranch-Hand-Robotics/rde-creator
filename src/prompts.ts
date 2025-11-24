@@ -4,147 +4,86 @@
 /**
  * Constructs an AI prompt for ROS 2 package generation based on template and user requirements
  */
-export function constructAIPrompt(
+// The original single-shot prompt is replaced by staged prompt builders
+// to enable a sub-agent, multi-step generation workflow that reduces response size
+export function constructPlanPrompt(
   templateContent: string,
   manifest: any,
-  variables: Map<string, string>,
+  variablesObj: Record<string, string>,
   naturalLanguageDescription: string,
-  testDescription?: string,
-  maxResponseSize: number = 50000
+  maxResponseSize: number
 ): string {
-  const variablesObj = Object.fromEntries(variables);
-
-  // Extract AI directive from manifest if present
   const aiDirective = manifest.ai_directive || '';
+  return `You are an expert ROS 2 developer. Produce a JSON plan for generating the package in multiple steps.
 
-  return `
-You are an expert ROS 2 developer tasked with generating a complete ROS 2 package based on a template and user requirements.
+IMPORTANT: Return ONLY raw JSON. Do NOT wrap in markdown code blocks. Do NOT use \`\`\`json formatting.
+Your response must start with { and end with }.
 
-${aiDirective ? `## TEMPLATE-SPECIFIC AI DIRECTIVE (HIGH PRIORITY - FOLLOW EXACTLY)
-${aiDirective}
-
-CRITICAL: Follow the directory structure and file organization specified in the AI directive exactly.
-CRITICAL: Only include test files if explicitly requested by the user in the test requirements section.
-CRITICAL: Do not include any files not mentioned in the AI directive unless specifically requested.
-CRITICAL: Respond with VALID JSON only. Your response must be parseable as JSON and contain only the package structure.
-CRITICAL: Package.xml must be included in the root of the package and must have the following fields correctly filled out; if not supplied provide a best guess based on the user's natural language description:
-- name
-- version
-- description
-- maintainer
-- license
-- author
-- buildtool_depend
-- depend
-- test_depend (if tests are requested)
-- export
-
-
-` : ''}## Template Information
-The following template files are available for reference:
-${templateContent}
-
-## Package Manifest (Metadata - Do not include manifest.yaml in generated package)
-${JSON.stringify(manifest, null, 2)}
-
-## Important: File vs Directory Interpretation
-When reading the manifest structure:
-- Lines ending with '/' indicate directories (e.g., 'launch/', 'urdf/')
-- Lines with file extensions indicate files (e.g., 'package.xml', 'setup.py')  
-- Lines without extensions but with specific names indicate files (e.g., 'resource/package_name' is a FILE)
-- The 'resource/package_name' entry MUST be an empty file, not a directory
-- Do NOT create directories where files are specified
-
-## User Parameters (Replace {{variable}} placeholders with these values)
-${JSON.stringify(variablesObj, null, 2)}
-
-## User Requirements (CRITICAL - Implement exactly as specified)
-${naturalLanguageDescription}
-
-**IMPORTANT**: The user's natural language description above is the PRIMARY requirement.
-Analyze it carefully and implement EXACTLY what is requested. Do not add extra features or change the functionality unless explicitly asked.
-If the description is unclear, make reasonable assumptions but document them in comments.
-
-## Test Requirements
-${testDescription && testDescription.trim() ? `
-The user has specified the following test case requirements:
-${testDescription}
-
-Please generate comprehensive test cases that:
-- Test the functionality described above
-- Cover edge cases and error scenarios mentioned
-- Follow ROS 2 testing best practices
-- Include unit tests, integration tests, and any specific test types mentioned
-- Use appropriate test frameworks (gtest for C++, unittest/pytest for Python, Jest for Node.js)
-- Include proper setup and teardown procedures
-- Test ROS 2 specific functionality (publishers, subscribers, services, parameters)
-- Validate message flows and service calls
-- Include performance and reliability tests where mentioned
-
-` : 'IMPORTANT: No tests were requested by the user. Do NOT include any test files or test directories in the generated package.'}
-
-## RESPONSE SIZE OPTIMIZATION (CRITICAL)
-**WARNING**: Your response has a strict size limit. To stay within limits:
-- Use concise but complete implementations
-- Avoid verbose comments and excessive whitespace
-- Keep documentation focused and brief
-- Use single-line function signatures where possible
-- Minimize boilerplate code while maintaining functionality
-- Keep CONTRIBUTING.md and Agents.md brief but informative
-- Prioritize essential functionality over comprehensive examples
-
-## Instructions
-1. **CRITICAL**: Follow the exact directory structure and file layout specified in the AI directive
-2. **CRITICAL**: Create files as needed to support the request
-3. **CRITICAL**: Do not include manifest.yaml or any metadata files in the generated package
-4. **CRITICAL**: ALL function implementations must be COMPLETE - no placeholder comments, no "TODO", no "implement this" comments
-5. **CRITICAL**: Include ALL required plugin descriptor XML files, configuration files, and dependencies
-6. Analyze the user's natural language description and adapt the package accordingly
-5. Use the provided parameters to customize the package (replace ALL {{variable}} placeholders)
-6. Generate a complete, functional ROS 2 package that meets the user's requirements
-7. Ensure all generated files follow ROS 2 best practices and conventions
-8. Include appropriate dependencies, launch files, and configuration as needed
-9. Make the package production-ready with proper error handling and documentation
-10. Use modern ROS 2 patterns (rclpy for Python, rclcpp for C++, rclnodejs for Node.js, rclrust for Rust)
-11. Include proper QoS settings where appropriate
-12. Add comprehensive logging and error handling
-13. Follow ROS 2 naming conventions and message standards
-14. Include launch files with proper parameter handling
-15. ${testDescription && testDescription.trim() ? 'Generate comprehensive test suites based on test requirements' : '**DO NOT generate any test files** - no tests were requested'}
-16. Ensure test files follow language-specific testing conventions and ROS 2 patterns
-17. **IMPORTANT:** Generate CONCISE documentation files:
-    - CONTRIBUTING.md: Brief overview with ONE simple Mermaid diagram, build steps, testing instructions
-    - Agents.md: Short instructions for AI agents (key commands, parameter info)
-    - Keep both files under 100 lines total to save space
-
-
-## Important ROS 2 Requirements
-- Include spin() or equivalent for event processing
-- Use appropriate message types from standard ROS 2 packages
-- Include proper exception handling
-- Add docstrings and comments for maintainability
-- **CRITICAL**: Do not include any placeholder text like "TODO", "FIXME", or "Implement this here"
-- **CRITICAL**: All function bodies must contain working code, not comments saying what should be implemented
-- **CRITICAL**: Include ALL plugin descriptor XML files (e.g., hardware_interface plugins, controller plugins)
-- **CRITICAL**: Include ALL dependencies in package.xml (e.g., jsoncpp if using JSON, serial libraries, etc.)
-- **CRITICAL**: All lifecycle methods (on_init, on_configure, on_activate, etc.) must have complete implementations
-- If you are confused about any requirement, make a reasonable assumption and proceed with a WORKING implementation, adding explanatory comments about your decisions
-
-Generate the ROS 2 package now:
-## Output Format (MUST be valid JSON only - no prose, no explanations)
-**CRITICAL**: Your response must START with { and END with }. Nothing before or after.
-**CRITICAL**: Response MUST NOT exceed ${maxResponseSize} characters total - optimize for brevity
-**CRITICAL**: Escape all special characters in file content (quotes, newlines, backslashes)
-**CRITICAL**: Use \n for newlines in file content, not actual line breaks
-**CRITICAL**: All function bodies must contain actual implementation code, not comments
-**CRITICAL**: Minimize whitespace and verbose comments to reduce size
-
+Example output format:
 {
-  "directories": ["dir1", "dir2"],
-  "files": {
-    "path/to/file.py": "file content here",
-    "package.xml": "<?xml version='1.0'?>..."
-  }
+  "files":[{"path":"package.xml","estimate_bytes":200}],
+  "chunks":{"large_file.cpp":3}
 }
+
+Requirements:
+- List all files to generate under "files" as objects: {"path":"...","estimate_bytes":123}
+- Provide a "chunks" map: file path -> number of chunks (<=10) to split large files
+- Use ${maxResponseSize} as an upper bound for any single response size
+${aiDirective ? `
+TEMPLATE AI DIRECTIVE:
+${aiDirective}
+` : ''}
+User variables: ${JSON.stringify(variablesObj)}
+User request: ${naturalLanguageDescription}
 `;
+}
+
+export function constructFileChunkPrompt(
+  templateContent: string,
+  manifest: any,
+  variablesObj: Record<string, string>,
+  naturalLanguageDescription: string,
+  filePath: string,
+  chunkIndex: number,
+  totalChunks: number
+): string {
+  const aiDirective = manifest.ai_directive || '';
+  return `You are an expert ROS 2 developer. Return JSON for chunk ${chunkIndex}/${totalChunks} of file: ${filePath}
+
+IMPORTANT: Return ONLY raw JSON. Do NOT wrap in markdown code blocks. Do NOT use \`\`\`json formatting.
+Your response must start with { and end with }.
+
+Example output format:
+{
+  "file":"${filePath}",
+  "chunk_index":${chunkIndex},
+  "total_chunks":${totalChunks},
+  "content":"file content here with \\n for newlines"
+}
+
+Requirements:
+- Content must be a JSON string with special characters escaped
+- Use \\n for newlines, escape quotes as \\" and backslashes as \\\\
+- chunk_index is 1-based
+- Concatenation of all chunks in order must equal the full file content
+- Generate ONLY this chunk (${chunkIndex}/${totalChunks}), not the entire file
+${aiDirective ? `
+TEMPLATE AI DIRECTIVE:
+${aiDirective}
+` : ''}
+User variables: ${JSON.stringify(variablesObj)}
+User request: ${naturalLanguageDescription}
+`;
+}
+
+export function constructFollowupPromptInstructions(maxResponseSize: number): string {
+  return `
+
+CRITICAL FORMATTING RULES:
+- Return raw JSON ONLY (no markdown, no code blocks, no \`\`\`json)
+- Response must start with { and end with }
+- Maximum ${maxResponseSize} characters per response
+- Escape all special characters properly (\\n for newlines, \\" for quotes)
+- For plans: include "files" array and "chunks" object
+- For chunks: include file, chunk_index, total_chunks, content fields`;
 }
