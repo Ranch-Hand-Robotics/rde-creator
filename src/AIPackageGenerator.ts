@@ -306,7 +306,11 @@ export class AIPackageGenerator {
                 }
                 
                 const contentEscaped = String(testChunkObj.content || '');
-                const unescaped = contentEscaped.replace(/\\n/g, '\n');
+                // Unescape \n, \", and \\ (order matters: backslashes last)
+                const unescaped = contentEscaped
+                  .replace(/\\n/g, '\n')
+                  .replace(/\\"/g, '"')
+                  .replace(/\\\\/g, '\\');
                 const processedContent = this.processVariables(unescaped, variables);
                 
                 if (processedContent.includes('{{')) {
