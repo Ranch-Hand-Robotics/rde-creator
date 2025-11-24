@@ -301,8 +301,8 @@ export class AIPackageGenerator {
                 ], { justification: `Request test file chunk ${i}/${total} for ${f.path}` });
                 const testChunkObj = await this.processAIResponse(testChunkResp);
                 
-                if (!testChunkObj || testChunkObj.file !== f.path) {
-                  throw new Error(`Unexpected test chunk response for ${f.path}`);
+                if (!testChunkObj || testChunkObj.file !== processedPath) {
+                  throw new Error(`Unexpected test chunk response for ${processedPath}`);
                 }
                 
                 const contentEscaped = String(testChunkObj.content || '');
