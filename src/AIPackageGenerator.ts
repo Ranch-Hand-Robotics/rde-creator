@@ -153,6 +153,9 @@ export class AIPackageGenerator {
       const MAX_PARALLEL_FILES = 3;
       
       const generateFile = async (f: {path: string; estimate_bytes?: number}) => {
+        if (!model) {
+          throw new Error('AI model not available');
+        }
         const total = chunksMap[f.path] || 1;
         
         // Prepare file path and ensure directory exists
@@ -277,6 +280,9 @@ export class AIPackageGenerator {
           
           // Generate test files in parallel
           const generateTestFile = async (f: {path: string; estimate_bytes?: number}) => {
+            if (!testModel) {
+              throw new Error('Test AI model not available');
+            }
             const total = testChunksMap[f.path] || 1;
             const processedPath = this.processVariables(f.path, variables);
             const fullPath = path.join(targetDirectory, processedPath);
