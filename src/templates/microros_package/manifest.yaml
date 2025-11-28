@@ -1,0 +1,586 @@
+name: "MicroROS2 Firmware + Host Package"
+version: 0.0.0
+description: A template for creating MicroROS2 firmware with PlatformIO and a ROS 2 host package that builds and manages the firmware
+license: "MIT"
+icon: "🔌"
+short_description: "Microcontroller + ROS 2 integration"
+user_instruction: "Describe the firmware functionality for your microcontroller and how the ROS 2 host package should manage it. Include details about sensors, actuators, communication topics, connection type (serial/network), firmware features, and host responsibilities. Be specific about hardware pins, protocols, and data rates."
+example_prompt: "Create MicroROS2 firmware for ESP32 to control a robotic gripper with servo motor and force sensor. Firmware should publish force readings at 50Hz and subscribe to gripper position commands. Include a calibration service. Host package should handle WiFi connection, firmware upload, version checking, and provide a launch file with configurable IP address. Add diagnostic monitoring for connection status."
+test_instruction: "Describe what should be tested in both the firmware and host package. Include hardware-in-the-loop tests, connection tests, firmware upload validation, and integration scenarios. Tests will only be generated if you provide this description."
+test_example_prompt: "Create tests for host package connection manager, verify firmware version checking logic, test upload functionality with mock serial port, validate parameter parsing in launch files, and create integration tests for microROS agent communication. For firmware, test sensor reading accuracy and command processing."
+ai_directive: |
+  This is a MicroROS2 template that generates BOTH firmware for a microcontroller AND a ROS 2 host package.
+  The host package acts as a software driver that manages the microcontroller firmware lifecycle.
+
+  HIGH PRIORITY REQUIREMENTS:
+  - Generate TWO distinct components:
+    1. MicroROS2 firmware (PlatformIO project for microcontroller)
+    2. ROS 2 host package (C++ or Python) that acts as the microcontroller driver/host
+  - The host package MUST include Docker-based firmware build system
+  - The compiled firmware binary MUST be included as a package resource
+  - Include launch files with configurable connection parameters (VID/PID or network)
+  - Support firmware version checking and conditional upload
+  - Include PlatformIO debug configuration for standalone firmware debugging
+  - Follow all ROS 2 best practices for the host package
+  - Follow MicroROS best practices for the firmware
+
+  MICROROS2 FIRMWARE REQUIREMENTS:
+  - Use PlatformIO as the build system (NOT Arduino IDE)
+  - Create platformio.ini with appropriate board configuration
+  - Use micro_ros_platformio library
+  - Support multiple transport types: Serial (USB), UART, UDP, WiFi
+  - Include proper microROS agent connection handling
+  - Implement reconnection logic for robust operation
+  - Use microROS publishers, subscribers, services as requested
+  - Follow microcontroller resource constraints (memory, CPU)
+  - Include error handling suitable for embedded systems
+  - Support both polling and interrupt-driven patterns where appropriate
+  - Include proper initialization sequence for microROS
+  - Implement watchdog or health monitoring if applicable
+  - Use appropriate RCLC (ROS Client Library for C) patterns
+  - Include timing management (loop rates, executor spin)
+
+  FIRMWARE ARCHITECTURE PATTERNS:
+  - Main setup: Initialize hardware, microROS transport, node, publishers/subscribers
+  - Main loop: Spin executor, process callbacks, handle reconnection
+  - Use rclc_executor for callback management
+  - Implement timer callbacks for periodic tasks
+  - Support parameter handling via microROS parameters if needed
+  - Include LED or status indicators for connection state
+  - Implement graceful degradation if agent disconnects
+  - Support firmware version reporting via topic or service
+
+  PLATFORMIO CONFIGURATION:
+  - Include appropriate platform (e.g., espressif32, ststm32, teensy, etc.)
+  - Specify board model (e.g., esp32dev, nucleo_f446re, teensy41)
+  - Add micro_ros_platformio library dependency
+  - Configure build flags for microROS (transport type, memory settings)
+  - Include upload settings (upload_port, upload_speed)
+  - Add debug configuration (debug_tool, debug_port, debug_speed)
+  - Support multiple build environments (debug, release, different boards)
+  - Include monitor settings (monitor_speed, monitor_port)
+  - Add custom scripts for pre/post build if needed
+  - Configure microROS transport via build flags
+
+  Example platformio.ini structure:
+  ```ini
+  [env:{{board_name}}]
+  platform = {{platform}}
+  board = {{board}}
+  framework = arduino
+  lib_deps = 
+      https://github.com/micro-ROS/micro_ros_platformio
+  build_flags = 
+      -DMICRO_ROS_TRANSPORT_{{transport_type}}
+      -DRCL_LOGGING_ENABLED
+  monitor_speed = 115200
+  upload_speed = 921600
+  debug_tool = {{debug_tool}}
+  debug_init_break = tbreak setup
+  ```
+
+  PLATFORMIO DEBUG CONFIGURATION:
+  - Include .vscode/launch.json with PlatformIO debug configurations
+  - Support common debug tools: stlink, jlink, cmsis-dap, esp-prog, etc.
+  - Configure debug breakpoints and initialization
+  - Include separate configurations for different boards if multiple environments exist
+  - Support both upload-and-debug and debug-only modes
+  - Include GDB server configuration
+  - Add debugging symbols and optimization flags for debug builds
+  - Example launch.json with PIO Debug configuration
+
+  Example .vscode/launch.json:
+  ```json
+  {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "platformio-debug",
+        "request": "launch",
+        "name": "PIO Debug ({{board_name}})",
+        "executable": ".pio/build/{{board_name}}/firmware.elf",
+        "projectEnvName": "{{board_name}}",
+        "toolchainBinDir": "",
+        "internalConsoleOptions": "openOnSessionStart",
+        "preLaunchTask": {
+          "type": "PlatformIO",
+          "task": "Pre-Debug"
+        }
+      }
+    ]
+  }
+  ```
+
+  ROS 2 HOST PACKAGE REQUIREMENTS:
+  - Acts as a software driver/host for the microcontroller
+  - Implements microROS agent functionality or uses micro_ros_agent
+  - Manages firmware lifecycle: version check, upload, connection management
+  - Provides ROS 2 interfaces (topics, services, actions) for interacting with firmware
+  - Includes Docker-based firmware build system
+  - Stores compiled firmware as a package resource
+  - Includes configuration files for connection parameters
+  - Provides launch files with runtime configuration
+  - Implements health monitoring and diagnostics
+  - Supports multiple microcontroller instances (multi-robot scenarios)
+  - Follow C++ or Python best practices based on language choice
+
+  DOCKER-BASED FIRMWARE BUILD:
+  - Create Dockerfile for firmware compilation environment
+  - Use official PlatformIO Docker image or build custom image based on the user's specification of platform
+  - Install necessary dependencies (PlatformIO, toolchains)
+  - Mount firmware source as volume during build
+  - Copy compiled binary to package resource directory
+  - Include build script that can be run locally or in CI/CD
+  - Support cross-platform builds (Linux, Windows, macOS via Docker)
+  - Cache dependencies for faster subsequent builds
+  - Include .dockerignore to exclude unnecessary files
+
+  Example Dockerfile:
+  ```dockerfile
+  FROM python:3.11-slim
+  RUN pip install platformio
+  WORKDIR /firmware
+  COPY firmware/ /firmware/
+  RUN pio run -e {{board_name}}
+  ```
+
+  Example build script (build_firmware.sh or build_firmware.cmd):
+  ```bash
+  #!/bin/bash
+  docker build -t {{package_name}}_firmware_builder .
+  docker run --rm -v $(pwd)/firmware:/firmware -v $(pwd)/resource/firmware:/output {{package_name}}_firmware_builder cp .pio/build/{{board_name}}/firmware.bin /output/
+  ```
+
+  FIRMWARE RESOURCE MANAGEMENT:
+  - Store firmware binary in resource/firmware/ directory
+  - Include firmware version file (version.txt or embedded in binary)
+  - Provide mechanism to read firmware version from binary
+  - Implement firmware hash checking for integrity
+  - Support multiple firmware variants if needed (different boards, features)
+  - Include metadata file with firmware information (build date, git commit, features)
+
+  CONNECTION MANAGEMENT IN HOST PACKAGE:
+  - Support serial connection: auto-detect or specify VID/PID
+  - Support network connection: UDP or TCP with configurable IP/port
+  - Implement connection retry with exponential backoff
+  - Provide connection status monitoring
+  - Support hot-plug detection for USB devices
+  - Implement graceful handling of disconnection
+  - Include connection state publishing for monitoring
+  - Support multiple simultaneous connections if needed
+
+  FIRMWARE UPLOAD FUNCTIONALITY:
+  - Detect connected microcontroller via VID/PID or serial port
+  - Read firmware version from microcontroller (if available)
+  - Compare with packaged firmware version
+  - Upload firmware if versions don't match or forced
+  - Support configurable auto-upload behavior (default: disabled)
+  - Use appropriate upload tool: platformio, esptool, stm32flash, teensy_loader_cli
+  - Provide upload progress feedback
+  - Verify successful upload before attempting connection
+  - Support DFU mode entry if needed
+
+  LAUNCH FILE CONFIGURATION:
+  - Include parameterized launch file for connection configuration
+  - Support command-line arguments and launch parameters
+  - Allow runtime specification of: serial port, VID/PID, IP address, port
+  - Include namespace support for multi-robot scenarios
+  - Support launching micro_ros_agent with appropriate transport
+  - Include remapping capabilities
+  - Provide examples for different connection types
+  - Support conditional launching based on parameters
+
+  Example launch file structure:
+  ```python
+  def generate_launch_description():
+      # Declare arguments
+      connection_type_arg = DeclareLaunchArgument('connection_type', default_value='serial')
+      serial_port_arg = DeclareLaunchArgument('serial_port', default_value='/dev/ttyUSB0')
+      network_ip_arg = DeclareLaunchArgument('network_ip', default_value='192.168.1.100')
+      auto_upload_arg = DeclareLaunchArgument('auto_upload', default_value='false')
+      
+      # Conditional nodes based on connection type
+      # Include micro_ros_agent node with appropriate transport
+      # Include host package node
+  ```
+
+  FIRMWARE VERSION CHECKING:
+  - Implement version query mechanism (service, topic, or serial command)
+  - Parse firmware version from microcontroller response
+  - Compare with packaged firmware version
+  - Log version information
+  - Provide version mismatch warnings
+  - Support semantic versioning (major.minor.patch)
+  - Include firmware metadata (build date, commit hash)
+
+  HOST PACKAGE ARCHITECTURE (C++):
+  - Use composable node pattern for host package
+  - Implement lifecycle node if state management is needed
+  - Include rclcpp_components registration
+  - Provide connection manager class
+  - Implement firmware uploader class
+  - Include transport abstraction layer
+  - Support asynchronous operations for non-blocking behavior
+  - Include comprehensive logging and diagnostics
+  - Follow modern C++17+ patterns
+
+  HOST PACKAGE ARCHITECTURE (Python):
+  - Use rclpy for ROS 2 Python interface
+  - Implement node class with proper lifecycle
+  - Include async/await patterns for non-blocking operations
+  - Provide connection manager module
+  - Implement firmware uploader module
+  - Include transport abstraction
+  - Use type hints for better maintainability
+  - Include comprehensive logging
+  - Support graceful shutdown
+
+  DEBUGGING WORKFLOW:
+  - User can debug firmware independently using PlatformIO debugger
+  - Launch.json includes PlatformIO debug configuration
+  - Debug workflow: attach hardware debugger (ST-Link, J-Link, etc.)
+  - Set breakpoints in firmware code
+  - Launch PIO Debug from VS Code
+  - Firmware debugging is separate from host package
+  - Host package should NOT attempt upload during active debug session
+  - Document debugging prerequisites (hardware debugger, connections)
+
+  DEFAULT BEHAVIOR FOR PRODUCTION:
+  - Auto-upload should be DISABLED by default
+  - Prevents interference with debugging sessions
+  - User must explicitly enable auto-upload via launch parameter
+  - Suitable for bringup and development workflows
+  - Prevents accidental firmware overwrites during testing
+
+  MULTI-INSTANCE SUPPORT:
+  - Support multiple microcontrollers connected simultaneously
+  - Use unique identifiers (serial number, VID/PID combinations)
+  - Include namespace or prefix for each instance
+  - Provide launch file that can spawn multiple instances
+  - Support different configurations per instance
+  - Include mechanism to discover connected devices
+
+  QUALITY ASSURANCE:
+  - Include comprehensive documentation in README.md
+  - Document hardware requirements and setup
+  - Include wiring diagrams if applicable
+  - Provide troubleshooting guide
+  - Include example usage and configuration
+  - Document debugging workflow
+  - Add testing instructions (hardware-in-loop, simulation)
+  - Include CI/CD configuration for automated firmware builds
+  - Provide development environment setup instructions
+
+  PACKAGE STRUCTURE:
+  The generated package should have this structure:
+
+  ```
+  {{package_name}}/
+  ├── CMakeLists.txt (if C++) or setup.py (if Python)
+  ├── package.xml
+  ├── README.md
+  ├── LICENSE
+  ├── CONTRIBUTING.md
+  ├── .gitignore
+  ├── Dockerfile                    # Firmware build environment
+  ├── .dockerignore
+  ├── build_firmware.sh             # Firmware build script (Linux/macOS)
+  ├── build_firmware.cmd            # Firmware build script (Windows)
+  ├── firmware/                     # MicroROS2 firmware source
+  │   ├── platformio.ini
+  │   ├── src/
+  │   │   └── main.cpp              # Main firmware code
+  │   ├── include/
+  │   │   └── {{package_name}}.h
+  │   ├── lib/                      # Custom libraries if needed
+  │   └── .vscode/
+  │       └── launch.json           # PlatformIO debug configuration
+  ├── resource/
+  │   ├── {{package_name}}          # ament resource index
+  │   └── firmware/
+  │       ├── firmware.bin          # Compiled firmware binary
+  │       ├── firmware.elf          # Debug symbols
+  │       └── version.txt           # Firmware version metadata
+  ├── config/
+  │   ├── connection_params.yaml    # Connection configuration
+  │   └── firmware_params.yaml      # Firmware parameters
+  ├── launch/
+  │   ├── {{package_name}}.launch.py         # Main launch file
+  │   ├── {{package_name}}_serial.launch.py  # Serial connection example
+  │   ├── {{package_name}}_network.launch.py # Network connection example
+  │   └── {{package_name}}_multi.launch.py   # Multi-instance example
+  ├── {{package_name}}/             # Host package source (Python)
+  │   ├── __init__.py
+  │   ├── host_node.py              # Main host node
+  │   ├── connection_manager.py     # Connection management
+  │   ├── firmware_uploader.py      # Firmware upload logic
+  │   └── version_checker.py        # Version checking
+  ├── include/{{package_name}}/     # Host package headers (C++)
+  │   ├── host_node.hpp
+  │   ├── connection_manager.hpp
+  │   ├── firmware_uploader.hpp
+  │   └── visibility_control.h
+  ├── src/                          # Host package source (C++)
+  │   ├── host_node.cpp
+  │   ├── connection_manager.cpp
+  │   ├── firmware_uploader.cpp
+  │   └── component.cpp
+  ├── scripts/
+  │   ├── upload_firmware.py        # Standalone firmware upload script
+  │   └── detect_devices.py         # Device detection utility
+  ├── test/
+  │   ├── test_host_node.py         # Host package tests
+  │   └── test_connection.py        # Connection tests
+  └── docs/
+      ├── hardware_setup.md         # Hardware setup guide
+      ├── debugging.md              # Debugging guide
+      └── troubleshooting.md        # Troubleshooting guide
+  ```
+
+  TRANSPORT-SPECIFIC IMPLEMENTATIONS:
+
+  Serial/USB Transport (most common):
+  - Use Serial or UART for microROS transport
+  - Configure baud rate (typically 115200 or higher)
+  - Handle serial port enumeration and auto-detection
+  - Support VID/PID filtering for device identification
+  - Implement serial reconnection logic
+  - Include buffer management for serial communication
+  - micro_ros_agent: `micro_ros_agent serial --dev /dev/ttyUSB0 -b 115200`
+
+  Network Transport (WiFi/Ethernet):
+  - Use UDP or TCP for microROS transport
+  - Configure microcontroller as client or server
+  - Include WiFi credentials configuration (if WiFi)
+  - Implement IP address configuration or DHCP
+  - Support mDNS for device discovery
+  - Include network error handling and retry logic
+  - micro_ros_agent: `micro_ros_agent udp4 --port 8888`
+
+  SUPPORTED PLATFORMS (common examples):
+  - ESP32 (espressif32 platform): WiFi, Bluetooth, dual-core
+  - ESP8266 (espressif8266 platform): WiFi, single-core
+  - STM32 (ststm32 platform): Various families, CAN, UART
+  - Teensy (teensy platform): High-performance ARM Cortex-M
+  - Arduino boards (atmelavr, atmelsam platforms)
+  - Raspberry Pi Pico (raspberrypi platform)
+
+  MICROROS AGENT INTEGRATION:
+  - Host package should launch micro_ros_agent
+  - Agent provides bridge between microROS (DDS-XRCE) and ROS 2 (DDS)
+  - Support agent configuration via parameters
+  - Include agent namespace configuration
+  - Monitor agent health and restart if needed
+  - Support agent logging configuration
+
+  SECURITY CONSIDERATIONS:
+  - Validate firmware binaries before upload
+  - Implement checksum verification
+  - Support secure boot if hardware supports it
+  - Include firmware signing if required
+  - Validate connection parameters
+  - Implement rate limiting for uploads
+  - Log all firmware operations for audit
+
+  ERROR HANDLING:
+  - Comprehensive error handling in firmware (limited resources)
+  - Detailed error handling in host package
+  - Include recovery mechanisms
+  - Provide meaningful error messages
+  - Log errors for debugging
+  - Support different error reporting mechanisms
+  - Include health monitoring and diagnostics topics
+
+  DOCUMENTATION REQUIREMENTS:
+  - README.md: Overview, features, quick start, usage examples
+  - Hardware setup guide: Wiring, connections, prerequisites
+  - Debugging guide: PlatformIO debug setup, common issues
+  - Troubleshooting guide: Common problems and solutions
+  - API documentation: Host package interfaces
+  - Firmware documentation: Code structure, customization
+  - Build instructions: Docker builds, local builds
+  - Deployment guide: Production deployment considerations
+
+  EXAMPLE USAGE PATTERNS:
+  ```bash
+  # Build firmware using Docker
+  ./build_firmware.sh
+
+  # Launch with serial connection (auto-detect)
+  ros2 launch {{package_name}} {{package_name}}.launch.py connection_type:=serial
+
+  # Launch with specific serial port and auto-upload
+  ros2 launch {{package_name}} {{package_name}}.launch.py connection_type:=serial serial_port:=/dev/ttyUSB0 auto_upload:=true
+
+  # Launch with network connection
+  ros2 launch {{package_name}} {{package_name}}.launch.py connection_type:=network network_ip:=192.168.1.100 network_port:=8888
+
+  # Upload firmware manually
+  python3 scripts/upload_firmware.py --port /dev/ttyUSB0
+
+  # Detect connected devices
+  python3 scripts/detect_devices.py
+
+  # Debug firmware with PlatformIO
+  # 1. Connect hardware debugger (ST-Link, J-Link, etc.)
+  # 2. Open VS Code
+  # 3. Go to Run and Debug (Ctrl+Shift+D)
+  # 4. Select "PIO Debug ({{board_name}})"
+  # 5. Press F5 to start debugging
+  ```
+
+  ADDITIONAL FEATURES TO CONSIDER:
+  - Parameter server integration for dynamic configuration
+  - Firmware over-the-air (OTA) updates
+  - Configuration file generation for microcontroller
+  - Simulation support (Gazebo, mock microcontroller)
+  - Monitoring dashboard (rqt plugin)
+  - Performance metrics collection
+  - Power management features
+  - Bootloader support for field updates
+  - Factory reset functionality
+
+options:
+  - variable: "package_name"
+    name: "Package Name"
+    type: "string"
+    description: "Name of the ROS 2 package (and prefix for firmware)"
+    default: "my_microros_package"
+    
+  - variable: "host_language"
+    name: "Host Package Language"
+    type: "select"
+    description: "Programming language for the host/driver package"
+    choices:
+      - value: "cpp"
+        label: "C++ (recommended for performance)"
+      - value: "python"
+        label: "Python (easier development)"
+    default: "cpp"
+    
+  - variable: "microcontroller_platform"
+    name: "Microcontroller Platform"
+    type: "select"
+    description: "Target microcontroller platform"
+    choices:
+      - value: "esp32"
+        label: "ESP32 (WiFi, Bluetooth, dual-core)"
+      - value: "esp8266"
+        label: "ESP8266 (WiFi, single-core)"
+      - value: "stm32"
+        label: "STM32 (Various families)"
+      - value: "teensy"
+        label: "Teensy (High-performance ARM)"
+      - value: "arduino"
+        label: "Arduino (Various boards)"
+      - value: "rpi_pico"
+        label: "Raspberry Pi Pico"
+    default: "esp32"
+    
+  - variable: "board_name"
+    name: "Board Name"
+    type: "string"
+    description: "Specific board identifier for PlatformIO (e.g., esp32dev, nucleo_f446re, teensy41)"
+    default: "esp32dev"
+    
+  - variable: "transport_type"
+    name: "Primary Transport Type"
+    type: "select"
+    description: "Communication transport between firmware and host"
+    choices:
+      - value: "serial"
+        label: "Serial/USB (most common)"
+      - value: "udp"
+        label: "UDP over WiFi/Ethernet"
+      - value: "tcp"
+        label: "TCP over WiFi/Ethernet"
+    default: "serial"
+    
+  - variable: "include_wifi"
+    name: "Include WiFi Configuration"
+    type: "boolean"
+    description: "Include WiFi setup code (for ESP32/ESP8266 with network transport)"
+    default: false
+    condition: "transport_type == 'udp' || transport_type == 'tcp'"
+    
+  - variable: "default_baud_rate"
+    name: "Serial Baud Rate"
+    type: "string"
+    description: "Default baud rate for serial communication"
+    default: "115200"
+    condition: "transport_type == 'serial'"
+    
+  - variable: "debug_tool"
+    name: "Debug Tool"
+    type: "select"
+    description: "Hardware debugger for PlatformIO debugging"
+    choices:
+      - value: "stlink"
+        label: "ST-Link (STM32)"
+      - value: "jlink"
+        label: "J-Link (Universal)"
+      - value: "cmsis-dap"
+        label: "CMSIS-DAP"
+      - value: "esp-prog"
+        label: "ESP-Prog (ESP32)"
+      - value: "picoprobe"
+        label: "Picoprobe (Raspberry Pi Pico)"
+    default: "stlink"
+    
+  - variable: "include_publisher"
+    name: "Include Publisher Example"
+    type: "boolean"
+    description: "Include example publisher in firmware"
+    default: true
+    
+  - variable: "include_subscriber"
+    name: "Include Subscriber Example"
+    type: "boolean"
+    description: "Include example subscriber in firmware"
+    default: true
+    
+  - variable: "include_service"
+    name: "Include Service Example"
+    type: "boolean"
+    description: "Include example service in firmware"
+    default: false
+    
+  - variable: "include_version_service"
+    name: "Include Version Query Service"
+    type: "boolean"
+    description: "Include service for querying firmware version"
+    default: true
+    
+  - variable: "auto_upload_default"
+    name: "Auto-Upload Default"
+    type: "boolean"
+    description: "Enable automatic firmware upload by default (NOT recommended for development)"
+    default: false
+    
+  - variable: "include_multi_instance"
+    name: "Multi-Instance Support"
+    type: "boolean"
+    description: "Include support for multiple microcontroller instances"
+    default: false
+    
+  - variable: "include_diagnostics"
+    name: "Include Diagnostics"
+    type: "boolean"
+    description: "Include diagnostic publishers for monitoring health"
+    default: true
+    
+  - variable: "include_lifecycle"
+    name: "Use Lifecycle Node"
+    type: "boolean"
+    description: "Use lifecycle node for host package (C++ only)"
+    default: false
+    condition: "host_language == 'cpp'"
+    
+  - variable: "support_humble"
+    name: "Support ROS 2 Humble"
+    type: "boolean"
+    description: "Include compatibility support for ROS 2 Humble (uses legacy CMake patterns)"
+    default: true
+    condition: "host_language == 'cpp'"
+
+file_mapping: []

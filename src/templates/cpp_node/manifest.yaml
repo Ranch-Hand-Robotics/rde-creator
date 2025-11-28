@@ -4,6 +4,10 @@ description: A template for creating C++-based ROS 2 composable nodes with optio
 license: "MIT"
 icon: "⚡"
 short_description: "High performance, real-time"
+user_instruction: "Describe the functionality of your C++ ROS 2 composable node. Include details about topics, services, actions, lifecycle states (if applicable), hardware interfaces, performance requirements, and threading needs. Be specific about message types, QoS profiles, and real-time constraints."
+example_prompt: "Create a composable lifecycle node for a laser-based object detection system. Subscribe to LaserScan messages, process them to detect objects using clustering, and publish detected objects as MarkerArray. Include lifecycle states for configuring parameters and activating/deactivating processing. Use multi-threading for parallel processing and include ros2_control hardware interface for scanner control."
+test_instruction: "Describe what aspects of your C++ node should be tested. Include unit tests, integration tests, performance benchmarks, thread safety tests, and lifecycle state transitions. Tests will only be generated if you provide this description."
+test_example_prompt: "Create unit tests for object clustering algorithm, integration tests for lifecycle state transitions, verify thread-safe operation with concurrent callbacks, test LaserScan processing with various input patterns, and benchmark processing latency to ensure real-time performance."
 ai_directive: |
   This is a ROS 2 C++ composable node template. When generating code for this template:
 

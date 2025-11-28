@@ -27,6 +27,10 @@ interface PackageManifest {
   icon?: string;
   short_description?: string;
   directory: string;
+  user_instruction?: string;
+  example_prompt?: string;
+  test_instruction?: string;
+  test_example_prompt?: string;
 }
 
 interface LanguageModel {
@@ -78,7 +82,11 @@ const App: React.FC = () => {
               description: data.description || '',
               icon: data.icon || '📦',
               short_description: data.short_description || data.description || '',
-              directory: dir
+              directory: dir,
+              user_instruction: data.user_instruction || '',
+              example_prompt: data.example_prompt || '',
+              test_instruction: data.test_instruction || '',
+              test_example_prompt: data.test_example_prompt || ''
             }));
             setAvailableManifests(manifests);
             // Set default to first manifest if available (prefer python_node if exists)
@@ -318,20 +326,34 @@ const App: React.FC = () => {
         {/* Package Description */}
         <div className="component-container">
           <h2>✨ What should your package do?</h2>
-          <div className="form-field">
-            <textarea
-              id="naturalLanguageDescription"
-              placeholder="Example: Create a publisher node that reads IMU data from a SparkFun 9DoF sensor (ISM330DHCX, MMC5983MA) at 100Hz using i2c. Include a calibration service that can be triggered to update sensor offsets, and publish both raw and calibrated data on separate topics. Add parameter support for configuring the sample rate and i2c bus address."
-              rows={6}
-              value={naturalLanguageDescription}
-              onChange={(e) => setNaturalLanguageDescription(e.target.value)}
-              className="text-area large"
-              required
-            />
-            <small className="help-text">
-              💡 Be specific! Include details about topics, services, parameters, sensors, algorithms, and behaviors.
-            </small>
-          </div>
+          {(() => {
+            const selectedManifest = availableManifests.find(m => m.directory === packageType);
+            const userInstruction = selectedManifest?.user_instruction || 'Describe the functionality of your ROS 2 package. Include details about topics, services, parameters, sensors, algorithms, and behaviors.';
+            const examplePrompt = selectedManifest?.example_prompt || 'Example: Create a publisher node that reads sensor data at 100Hz and publishes it on a topic...';
+            
+            return (
+              <>
+                <div className="instruction-text">
+                  {userInstruction}
+                </div>
+                <div className="form-field">
+                  <textarea
+                    id="naturalLanguageDescription"
+                    placeholder={examplePrompt}
+                    rows={6}
+                    value={naturalLanguageDescription}
+                    onChange={(e) => setNaturalLanguageDescription(e.target.value)}
+                    className="text-area large"
+                    required
+                  />
+                  <small className="help-text">
+                    💡 Be specific! The more details you provide, the better the generated code will match your requirements.
+                  </small>
+                </div>
+              </>
+            );
+          })()}
+        </div>
           
           <div className="form-field">
             <label htmlFor="modelSelect">AI Model for Code Generation</label>
@@ -372,22 +394,33 @@ const App: React.FC = () => {
             </label>
           </div>
           
-          {generateTests && (
-            <>
-              <div className="form-field">
-                <label htmlFor="testDescription">Test Requirements</label>
-                <textarea
-                  id="testDescription"
-                  placeholder="Example: Create unit tests for the IMU data processing, verify calibration service functionality, test error handling for disconnected sensors, and validate parameter updates."
-                  rows={3}
-                  value={testDescription}
-                  onChange={(e) => setTestDescription(e.target.value)}
-                  className="text-area"
-                />
-                <small className="help-text">
-                  Describe what tests should be generated. Be specific about test scenarios and edge cases.
-                </small>
-              </div>
+          {generateTests && (() => {
+            const selectedManifest = availableManifests.find(m => m.directory === packageType);
+            const testInstruction = selectedManifest?.test_instruction || 'Describe what aspects of your package should be tested. Include test scenarios, edge cases, and validation requirements.';
+            const testExamplePrompt = selectedManifest?.test_example_prompt || 'Example: Create unit tests for data processing, verify service functionality, test error handling...';
+            
+            return (
+              <>
+                <div className="instruction-text">
+                  {testInstruction}
+                </div>
+                <div className="form-field">
+                  <label htmlFor="testDescription">Test Requirements</label>
+                  <textarea
+                    id="testDescription"
+                    placeholder={testExamplePrompt}
+                    rows={3}
+                    value={testDescription}
+                    onChange={(e) => setTestDescription(e.target.value)}
+                    className="text-area"
+                  />
+                  <small className="help-text">
+                    💡 Tests will only be generated if you provide a description here. Be specific about test scenarios and edge cases.
+                  </small>
+                </div>
+              </>
+            );
+          })()}
               
               <div className="form-field">
                 <label htmlFor="testModelSelect">AI Model for Test Generation</label>

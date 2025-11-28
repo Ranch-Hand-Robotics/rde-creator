@@ -689,6 +689,18 @@ h2 {
   line-height: 1.4;
 }
 
+.instruction-text {
+  display: block;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--vscode-textBlockQuote-background, rgba(127, 127, 127, 0.1));
+  border-left: 4px solid var(--vscode-textBlockQuote-border, #7b61ff);
+  color: var(--vscode-foreground, #cccccc);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  border-radius: 4px;
+}
+
 .button:disabled {
   opacity: 0.5;
   cursor: not-allowed;

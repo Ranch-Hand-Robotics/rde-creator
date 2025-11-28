@@ -113,6 +113,22 @@ npm run test       # Run VS Code extension tests
 3. Template files use Handlebars syntax: `{{variable}}`
 4. Update webpack copy patterns if needed
 
+### Available Templates
+- **Python ROS 2 Node**: Python-based nodes with support for publishers, subscribers, services, actions, ros2_control, MoveIt2, Nav2, and MAVLink
+- **C++ ROS 2 Node**: High-performance composable C++ nodes with lifecycle support, ros2_control hardware interfaces, MoveIt2, Nav2, and MAVLink
+- **Node.js ROS 2 Node**: JavaScript/TypeScript ROS 2 nodes using rclnodejs
+- **Resource Package**: ROS 2 resource-only package for configuration files, launch files, and shared resources
+- **MicroROS2 Firmware + Host Package**: Complete MicroROS2 solution with:
+  - PlatformIO-based firmware for microcontrollers (ESP32, STM32, Teensy, etc.)
+  - ROS 2 host package (C++ or Python) that acts as firmware driver
+  - Docker-based firmware build system
+  - Firmware lifecycle management (version checking, upload)
+  - Multiple transport types (Serial/USB, UDP, TCP)
+  - PlatformIO debug configuration for standalone firmware debugging
+  - Launch files with configurable connection parameters (VID/PID, network)
+  - Multi-instance support for multiple microcontrollers
+  - Automatic firmware build and packaging as resource
+
 ## VS Code Integration
 
 ### Webview Setup
@@ -200,6 +216,88 @@ When writing AI directives for templates:
 - Mention required dependencies and imports
 - Specify error handling and logging requirements
 - Include performance and scalability considerations
+
+## MicroROS2 Template Patterns
+
+The MicroROS2 template generates a dual-component system:
+1. **Firmware Component**: PlatformIO project for microcontroller
+2. **Host Component**: ROS 2 package that manages the firmware
+
+### Firmware Architecture
+- **PlatformIO**: Build system with platformio.ini configuration
+- **micro_ros_platformio**: Library dependency for microROS support
+- **Transport Layer**: Serial, UART, UDP, or TCP communication
+- **RCLC Executor**: Callback management and node spinning
+- **Reconnection Logic**: Automatic recovery from agent disconnection
+- **Debug Support**: PlatformIO debug configuration with hardware debugger support
+
+### Host Package Architecture
+- **Connection Manager**: Handles serial/network connections with auto-detection
+- **Firmware Uploader**: Manages firmware version checking and upload
+- **Version Checker**: Compares firmware versions for update decisions
+- **Docker Build**: Containerized firmware compilation for cross-platform builds
+- **Launch Configuration**: Parameterized launch files for runtime configuration
+- **Agent Integration**: Launches and manages micro_ros_agent
+
+### Build and Deploy Workflow
+1. **Firmware Development**: Write firmware code in `firmware/src/main.cpp`
+2. **Docker Build**: Run `build_firmware.sh` to compile in Docker container
+3. **Resource Packaging**: Compiled binary stored in `resource/firmware/`
+4. **Host Package Build**: Standard ROS 2 package build (colcon build)
+5. **Launch**: Use launch files with connection parameters
+6. **Upload**: Automatic or manual firmware upload based on version check
+
+### Debug Workflow
+- **Standalone Firmware Debug**: Use PlatformIO debugger with hardware debugger (ST-Link, J-Link)
+- **VS Code Integration**: `.vscode/launch.json` includes PIO Debug configuration
+- **Host Package Debug**: Standard ROS 2 debugging with gdb or VS Code C++/Python debuggers
+- **Separate Debugging**: Firmware and host can be debugged independently
+- **Default Behavior**: Auto-upload disabled by default to prevent interference with debugging
+
+### Connection Types
+- **Serial/USB**: Most common, auto-detect via VID/PID, configurable baud rate
+- **Network (UDP)**: WiFi/Ethernet, specify IP and port, support mDNS discovery
+- **Network (TCP)**: Similar to UDP with connection-oriented protocol
+
+### Multi-Instance Support
+- Launch multiple microcontrollers simultaneously
+- Unique identification via VID/PID or serial number
+- Namespace separation for each instance
+- Independent configuration per instance
+
+### Platform Support
+- **ESP32**: WiFi, Bluetooth, dual-core, popular for IoT
+- **ESP8266**: WiFi, single-core, legacy but still used
+- **STM32**: Various families, CAN bus, robust industrial use
+- **Teensy**: High-performance ARM, excellent for robotics
+- **Arduino**: Various boards, easy to get started
+- **Raspberry Pi Pico**: RP2040, affordable and capable
+
+### Key Configuration Options
+- `host_language`: C++ or Python for host package
+- `microcontroller_platform`: Target MCU platform
+- `transport_type`: Serial, UDP, or TCP
+- `debug_tool`: Hardware debugger type
+- `auto_upload_default`: Enable/disable automatic firmware upload
+- `include_multi_instance`: Support multiple devices
+- `include_lifecycle`: Use lifecycle node for host (C++ only)
+
+### Docker-Based Firmware Build
+- **Cross-Platform**: Build on Linux, Windows, or macOS
+- **Reproducible**: Same environment every time
+- **Isolated**: No local PlatformIO installation required
+- **CI/CD Ready**: Easy to integrate in automation pipelines
+- **Cached**: Dependencies cached for faster subsequent builds
+
+### Best Practices
+- Keep firmware simple and focused on real-time tasks
+- Use host package for complex logic and ROS 2 integration
+- Default to auto-upload disabled during development
+- Version firmware consistently for upgrade tracking
+- Include comprehensive diagnostics for field deployment
+- Document hardware setup and wiring clearly
+- Provide troubleshooting guides for common issues
+- Test with actual hardware, not just simulation
 
 ## AI Generation Workflow
 

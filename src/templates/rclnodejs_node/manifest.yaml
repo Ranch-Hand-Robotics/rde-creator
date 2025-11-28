@@ -4,6 +4,10 @@ description: A template for creating Node.js-based ROS 2 nodes using rclnodejs w
 license: "MIT"
 icon: "🌐"
 short_description: "Web integration, async I/O"
+user_instruction: "Describe the functionality of your Node.js/TypeScript ROS 2 node using rclnodejs. Include details about topics, services, web interfaces, async operations, external APIs, and integration points. Be specific about message types, HTTP endpoints, WebSocket connections, and data flow."
+example_prompt: "Create a TypeScript node that bridges ROS 2 with a web dashboard. Subscribe to robot pose and sensor topics, expose a WebSocket server for real-time data streaming to browsers, and provide REST API endpoints for commanding the robot. Include JWT authentication, rate limiting, and automatic reconnection handling."
+test_instruction: "Describe what aspects of your Node.js node should be tested. Include API tests, async operation tests, error handling, connection tests, and integration scenarios. Tests will only be generated if you provide this description."
+test_example_prompt: "Create tests for WebSocket connection handling, verify REST API endpoints with different authentication scenarios, test async ROS 2 message processing, validate rate limiting functionality, and test reconnection behavior after connection failures."
 ai_directive: |
   This is a ROS 2 Node.js node template using rclnodejs. When generating code for this template:
 

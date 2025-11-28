@@ -4,6 +4,10 @@ description: A template for representing resources like launch files, urdf files
 icon: "📦"
 short_description: "Resource Package for ROS 2"
 license: "MIT"
+user_instruction: "Describe the resources you need for your ROS 2 system. Include launch files, URDF/Xacro robot descriptions, meshes, configuration files, parameter files, and any other static resources. Be specific about robot geometry, joints, sensors, and launch configurations."
+example_prompt: "Create a resource package for a mobile manipulator robot with differential drive base and 6-DOF arm. Include URDF with collision meshes, visual STL files, launch files for visualization in RViz, Gazebo simulation configuration, and parameter files for controllers. Add camera and lidar sensor descriptions."
+test_instruction: "Describe what validation should be performed on your resources. Include URDF validation, launch file testing, parameter verification, and simulation checks. Tests will only be generated if you provide this description."
+test_example_prompt: "Create validation scripts to check URDF syntax and joint limits, test that all mesh files are accessible, verify launch files start without errors, and validate parameter files contain required fields with correct types."
 ai_directive: |
   This is a ROS 2 resource package template. When generating code for this template:
   

@@ -4,6 +4,10 @@ description: A template for creating Python-based ROS 2 nodes with various commu
 license: "MIT"
 icon: "🐍"
 short_description: "Fast prototyping, rich libraries"
+user_instruction: "Describe the functionality of your Python ROS 2 node. Include details about topics to publish/subscribe, services, actions, parameters, sensors, algorithms, and any special behaviors. Be specific about data types, rates, and communication patterns."
+example_prompt: "Create a publisher node that reads IMU data from a SparkFun 9DoF sensor (ISM330DHCX, MMC5983MA) at 100Hz using i2c. Include a calibration service that can be triggered to update sensor offsets, and publish both raw and calibrated data on separate topics. Add parameter support for configuring the sample rate and i2c bus address."
+test_instruction: "Describe what aspects of your node should be tested. Include test scenarios, edge cases, error conditions, and validation requirements. Tests will only be generated if you provide this description."
+test_example_prompt: "Create unit tests for the IMU data processing, verify calibration service functionality, test error handling for disconnected sensors, and validate parameter updates. Include mock publishers for testing subscribers."
 ai_directive: |
   This is a ROS 2 Python node template. When generating code for this template:
 
