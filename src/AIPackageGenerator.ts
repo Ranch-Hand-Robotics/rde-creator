@@ -152,11 +152,15 @@ export class AIPackageGenerator {
       // Generate files in parallel (max 3 at a time to avoid overwhelming the API)
       const MAX_PARALLEL_FILES = 3;
       
-      const generateFile = async (f: {path: string; estimate_bytes?: number}) => {
-        if (!model) {
-          throw new Error('AI model not available');
-        }
-        const total = chunksMap[f.path] || 1;
+      // Common file generation function
+      const generateFileWithChunks = async (
+        f: {path: string; estimate_bytes?: number},
+        aiModel: vscode.LanguageModelChat,
+        chunksMapping: Record<string, number>,
+        promptConstructor: (filePath: string, chunkIndex: number, totalChunks: number) => string,
+        messagePrefix: string
+      ) => {
+        const total = chunksMapping[f.path] || 1;
         
         // Prepare file path and ensure directory exists
         const processedPath = this.processVariables(f.path, variables);
@@ -171,14 +175,14 @@ export class AIPackageGenerator {
           // Stream chunks directly to disk (must be sequential per file)
           for (let i = 1; i <= total; i++) {
             this.checkCancellation();
-            const chunkPrompt = constructFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, f.path, i, total);
-            this.sendProgress(`Requesting chunk ${i}/${total} for ${f.path}`);
-            const chunkResp = await model.sendRequest([
+            const chunkPrompt = promptConstructor(f.path, i, total);
+            this.sendProgress(`Requesting ${messagePrefix}chunk ${i}/${total} for ${f.path}`);
+            const chunkResp = await aiModel.sendRequest([
               vscode.LanguageModelChatMessage.User(chunkPrompt + '\n' + followupInstr)
-            ], { justification: `Request file chunk ${i}/${total} for ${f.path}` });
+            ], { justification: `Request ${messagePrefix}file chunk ${i}/${total} for ${f.path}` });
             const chunkObj = await this.processAIResponse(chunkResp);
             if (!chunkObj || chunkObj.file !== processedPath) {
-              throw new Error(`Unexpected chunk response for ${processedPath}`);
+              throw new Error(`Unexpected ${messagePrefix}chunk response for ${processedPath}`);
             }
             
             // Unescape and process chunk content
@@ -188,15 +192,15 @@ export class AIPackageGenerator {
             
             // Validate variable replacement
             if (processedContent.includes('{{')) {
-              this.outputChannel.appendLine(`WARNING: Unreplaced variables found in chunk ${i} of ${processedPath}`);
+              this.outputChannel.appendLine(`WARNING: Unreplaced variables found in ${messagePrefix}chunk ${i} of ${processedPath}`);
             }
             
             // Write chunk directly to file
-            await fileHandle.write(processedContent, null, 'utf-8');
-            this.sendProgress(`Written chunk ${i}/${total} to ${processedPath}`);
+            await fileHandle.write(processedContent, 'utf-8');
+            this.sendProgress(`Written ${messagePrefix}chunk ${i}/${total} to ${processedPath}`);
           }
           
-          this.sendProgress(`Completed file: ${processedPath}`);
+          this.sendProgress(`Completed ${messagePrefix}file: ${processedPath}`);
         } finally {
           if (fileHandle) {
             await fileHandle.close();
@@ -208,7 +212,16 @@ export class AIPackageGenerator {
       for (let i = 0; i < filesList.length; i += MAX_PARALLEL_FILES) {
         this.checkCancellation();
         const batch = filesList.slice(i, i + MAX_PARALLEL_FILES);
-        await Promise.all(batch.map(f => generateFile(f)));
+        await Promise.all(batch.map(f => 
+          generateFileWithChunks(
+            f,
+            model,
+            chunksMap,
+            (filePath, chunkIndex, totalChunks) => 
+              constructFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, filePath, chunkIndex, totalChunks),
+            ''
+          )
+        ));
       }
 
       this.sendProgress('ROS 2 package files created successfully');
@@ -278,61 +291,19 @@ export class AIPackageGenerator {
             }
           }
           
-          // Generate test files in parallel
-          const generateTestFile = async (f: {path: string; estimate_bytes?: number}) => {
-            if (!testModel) {
-              throw new Error('Test AI model not available');
-            }
-            const total = testChunksMap[f.path] || 1;
-            const processedPath = this.processVariables(f.path, variables);
-            const fullPath = path.join(targetDirectory, processedPath);
-            await fs.mkdir(path.dirname(fullPath), { recursive: true });
-            
-            let fileHandle: fs.FileHandle | undefined;
-            try {
-              fileHandle = await fs.open(fullPath, 'w');
-              
-              for (let i = 1; i <= total; i++) {
-                this.checkCancellation();
-                const testChunkPrompt = this.constructTestFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, testDescription, f.path, i, total);
-                this.sendProgress(`Requesting test chunk ${i}/${total} for ${f.path}`);
-                const testChunkResp = await testModel.sendRequest([
-                  vscode.LanguageModelChatMessage.User(testChunkPrompt + '\n' + followupInstr)
-                ], { justification: `Request test file chunk ${i}/${total} for ${f.path}` });
-                const testChunkObj = await this.processAIResponse(testChunkResp);
-                
-                if (!testChunkObj || testChunkObj.file !== processedPath) {
-                  throw new Error(`Unexpected test chunk response for ${processedPath}`);
-                }
-                
-                const contentEscaped = String(testChunkObj.content || '');
-                // Unescape \n, \", and \\ (order matters: backslashes last)
-                const unescaped = contentEscaped
-                  .replace(/\\n/g, '\n')
-                  .replace(/\\"/g, '"')
-                  .replace(/\\\\/g, '\\');
-                const processedContent = this.processVariables(unescaped, variables);
-                
-                if (processedContent.includes('{{')) {
-                  this.outputChannel.appendLine(`WARNING: Unreplaced variables found in test chunk ${i} of ${processedPath}`);
-                }
-                
-                await fileHandle.write(processedContent, null, 'utf-8');
-                this.sendProgress(`Written test chunk ${i}/${total} to ${processedPath}`);
-              }
-              
-              this.sendProgress(`Completed test file: ${processedPath}`);
-            } finally {
-              if (fileHandle) {
-                await fileHandle.close();
-              }
-            }
-          };
-          
           // Process test files in parallel batches
           for (let i = 0; i < testFilesList.length; i += MAX_PARALLEL_FILES) {
             const batch = testFilesList.slice(i, i + MAX_PARALLEL_FILES);
-            await Promise.all(batch.map(f => generateTestFile(f)));
+            await Promise.all(batch.map(f => 
+              generateFileWithChunks(
+                f,
+                testModel,
+                testChunksMap,
+                (filePath, chunkIndex, totalChunks) => 
+                  this.constructTestFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, testDescription, filePath, chunkIndex, totalChunks),
+                'test '
+              )
+            ));
           }
           
           this.sendProgress('Test files generated successfully');

@@ -534,7 +534,7 @@ const App: React.FC = () => {
                   {planSteps.map((step, index) => (
                     <div key={index} className="step">
                       <div className={`step-indicator ${step.completed ? 'completed' : 'active'} ${step.generating ? 'spinning' : ''}`}>
-                        {step.completed ? '\u2713' : '\u25cb'}
+                        {step.completed ? '✓' : '○'}
                       </div>
                       <span className={step.completed ? 'completed-text' : ''}>{step.file}</span>
                     </div>
