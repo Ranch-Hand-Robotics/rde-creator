@@ -12,6 +12,8 @@ export class CreateNodePanel {
   private _disposables: vscode.Disposable[] = [];
   private readonly _extensionUri: vscode.Uri;
   private _targetFolderUri?: vscode.Uri;
+  private _isGenerating: boolean = false;
+  private _currentGenerator?: AIPackageGenerator;
 
   
 
@@ -67,14 +69,16 @@ export class CreateNodePanel {
         displayName: `${model.name} (${model.family})`
       }));
 
-      // Get last selected model from settings
+      // Get last selected models from settings
       const config = vscode.workspace.getConfiguration('rosPackageCreator');
       const lastSelectedModel = config.get<string>('lastSelectedModel', 'auto');
+      const lastSelectedTestModel = config.get<string>('lastSelectedTestModel', 'auto');
 
       this._panel.webview.postMessage({ 
         command: "setAvailableModels", 
         models: formattedModels,
-        lastSelectedModel: lastSelectedModel
+        lastSelectedModel: lastSelectedModel,
+        lastSelectedTestModel: lastSelectedTestModel
       });
     } catch (error) {
       extension.outputChannel.appendLine(`Error loading models: ${error}`);
@@ -87,21 +91,7 @@ export class CreateNodePanel {
     }
   }
 
-  private _sendMaxResponseSize() {
-    try {
-      const config = vscode.workspace.getConfiguration('rosPackageCreator');
-      const maxResponseSize = config.get<number>('maxAIResponseSize', 50000);
-      
-      this._panel.webview.postMessage({
-        command: "setMaxResponseSize",
-        maxResponseSize: maxResponseSize
-      });
-      
-      extension.outputChannel.appendLine(`Sent maxResponseSize to webview: ${maxResponseSize}`);
-    } catch (error) {
-      extension.outputChannel.appendLine(`Error sending maxResponseSize: ${error}`);
-    }
-  }
+
 
   public static async render(extensionUri: vscode.Uri, targetFolderUri?: vscode.Uri) {
     // Check if AI models are available before showing the webview
@@ -160,7 +150,6 @@ export class CreateNodePanel {
             // Webview is ready, load manifests and models
             this._loadManifests();
             this._loadAvailableModels();
-            this._sendMaxResponseSize();
             return;
 
           case "createPackage":
@@ -206,40 +195,61 @@ export class CreateNodePanel {
 
             extension.outputChannel.appendLine(`AI-generating package at ${aiNewPackageDir} (target folder: ${this._targetFolderUri?.fsPath || 'workspace root'})`);
 
-            // Save the selected model to settings for next time
+            // Save the selected models to settings for next time
+            const config = vscode.workspace.getConfiguration('rosPackageCreator');
             if (message.selectedModel) {
-              const config = vscode.workspace.getConfiguration('rosPackageCreator');
               await config.update('lastSelectedModel', message.selectedModel, vscode.ConfigurationTarget.Global);
               extension.outputChannel.appendLine(`Saved selected model: ${message.selectedModel}`);
             }
+            if (message.selectedTestModel) {
+              await config.update('lastSelectedTestModel', message.selectedTestModel, vscode.ConfigurationTarget.Global);
+              extension.outputChannel.appendLine(`Saved selected test model: ${message.selectedTestModel}`);
+            }
 
             // Run AI generation asynchronously without blocking the UI
+            this._isGenerating = true;
+            this._currentGenerator = new AIPackageGenerator(
+              extension.outputChannel, 
+              this._panel.webview,
+              50000  // Fixed chunk size
+            );
             (async () => {
               try {
-                // Use maxResponseSize from webview message (user may have overridden it)
-                const maxResponseSize = message.maxResponseSize || 50000;
-                
-                const aiGenerator = new AIPackageGenerator(
-                  extension.outputChannel, 
-                  this._panel.webview,
-                  maxResponseSize
-                );
-                await aiGenerator.generatePackageWithAI(
+                await this._currentGenerator!.generatePackageWithAI(
                   aiTemplateSource,
                   aiVariables,
                   naturalLanguageDescription,
                   aiNewPackageDir,
                   aiTestDescription,
-                  message.selectedModel
+                  message.selectedModel,
+                  message.selectedTestModel
                 );
+                this._isGenerating = false;
+                this._currentGenerator = undefined;
                 vscode.window.showInformationMessage(`AI-generated package ${aiPackageName} created successfully`);
-                this.dispose();
               } catch (error) {
-                extension.outputChannel.appendLine(`AI generation failed: ${error}`);
-                vscode.window.showErrorMessage(`AI generation failed: ${error}`);
+                this._isGenerating = false;
+                this._currentGenerator = undefined;
+                const errorMsg = String(error);
+                if (errorMsg.includes('cancelled')) {
+                  extension.outputChannel.appendLine('Generation cancelled by user');
+                } else {
+                  extension.outputChannel.appendLine(`AI generation failed: ${error}`);
+                  vscode.window.showErrorMessage(`AI generation failed: ${error}`);
+                }
               }
             })();
 
+            return;
+
+          case "stopGeneration":
+            if (this._isGenerating && this._currentGenerator) {
+              extension.outputChannel.appendLine('User requested to stop generation');
+              this._currentGenerator.cancel();
+              this._isGenerating = false;
+              this._currentGenerator = undefined;
+              vscode.window.showInformationMessage('Generation stopped by user');
+            }
             return;
 
           case "cancel":

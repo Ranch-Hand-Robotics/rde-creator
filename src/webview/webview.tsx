@@ -17,7 +17,8 @@ interface WebviewMessage {
   testDescription?: string;
   manifests?: string;
   selectedModel?: string;
-  maxResponseSize?: number;
+  selectedTestModel?: string;
+  files?: string[];
 }
 
 interface PackageManifest {
@@ -50,10 +51,17 @@ const App: React.FC = () => {
   const [generationProgress, setGenerationProgress] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingManifests, setIsLoadingManifests] = useState(true);
+  const [generationComplete, setGenerationComplete] = useState(false);
+  const [generationStopped, setGenerationStopped] = useState(false);
 
   const [availableModels, setAvailableModels] = useState<LanguageModel[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('');
-  const [maxResponseSize, setMaxResponseSize] = useState<number>(50000);
+  const [selectedTestModel, setSelectedTestModel] = useState<string>('');
+  const [generateTests, setGenerateTests] = useState<boolean>(false);
+  
+  // Track generation plan and progress
+  const [planSteps, setPlanSteps] = useState<Array<{file: string, completed: boolean, generating: boolean}>>([]);
+  const [currentStep, setCurrentStep] = useState<string>('');
 
   useEffect(() => {
     // Request manifests on load
@@ -104,18 +112,109 @@ const App: React.FC = () => {
             } else {
               setSelectedModel(lastSelectedModel);
             }
+            
+            // Set default test model (prefer different from main model)
+            const lastSelectedTestModel = message.lastSelectedTestModel || 'auto';
+            if (lastSelectedTestModel === 'auto' || !modelsWithAuto.find(m => m.id === lastSelectedTestModel)) {
+              setSelectedTestModel('auto');
+            } else {
+              setSelectedTestModel(lastSelectedTestModel);
+            }
           } catch (error) {
             console.error('Error parsing models:', error);
           }
           break;
+        case 'aiPlan':
+          // Receive the full file list from the AI plan
+          if (message.files && Array.isArray(message.files)) {
+            setPlanSteps(message.files.map((file: string) => ({ file, completed: false, generating: false })));
+            setCurrentStep(`Plan received: ${message.files.length} files to generate`);
+          }
+          break;
+        case 'aiTestPlan':
+          // Receive the test file list and add to plan
+          if (message.files && Array.isArray(message.files)) {
+            setPlanSteps(prev => [
+              ...prev,
+              ...message.files.map((file: string) => ({ file, completed: false, generating: false }))
+            ]);
+            setCurrentStep(`Test plan received: ${message.files.length} test files to generate`);
+          }
+          break;
         case 'aiProgress':
           setGenerationProgress(prev => [...prev, message.text]);
+          
+          // Parse progress messages to update plan steps
+          const text = message.text;
+          
+          // Detect plan received - extract file list
+          if (text.includes('Plan received from AI')) {
+            // Next messages should contain file information
+            setCurrentStep('Received generation plan');
+          } else if (text.match(/Requesting chunk \d+\/\d+ for (.+)/)) {
+            const match = text.match(/Requesting chunk \d+\/\d+ for (.+)/);
+            if (match) {
+              const filePath = match[1];
+              setCurrentStep(`Generating ${filePath}`);
+              // Mark file as generating, add if not already there
+              setPlanSteps(prev => {
+                const existing = prev.find(s => s.file === filePath);
+                if (!existing) {
+                  return [...prev, { file: filePath, completed: false, generating: true }];
+                }
+                // Mark as generating if not already completed
+                return prev.map(s => 
+                  s.file === filePath && !s.completed ? { ...s, generating: true } : s
+                );
+              });
+            }
+          } else if (text.match(/Completed file: (.+)/)) {
+            const match = text.match(/Completed file: (.+)/);
+            if (match) {
+              const filePath = match[1];
+              setCurrentStep(`Completed ${filePath}`);
+              // Mark as completed and not generating
+              setPlanSteps(prev => prev.map(s => 
+                s.file === filePath ? { ...s, completed: true, generating: false } : s
+              ));
+            }
+          } else if (text.includes('Sending plan request')) {
+            setCurrentStep('Requesting generation plan...');
+          } else if (text.includes('Template files loaded')) {
+            setCurrentStep('Analyzing template structure');
+          } else if (text.includes('Starting test generation')) {
+            setCurrentStep('Starting test generation');
+          } else if (text.match(/Requesting test chunk \d+\/\d+ for (.+)/)) {
+            const match = text.match(/Requesting test chunk \d+\/\d+ for (.+)/);
+            if (match) {
+              const filePath = match[1];
+              setCurrentStep(`Generating test: ${filePath}`);
+              // Mark test file as generating, add if not already there
+              setPlanSteps(prev => {
+                const existing = prev.find(s => s.file === filePath);
+                if (!existing) {
+                  return [...prev, { file: filePath, completed: false, generating: true }];
+                }
+                return prev.map(s => 
+                  s.file === filePath && !s.completed ? { ...s, generating: true } : s
+                );
+              });
+            }
+          } else if (text.match(/Completed test file: (.+)/)) {
+            const match = text.match(/Completed test file: (.+)/);
+            if (match) {
+              const filePath = match[1];
+              setCurrentStep(`Completed test: ${filePath}`);
+              setPlanSteps(prev => prev.map(s => 
+                s.file === filePath ? { ...s, completed: true, generating: false } : s
+              ));
+            }
+          }
           break;
         case 'aiComplete':
           setIsGenerating(false);
-          break;
-        case 'setMaxResponseSize':
-          setMaxResponseSize(message.maxResponseSize || 50000);
+          setGenerationComplete(true);
+          setCurrentStep('Generation complete');
           break;
       }
     };
@@ -164,13 +263,17 @@ const App: React.FC = () => {
         package_license: finalPackageLicense
       },
       naturalLanguageDescription: finalNaturalLanguageDescription,
-      testDescription: testDescription.trim(),
+      testDescription: generateTests ? testDescription.trim() : '',
       selectedModel: selectedModel,
-      maxResponseSize: maxResponseSize
+      selectedTestModel: generateTests ? selectedTestModel : undefined
     };
 
     setIsGenerating(true);
     setGenerationProgress([]);
+    setGenerationComplete(false);
+    setGenerationStopped(false);
+    setPlanSteps([]);
+    setCurrentStep('Starting generation...');
     vscode.postMessage(message);
   };
 
@@ -231,23 +334,7 @@ const App: React.FC = () => {
           </div>
           
           <div className="form-field">
-            <label htmlFor="testDescription">🧪 Test Requirements (Optional; leave blank for no tests)</label>
-            <textarea
-              id="testDescription"
-              placeholder="Example: Create unit tests for the IMU data processing, verify calibration service functionality, test error handling for disconnected sensors, and validate parameter updates."
-              rows={3}
-              value={testDescription}
-              onChange={(e) => setTestDescription(e.target.value)}
-              className="text-area"
-            />
-          </div>
-        </div>
-
-        {/* AI Model Selection */}
-        <div className="component-container">
-          <h2>🤖 AI Model Selection</h2>
-          <div className="form-field">
-            <label htmlFor="modelSelect">Choose AI Model</label>
+            <label htmlFor="modelSelect">AI Model for Code Generation</label>
             <select
               id="modelSelect"
               value={selectedModel}
@@ -266,31 +353,67 @@ const App: React.FC = () => {
               )}
             </select>
             <small className="help-text">
-              💡 Select the AI model to use for generating your ROS 2 package. Different models may produce different results.
+              💡 Select the AI model to use for generating your ROS 2 package code. Different models may produce different results.
             </small>
+          </div>
+        </div>
+
+        {/* Test Generation */}
+        <div className="component-container">
+          <h2>🧪 Test Generation (Optional)</h2>
+          <div className="form-field">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={generateTests}
+                onChange={(e) => setGenerateTests(e.target.checked)}
+              />
+              <span>Generate tests for this package</span>
+            </label>
           </div>
           
-          <div className="form-field">
-            <label htmlFor="maxResponseSize">Max AI Response Size (characters)</label>
-            <input
-              id="maxResponseSize"
-              type="number"
-              min="10000"
-              value={maxResponseSize}
-              onChange={(e) => {
-                const val = parseInt(e.target.value, 10);
-                if (!isNaN(val)) {
-                  setMaxResponseSize(val);
-                } else if (e.target.value === "") {
-                  setMaxResponseSize(0); // Or keep previous value, or set to default
-                }
-              }}
-              className="text-field"
-            />
-            <small className="help-text">
-              💡 Maximum size of AI-generated response. Increase for larger/more complex packages. Current: {(maxResponseSize / 1000).toFixed(0)}KB
-            </small>
-          </div>
+          {generateTests && (
+            <>
+              <div className="form-field">
+                <label htmlFor="testDescription">Test Requirements</label>
+                <textarea
+                  id="testDescription"
+                  placeholder="Example: Create unit tests for the IMU data processing, verify calibration service functionality, test error handling for disconnected sensors, and validate parameter updates."
+                  rows={3}
+                  value={testDescription}
+                  onChange={(e) => setTestDescription(e.target.value)}
+                  className="text-area"
+                />
+                <small className="help-text">
+                  Describe what tests should be generated. Be specific about test scenarios and edge cases.
+                </small>
+              </div>
+              
+              <div className="form-field">
+                <label htmlFor="testModelSelect">AI Model for Test Generation</label>
+                <select
+                  id="testModelSelect"
+                  value={selectedTestModel}
+                  onChange={(e) => setSelectedTestModel(e.target.value)}
+                  className="select-field"
+                  disabled={availableModels.length === 0}
+                >
+                  {availableModels.length === 0 ? (
+                    <option value="">Loading models...</option>
+                  ) : (
+                    availableModels.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.displayName}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <small className="help-text">
+                  💡 Recommended: Use a different model than the one generating code for better test coverage and different perspectives on edge cases.
+                </small>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Package Metadata */}
@@ -379,59 +502,183 @@ const App: React.FC = () => {
   const renderGeneratingPage = () => (
     <div id="generating_page">
       <div className="header-bar">
-        <h1>Generating ROS 2 Package with AI</h1>
+        <h1>🤖 Generating ROS 2 Package with AI</h1>
       </div>
       <div className="component-row">
         <div className="component-container">
           <h2>AI Generation Progress</h2>
           <div className="component-example">
-            <div className="progress-container">
-              <div className="progress-spinner"></div>
-              <p>AI is analyzing your requirements and generating the ROS 2 package...</p>
-            </div>
-            
-            {generationProgress.length > 0 && (
-              <div className="progress-log">
-                <h3>Progress Log:</h3>
-                <div className="log-entries">
-                  {generationProgress.map((message, index) => (
-                    <div key={index} className="log-entry">
-                      <span className="log-timestamp">{new Date().toLocaleTimeString()}</span>
-                      <span className="log-message">{message}</span>
+            <div className="progress-steps">
+              {currentStep && (
+                <div className="current-step">
+                  <strong>Current Step:</strong> {currentStep}
+                </div>
+              )}
+              
+              <div className="step">
+                <div className={`step-indicator ${generationProgress.length > 0 ? 'completed' : 'active spinning'}`}>
+                  {generationProgress.length > 0 ? '✓' : '○'}
+                </div>
+                <span className={generationProgress.length > 0 ? 'completed-text' : ''}>Analyzing template structure</span>
+              </div>
+              <div className="step">
+                <div className={`step-indicator ${generationProgress.some(msg => msg.includes('Plan received')) ? 'completed' : planSteps.length > 0 ? 'active' : 'active spinning'}`}>
+                  {generationProgress.some(msg => msg.includes('Plan received')) ? '✓' : '○'}
+                </div>
+                <span className={generationProgress.some(msg => msg.includes('Plan received')) ? 'completed-text' : ''}>Requesting generation plan</span>
+              </div>
+              
+              {planSteps.length > 0 && (
+                <>
+                  <h3>File Generation Progress:</h3>
+                  {planSteps.map((step, index) => (
+                    <div key={index} className="step">
+                      <div className={`step-indicator ${step.completed ? 'completed' : 'active'} ${step.generating ? 'spinning' : ''}`}>
+                        {step.completed ? '✓' : '○'}
+                      </div>
+                      <span className={step.completed ? 'completed-text' : ''}>{step.file}</span>
                     </div>
                   ))}
-                </div>
-              </div>
-            )}
-            
-            <div className="progress-steps">
-              <div className="step">
-                <div className="step-indicator active"></div>
-                <span>Analyzing template structure</span>
-              </div>
-              <div className="step">
-                <div className={`step-indicator ${generationProgress.some(msg => msg.includes('prompt') || msg.includes('language')) ? 'active' : ''}`}></div>
-                <span>Processing natural language description</span>
-              </div>
-              <div className="step">
-                <div className={`step-indicator ${generationProgress.some(msg => msg.includes('model') || msg.includes('response')) ? 'active' : ''}`}></div>
-                <span>Generating ROS 2 code and configuration</span>
-              </div>
-              <div className="step">
-                <div className={`step-indicator ${generationProgress.some(msg => msg.includes('files') || msg.includes('created')) ? 'active' : ''}`}></div>
-                <span>Creating package files</span>
-              </div>
+                </>
+              )}
             </div>
           </div>
         </div>
+      </div>
+      
+      <div className="button-bar">
+        <button 
+          className="button secondary" 
+          onClick={() => {
+            vscode.postMessage({ command: 'stopGeneration' });
+            setIsGenerating(false);
+            setGenerationStopped(true);
+          }}
+        >
+          ⏹️ Stop Generation
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderStoppedPage = () => (
+    <div id="stopped_page">
+      <div className="header-bar">
+        <h1>⏹️ Package Generation Stopped</h1>
+      </div>
+      <div className="component-row">
+        <div className="component-container">
+          <h2>Generation Cancelled</h2>
+          <div className="component-example">
+            <p>Package generation was stopped by user request.</p>
+            
+            {planSteps.length > 0 && (
+              <div className="progress-steps">
+                <h3>Progress Before Stopping:</h3>
+                {planSteps.map((step, index) => (
+                  <div key={index} className="step">
+                    <div className={`step-indicator ${step.completed ? 'completed' : ''}`}>
+                      {step.completed ? '✓' : '○'}
+                    </div>
+                    <span className={step.completed ? 'completed-text' : ''}>{step.file}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <div className="button-bar">
+        <button 
+          className="button primary" 
+          onClick={() => {
+            setIsGenerating(false);
+            setGenerationProgress([]);
+            setGenerationComplete(false);
+            setGenerationStopped(false);
+            setNaturalLanguageDescription('');
+            setTestDescription('');
+            setPackageName('');
+            setPackageDescription('');
+            setPlanSteps([]);
+            setCurrentStep('');
+          }}
+        >
+          ✨ Create Another Package
+        </button>
+        <button 
+          className="button secondary" 
+          onClick={() => vscode.postMessage({ command: 'cancel' })}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderCompletePage = () => (
+    <div id="complete_page">
+      <div className="header-bar">
+        <h1>✅ Package Generation Complete!</h1>
+      </div>
+      <div className="component-row">
+        <div className="component-container">
+          <h2>🎉 Success</h2>
+          <div className="component-example">
+            <p>Your ROS 2 package has been successfully generated with AI assistance.</p>
+            
+            {planSteps.length > 0 && (
+              <div className="progress-steps">
+                <h3>Generated Files:</h3>
+                {planSteps.map((step, index) => (
+                  <div key={index} className="step">
+                    <div className={`step-indicator ${step.completed ? 'completed' : ''}`}>
+                      {step.completed ? '✓' : '○'}
+                    </div>
+                    <span className={step.completed ? 'completed-text' : ''}>{step.file}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <div className="button-bar">
+        <button 
+          className="button primary" 
+          onClick={() => {
+            setIsGenerating(false);
+            setGenerationProgress([]);
+            setGenerationComplete(false);
+            setGenerationStopped(false);
+            setNaturalLanguageDescription('');
+            setTestDescription('');
+            setPackageName('');
+            setPackageDescription('');
+            setPlanSteps([]);
+            setCurrentStep('');
+          }}
+        >
+          ✨ Create Another Package
+        </button>
+        <button 
+          className="button secondary" 
+          onClick={() => vscode.postMessage({ command: 'cancel' })}
+        >
+          Close
+        </button>
       </div>
     </div>
   );
 
   return (
     <div className={`app ${isGenerating ? 'generating-page' : ''}`}>
-      {renderCreatePackagePage()}
+      {!isGenerating && !generationComplete && !generationStopped && renderCreatePackagePage()}
       {isGenerating && renderGeneratingPage()}
+      {!isGenerating && generationComplete && renderCompletePage()}
+      {!isGenerating && generationStopped && renderStoppedPage()}
     </div>
   );
 };

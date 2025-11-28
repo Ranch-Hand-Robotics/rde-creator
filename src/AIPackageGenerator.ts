@@ -5,11 +5,12 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as yaml from 'yaml';
-import { constructAIPrompt } from './prompts';
+import { constructPlanPrompt, constructFileChunkPrompt, constructFollowupPromptInstructions } from './prompts';
 
 export class AIPackageGenerator {
   private outputChannel: vscode.OutputChannel;
   private webview: vscode.Webview | undefined;
+  private _isCancelled: boolean = false;
   
   // Maximum AI response size in characters (configurable)
   // Default: 50KB - increase if you need larger/more complex packages
@@ -27,6 +28,23 @@ export class AIPackageGenerator {
   }
 
   /**
+   * Cancel the current generation operation
+   */
+  public cancel(): void {
+    this._isCancelled = true;
+    this.outputChannel.appendLine('Generation cancellation requested');
+  }
+
+  /**
+   * Check if generation has been cancelled
+   */
+  private checkCancellation(): void {
+    if (this._isCancelled) {
+      throw new Error('Generation cancelled by user');
+    }
+  }
+
+  /**
    * Generate a ROS package using AI based on template, parameters, and natural language description
    */
   public async generatePackageWithAI(
@@ -35,7 +53,8 @@ export class AIPackageGenerator {
     naturalLanguageDescription: string,
     targetDirectory: string,
     testDescription?: string,
-    selectedModelId?: string
+    selectedModelId?: string,
+    selectedTestModelId?: string
   ): Promise<void> {
     try {
       // Check if language model access is available
@@ -65,40 +84,239 @@ export class AIPackageGenerator {
       // Read template files and manifest
       const templateContent = await this.readTemplateContent(templatePath);
       this.sendProgress('Template files loaded and analyzed');
+      this.checkCancellation();
 
       const manifestContent = await fs.readFile(path.join(templatePath, 'manifest.yaml'), 'utf-8');
       const manifest = yaml.parse(manifestContent);
       this.sendProgress('Package manifest parsed');
+      this.checkCancellation();
 
-      // Construct the AI prompt with the configured max response size
-      const prompt = constructAIPrompt(
-        templateContent, 
-        manifest, 
-        variables, 
-        naturalLanguageDescription, 
-        testDescription,
-        this.maxResponseSize
-      );
-      this.sendProgress('AI prompt constructed with template and user requirements');
+      // Stage 1: Request a generation plan (list files + chunking)
+      const variablesObj = Object.fromEntries(variables);
+      const planPrompt = constructPlanPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, this.maxResponseSize);
+      const followupInstr = constructFollowupPromptInstructions(this.maxResponseSize);
+      this.sendProgress('Sending plan request to AI model...');
+      const planResponse = await model.sendRequest([
+        vscode.LanguageModelChatMessage.User(planPrompt + '\n' + followupInstr)
+      ], { justification: 'Request generation plan (file list + chunking)' });
+      const planObj = await this.processAIResponse(planResponse);
+      this.sendProgress('Plan received from AI');
+      this.checkCancellation();
 
-      // Send request to language model
-      const messages = [
-        vscode.LanguageModelChatMessage.User(prompt)
-      ];
+      // Normalize plan into a map of file -> estimated_chunks
+      const filesList: Array<{path: string; estimate_bytes?: number}> = [];
+      const chunksMap: Record<string, number> = {};
 
-      this.sendProgress('Sending request to AI language model...');
-      const response = await model.sendRequest(messages, {
-        justification: 'Generating ROS 2 package code based on template and user requirements'
-      });
-      this.sendProgress('AI model response received, processing...');
+      if (Array.isArray(planObj.files)) {
+        for (const f of planObj.files) {
+          if (typeof f === 'string') { filesList.push({ path: f }); }
+          else if (f && f.path) { filesList.push({ path: f.path, estimate_bytes: f.estimate_bytes }); }
+        }
+      }
+      
+      // Send file list to webview
+      if (filesList.length > 0) {
+        const processedFilesList = filesList.map(f => this.processVariables(f.path, variables));
+        if (this.webview) {
+          this.webview.postMessage({ 
+            command: 'aiPlan', 
+            files: processedFilesList 
+          });
+        }
+        this.sendProgress(`Generation plan includes ${filesList.length} files`);
+      }
+      if (planObj.chunks && typeof planObj.chunks === 'object') {
+        for (const [k, v] of Object.entries(planObj.chunks)) {
+          const n = Number(v) || 0;
+          if (n > 0) { chunksMap[k] = Math.min(10, Math.max(1, n)); }
+        }
+      }
 
-      // Process the AI response
-      const generatedContent = await this.processAIResponse(response);
-      this.sendProgress('AI response processed and parsed');
+      // Fallback: if no files listed, try manifest file mapping or throw
+      if (filesList.length === 0) {
+        // try common package files
+        filesList.push({ path: 'package.xml' });
+      }
 
-      // Generate the package using the AI response
-      await this.createPackageFromAIResponse(generatedContent, targetDirectory, variables);
+      // Decide chunk counts heuristically when not provided
+      for (const f of filesList) {
+        if (!chunksMap[f.path]) {
+          const estimate = f.estimate_bytes || 2000;
+          const perChunk = Math.max(1000, Math.floor(this.maxResponseSize * 0.6));
+          const needed = Math.min(10, Math.max(1, Math.ceil(estimate / perChunk)));
+          chunksMap[f.path] = needed;
+        }
+      }
+
+      // Stage 2: Request each file chunk-by-chunk and stream to disk
+      // Generate files in parallel (max 3 at a time to avoid overwhelming the API)
+      const MAX_PARALLEL_FILES = 3;
+      
+      // Common file generation function
+      const generateFileWithChunks = async (
+        f: {path: string; estimate_bytes?: number},
+        aiModel: vscode.LanguageModelChat,
+        chunksMapping: Record<string, number>,
+        promptConstructor: (filePath: string, chunkIndex: number, totalChunks: number) => string,
+        messagePrefix: string
+      ) => {
+        const total = chunksMapping[f.path] || 1;
+        
+        // Prepare file path and ensure directory exists
+        const processedPath = this.processVariables(f.path, variables);
+        const fullPath = path.join(targetDirectory, processedPath);
+        await fs.mkdir(path.dirname(fullPath), { recursive: true });
+        
+        // Open file for writing (truncate if exists)
+        let fileHandle: fs.FileHandle | undefined;
+        try {
+          fileHandle = await fs.open(fullPath, 'w');
+          
+          // Stream chunks directly to disk (must be sequential per file)
+          for (let i = 1; i <= total; i++) {
+            this.checkCancellation();
+            const chunkPrompt = promptConstructor(f.path, i, total);
+            this.sendProgress(`Requesting ${messagePrefix}chunk ${i}/${total} for ${f.path}`);
+            const chunkResp = await aiModel.sendRequest([
+              vscode.LanguageModelChatMessage.User(chunkPrompt + '\n' + followupInstr)
+            ], { justification: `Request ${messagePrefix}file chunk ${i}/${total} for ${f.path}` });
+            const chunkObj = await this.processAIResponse(chunkResp);
+            if (!chunkObj || chunkObj.file !== processedPath) {
+              throw new Error(`Unexpected ${messagePrefix}chunk response for ${processedPath}`);
+            }
+            
+            // Unescape and process chunk content
+            const contentEscaped = String(chunkObj.content || '');
+            const unescaped = contentEscaped.replace(/\\n/g, '\n');
+            const processedContent = this.processVariables(unescaped, variables);
+            
+            // Validate variable replacement
+            if (processedContent.includes('{{')) {
+              this.outputChannel.appendLine(`WARNING: Unreplaced variables found in ${messagePrefix}chunk ${i} of ${processedPath}`);
+            }
+            
+            // Write chunk directly to file
+            await fileHandle.write(processedContent, null, 'utf-8');
+            this.sendProgress(`Written ${messagePrefix}chunk ${i}/${total} to ${processedPath}`);
+          }
+          
+          this.sendProgress(`Completed ${messagePrefix}file: ${processedPath}`);
+        } finally {
+          if (fileHandle) {
+            await fileHandle.close();
+          }
+        }
+      };
+      
+      // Process files in parallel batches
+      for (let i = 0; i < filesList.length; i += MAX_PARALLEL_FILES) {
+        this.checkCancellation();
+        const batch = filesList.slice(i, i + MAX_PARALLEL_FILES);
+        if (!model) {
+          throw new Error('Language model is not available');
+        }
+        const currentModel = model;
+        await Promise.all(batch.map(f => 
+          generateFileWithChunks(
+            f,
+            currentModel,
+            chunksMap,
+            (filePath, chunkIndex, totalChunks) => 
+              constructFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, filePath, chunkIndex, totalChunks),
+            ''
+          )
+        ));
+      }
+
       this.sendProgress('ROS 2 package files created successfully');
+
+      // Stage 3: Generate tests if requested
+      if (testDescription && testDescription.trim() && selectedTestModelId) {
+        this.checkCancellation();
+        this.sendProgress('Starting test generation with separate AI model...');
+        
+        // Select test model
+        let testModel: vscode.LanguageModelChat | undefined;
+        if (selectedTestModelId && selectedTestModelId !== 'auto') {
+          const allModels = await vscode.lm.selectChatModels({});
+          testModel = allModels.find(m => `${m.vendor}-${m.family}-${allModels.indexOf(m)}` === selectedTestModelId);
+        }
+        
+        if (!testModel) {
+          this.sendProgress('Warning: Test model not found, skipping test generation');
+        } else {
+          this.outputChannel.appendLine(`Using test model: ${testModel.name} (${testModel.vendor}, ${testModel.family})`);
+          
+          // Request test plan
+          const testPlanPrompt = this.constructTestPlanPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, testDescription);
+          this.sendProgress('Requesting test generation plan...');
+          const testPlanResponse = await testModel.sendRequest([
+            vscode.LanguageModelChatMessage.User(testPlanPrompt + '\n' + followupInstr)
+          ], { justification: 'Request test generation plan' });
+          const testPlanObj = await this.processAIResponse(testPlanResponse);
+          this.sendProgress('Test plan received from AI');
+          
+          // Normalize test plan
+          const testFilesList: Array<{path: string; estimate_bytes?: number}> = [];
+          const testChunksMap: Record<string, number> = {};
+          
+          if (Array.isArray(testPlanObj.files)) {
+            for (const f of testPlanObj.files) {
+              if (typeof f === 'string') { testFilesList.push({ path: f }); }
+              else if (f && f.path) { testFilesList.push({ path: f.path, estimate_bytes: f.estimate_bytes }); }
+            }
+          }
+          
+          // Send test file list to webview
+          if (testFilesList.length > 0) {
+            const processedTestFilesList = testFilesList.map(f => this.processVariables(f.path, variables));
+            if (this.webview) {
+              this.webview.postMessage({ 
+                command: 'aiTestPlan', 
+                files: processedTestFilesList 
+              });
+            }
+            this.sendProgress(`Test generation plan includes ${testFilesList.length} files`);
+          }
+          if (testPlanObj.chunks && typeof testPlanObj.chunks === 'object') {
+            for (const [k, v] of Object.entries(testPlanObj.chunks)) {
+              const n = Number(v) || 0;
+              if (n > 0) { testChunksMap[k] = Math.min(10, Math.max(1, n)); }
+            }
+          }
+          
+          // Decide chunk counts for test files
+          for (const f of testFilesList) {
+            if (!testChunksMap[f.path]) {
+              const estimate = f.estimate_bytes || 2000;
+              const perChunk = Math.max(1000, Math.floor(this.maxResponseSize * 0.6));
+              const needed = Math.min(10, Math.max(1, Math.ceil(estimate / perChunk)));
+              testChunksMap[f.path] = needed;
+            }
+          }
+          
+          // Process test files in parallel batches
+          for (let i = 0; i < testFilesList.length; i += MAX_PARALLEL_FILES) {
+            const batch = testFilesList.slice(i, i + MAX_PARALLEL_FILES);
+            const currentTestModel = testModel;
+            if (!currentTestModel) {
+              throw new Error('Test model is not available');
+            }
+            await Promise.all(batch.map(f => 
+              generateFileWithChunks(
+                f,
+                currentTestModel,
+                testChunksMap,
+                (filePath, chunkIndex, totalChunks) => 
+                  this.constructTestFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, testDescription, filePath, chunkIndex, totalChunks),
+                'test '
+              )
+            ));
+          }
+          
+          this.sendProgress('Test files generated successfully');
+        }
+      }
 
       this.outputChannel.appendLine('AI-powered ROS package generation completed successfully');
       // Send completion message to webview
@@ -169,26 +387,28 @@ export class AIPackageGenerator {
 
     this.sendProgress(`AI Response received (${fullResponse.length} characters)`);
 
+    // Clean up the response - remove markdown code blocks if present
+    let cleanedResponse = fullResponse.trim();
+    
+    // Try to extract JSON from markdown code blocks first (most common case)
+    const markdownJsonMatch = cleanedResponse.match(/```(?:json)?\s*\n?(\{[\s\S]*?\})\s*\n?```/);
+    if (markdownJsonMatch) {
+      cleanedResponse = markdownJsonMatch[1].trim();
+    } else if (cleanedResponse.startsWith('```')) {
+      // Handle cases where markdown wrapping exists but without json tag
+      const codeBlockMatch = cleanedResponse.match(/```[^\n]*\n([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        cleanedResponse = codeBlockMatch[1].trim();
+      }
+    }
+
     try {
-      // Try to parse as JSON directly first
-      const parsed = JSON.parse(fullResponse);
+      // Try to parse the cleaned response as JSON
+      const parsed = JSON.parse(cleanedResponse);
       return parsed;
     } catch (error) {
-      this.sendProgress(`Failed to parse AI response :\n ${fullResponse}\n`);
-      this.sendProgress(`Failed to parse AI response as JSON: ${error}`);
-
-      // Fallback 1: Try to extract JSON from markdown code blocks
-      const markdownJsonMatch = fullResponse.match(/```(?:json)?\s*\n?(\{[\s\S]*?\})\s*\n?```/);
-      if (markdownJsonMatch) {
-        try {
-          return JSON.parse(markdownJsonMatch[1]);
-        } catch (markdownError) {
-          this.sendProgress(`Failed to parse extracted markdown JSON: ${markdownError}`);
-        }
-      }
-
-      // Fallback 2: Try to extract JSON using the original regex (finds first { to last })
-      const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
+      // Fallback: Try to extract JSON object from text (find first { to matching })
+      const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
           return JSON.parse(jsonMatch[0]);
@@ -197,29 +417,25 @@ export class AIPackageGenerator {
         }
       }
 
-      // Fallback 3: Try to find JSON after common prefixes
-      const prefixesToTry = ['Here is the ROS 2 package:', 'Here\'s the package:', 'Package structure:', 'Generated package:'];
+      // Fallback 2: Try to find JSON after common prefixes
+      const prefixesToTry = ['Here is the ROS 2 package:', 'Here\'s the package:', 'Package structure:', 'Generated package:', 'Here is the file:', 'Here\'s the chunk:'];
       for (const prefix of prefixesToTry) {
         const prefixIndex = fullResponse.indexOf(prefix);
         if (prefixIndex !== -1) {
           const afterPrefix = fullResponse.substring(prefixIndex + prefix.length).trim();
-          try {
-            const parsed = JSON.parse(afterPrefix);
-            return parsed;
-          } catch (prefixError) {
-            // Try to extract JSON from the remaining text
-            const jsonFromRest = afterPrefix.match(/\{[\s\S]*\}/);
-            if (jsonFromRest) {
-              try {
-                return JSON.parse(jsonFromRest[0]);
-              } catch (restError) {
-                // Continue to next prefix
-              }
+          const jsonFromRest = afterPrefix.match(/\{[\s\S]*\}/);
+          if (jsonFromRest) {
+            try {
+              return JSON.parse(jsonFromRest[0]);
+            } catch (restError) {
+              // Continue to next prefix
             }
           }
         }
       }
 
+      this.sendProgress(`Failed to parse AI response as JSON: ${error}`);
+      this.sendProgress(`Response preview: ${fullResponse.substring(0, 200)}...`);
       throw new Error(`AI response is not valid JSON. Response starts with: "${fullResponse.substring(0, 100)}..."`);
     }
   }
@@ -293,5 +509,91 @@ export class AIPackageGenerator {
     if (this.webview) {
       this.webview.postMessage({ command: 'aiProgress', text: message });
     }
+  }
+
+  private constructTestPlanPrompt(
+    templateContent: string,
+    manifest: any,
+    variablesObj: Record<string, string>,
+    packageDescription: string,
+    testDescription: string
+  ): string {
+    const aiDirective = manifest.ai_directive || '';
+    return `You are an expert ROS 2 test engineer. Produce a JSON plan for generating test files for a ROS 2 package.
+
+IMPORTANT: Return ONLY raw JSON. Do NOT wrap in markdown code blocks. Do NOT use \`\`\`json formatting.
+Your response must start with { and end with }.
+
+Example output format:
+{
+  "files":[{"path":"test/test_node.cpp","estimate_bytes":500}],
+  "chunks":{}
+}
+
+Package functionality:
+${packageDescription}
+
+Test requirements:
+${testDescription}
+
+Requirements:
+- List all test files to generate under "files" as objects: {"path":"...","estimate_bytes":123}
+- Provide a "chunks" map: file path -> number of chunks (<=10) to split large files
+- Use ${this.maxResponseSize} as an upper bound for any single response size
+- Include appropriate test frameworks (gtest for C++, unittest/pytest for Python, Jest for Node.js)
+- Follow ROS 2 testing best practices
+${aiDirective ? `
+TEMPLATE AI DIRECTIVE:
+${aiDirective}
+` : ''}
+User variables: ${JSON.stringify(variablesObj)}
+`;
+  }
+
+  private constructTestFileChunkPrompt(
+    templateContent: string,
+    manifest: any,
+    variablesObj: Record<string, string>,
+    packageDescription: string,
+    testDescription: string,
+    filePath: string,
+    chunkIndex: number,
+    totalChunks: number
+  ): string {
+    const aiDirective = manifest.ai_directive || '';
+    return `You are an expert ROS 2 test engineer. Return JSON for test chunk ${chunkIndex}/${totalChunks} of file: ${filePath}
+
+IMPORTANT: Return ONLY raw JSON. Do NOT wrap in markdown code blocks. Do NOT use \`\`\`json formatting.
+Your response must start with { and end with }.
+
+Example output format:
+{
+  "file":"${filePath}",
+  "chunk_index":${chunkIndex},
+  "total_chunks":${totalChunks},
+  "content":"test file content here with \\n for newlines"
+}
+
+Package functionality:
+${packageDescription}
+
+Test requirements:
+${testDescription}
+
+Requirements:
+- Content must be a JSON string with special characters escaped
+- Use \\n for newlines, escape quotes as \\" and backslashes as \\\\
+- chunk_index is 1-based
+- Concatenation of all chunks in order must equal the full test file content
+- Generate ONLY this chunk (${chunkIndex}/${totalChunks}), not the entire file
+- Follow ROS 2 testing best practices
+- Include proper test fixtures, setup/teardown, and assertions
+- Test edge cases and error conditions
+${aiDirective ? `
+TEMPLATE AI DIRECTIVE:
+${aiDirective}
+` : ''}
+User variables: ${JSON.stringify(variablesObj)}
+`;
   }
 }
