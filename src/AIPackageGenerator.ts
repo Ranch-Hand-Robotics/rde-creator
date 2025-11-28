@@ -196,7 +196,7 @@ export class AIPackageGenerator {
             }
             
             // Write chunk directly to file
-            await fileHandle.write(processedContent, 'utf-8');
+            await fileHandle.write(processedContent, null, 'utf-8');
             this.sendProgress(`Written ${messagePrefix}chunk ${i}/${total} to ${processedPath}`);
           }
           
@@ -212,10 +212,14 @@ export class AIPackageGenerator {
       for (let i = 0; i < filesList.length; i += MAX_PARALLEL_FILES) {
         this.checkCancellation();
         const batch = filesList.slice(i, i + MAX_PARALLEL_FILES);
+        if (!model) {
+          throw new Error('Language model is not available');
+        }
+        const currentModel = model;
         await Promise.all(batch.map(f => 
           generateFileWithChunks(
             f,
-            model,
+            currentModel,
             chunksMap,
             (filePath, chunkIndex, totalChunks) => 
               constructFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, filePath, chunkIndex, totalChunks),
@@ -294,10 +298,14 @@ export class AIPackageGenerator {
           // Process test files in parallel batches
           for (let i = 0; i < testFilesList.length; i += MAX_PARALLEL_FILES) {
             const batch = testFilesList.slice(i, i + MAX_PARALLEL_FILES);
+            const currentTestModel = testModel;
+            if (!currentTestModel) {
+              throw new Error('Test model is not available');
+            }
             await Promise.all(batch.map(f => 
               generateFileWithChunks(
                 f,
-                testModel,
+                currentTestModel,
                 testChunksMap,
                 (filePath, chunkIndex, totalChunks) => 
                   this.constructTestFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, testDescription, filePath, chunkIndex, totalChunks),
