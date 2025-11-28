@@ -67,6 +67,71 @@ const App: React.FC = () => {
   const [planSteps, setPlanSteps] = useState<Array<{file: string, completed: boolean, generating: boolean}>>([]);
   const [currentStep, setCurrentStep] = useState<string>('');
 
+  // Restore state on mount
+  useEffect(() => {
+    const previousState = vscode.getState();
+    if (previousState) {
+      if (previousState.isGenerating !== undefined) { setIsGenerating(previousState.isGenerating); }
+      if (previousState.generationComplete !== undefined) { setGenerationComplete(previousState.generationComplete); }
+      if (previousState.generationStopped !== undefined) { setGenerationStopped(previousState.generationStopped); }
+      if (previousState.generationProgress) { setGenerationProgress(previousState.generationProgress); }
+      if (previousState.planSteps) { setPlanSteps(previousState.planSteps); }
+      if (previousState.currentStep) { setCurrentStep(previousState.currentStep); }
+      if (previousState.packageName) { setPackageName(previousState.packageName); }
+      if (previousState.packageMaintainer) { setPackageMaintainer(previousState.packageMaintainer); }
+      if (previousState.packageVersion) { setPackageVersion(previousState.packageVersion); }
+      if (previousState.packageDescription) { setPackageDescription(previousState.packageDescription); }
+      if (previousState.packageLicense) { setPackageLicense(previousState.packageLicense); }
+      if (previousState.packageType) { setPackageType(previousState.packageType); }
+      if (previousState.naturalLanguageDescription) { setNaturalLanguageDescription(previousState.naturalLanguageDescription); }
+      if (previousState.testDescription) { setTestDescription(previousState.testDescription); }
+      if (previousState.generateTests !== undefined) { setGenerateTests(previousState.generateTests); }
+      if (previousState.selectedModel) { setSelectedModel(previousState.selectedModel); }
+      if (previousState.selectedTestModel) { setSelectedTestModel(previousState.selectedTestModel); }
+    }
+  }, []);
+
+  // Persist state whenever critical state changes
+  useEffect(() => {
+    vscode.setState({
+      isGenerating,
+      generationComplete,
+      generationStopped,
+      generationProgress,
+      planSteps,
+      currentStep,
+      packageName,
+      packageMaintainer,
+      packageVersion,
+      packageDescription,
+      packageLicense,
+      packageType,
+      naturalLanguageDescription,
+      testDescription,
+      generateTests,
+      selectedModel,
+      selectedTestModel
+    });
+  }, [
+    isGenerating,
+    generationComplete,
+    generationStopped,
+    generationProgress,
+    planSteps,
+    currentStep,
+    packageName,
+    packageMaintainer,
+    packageVersion,
+    packageDescription,
+    packageLicense,
+    packageType,
+    naturalLanguageDescription,
+    testDescription,
+    generateTests,
+    selectedModel,
+    selectedTestModel
+  ]);
+
   useEffect(() => {
     // Request manifests on load
     vscode.postMessage({ command: 'webviewLoaded' });
@@ -353,7 +418,6 @@ const App: React.FC = () => {
               </>
             );
           })()}
-        </div>
           
           <div className="form-field">
             <label htmlFor="modelSelect">AI Model for Code Generation</label>
@@ -418,35 +482,33 @@ const App: React.FC = () => {
                     💡 Tests will only be generated if you provide a description here. Be specific about test scenarios and edge cases.
                   </small>
                 </div>
+                
+                <div className="form-field">
+                  <label htmlFor="testModelSelect">AI Model for Test Generation</label>
+                  <select
+                    id="testModelSelect"
+                    value={selectedTestModel}
+                    onChange={(e) => setSelectedTestModel(e.target.value)}
+                    className="select-field"
+                    disabled={availableModels.length === 0}
+                  >
+                    {availableModels.length === 0 ? (
+                      <option value="">Loading models...</option>
+                    ) : (
+                      availableModels.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.displayName}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <small className="help-text">
+                    💡 Recommended: Use a different model than the one generating code for better test coverage and different perspectives on edge cases.
+                  </small>
+                </div>
               </>
             );
           })()}
-              
-              <div className="form-field">
-                <label htmlFor="testModelSelect">AI Model for Test Generation</label>
-                <select
-                  id="testModelSelect"
-                  value={selectedTestModel}
-                  onChange={(e) => setSelectedTestModel(e.target.value)}
-                  className="select-field"
-                  disabled={availableModels.length === 0}
-                >
-                  {availableModels.length === 0 ? (
-                    <option value="">Loading models...</option>
-                  ) : (
-                    availableModels.map((model) => (
-                      <option key={model.id} value={model.id}>
-                        {model.displayName}
-                      </option>
-                    ))
-                  )}
-                </select>
-                <small className="help-text">
-                  💡 Recommended: Use a different model than the one generating code for better test coverage and different perspectives on edge cases.
-                </small>
-              </div>
-            </>
-          )}
         </div>
 
         {/* Package Metadata */}
