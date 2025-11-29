@@ -9,21 +9,16 @@ example_prompt: "Create MicroROS2 firmware for ESP32 to control a robotic grippe
 test_instruction: "Describe what should be tested in both the firmware and host package. Include hardware-in-the-loop tests, connection tests, firmware upload validation, and integration scenarios. Tests will only be generated if you provide this description."
 test_example_prompt: "Create tests for host package connection manager, verify firmware version checking logic, test upload functionality with mock serial port, validate parameter parsing in launch files, and create integration tests for microROS agent communication. For firmware, test sensor reading accuracy and command processing."
 ai_directive: |
-  This is a MicroROS2 template that generates BOTH firmware for a microcontroller AND a C++ ROS 2 host package.
-  The host package ONLY manages firmware lifecycle - it does NOT replicate firmware's pub/sub interface.
+  This template generates TWO components:
+  1. MicroROS2 firmware (PlatformIO project) - implements ROS 2 communication via RCLC
+  2. C++ lifecycle node (host package) - manages firmware lifecycle only (upload, version check, connection)
 
-  HIGH PRIORITY REQUIREMENTS:
-  - Generate TWO distinct components:
-    1. MicroROS2 firmware (PlatformIO project for microcontroller)
-    2. C++ ROS 2 lifecycle node that manages firmware (NO Python option)
-  - The host package MUST include Docker-based firmware build system
-  - The compiled firmware binary MUST be included as a package resource
-  - Include launch files that MUST launch both micro_ros_agent + host lifecycle node
-  - Support firmware version checking via resource/firmware/version.txt (mandatory)
-  - Include PlatformIO debug configuration for standalone firmware debugging
-  - Follow all ROS 2 C++ best practices for the host package
-  - Follow MicroROS best practices for the firmware
-  - IMPORTANT: Do NOT generate test files unless explicitly requested by the user in a separate test description. The test/ directory in the package structure is OPTIONAL.
+  CRITICAL ARCHITECTURE:
+  - Host provides lifecycle management ONLY (not pub/sub) - all ROS 2 topics/services/actions are in firmware
+  - Host MUST launch micro_ros_agent + lifecycle node together (agent bridges firmware to ROS 2)
+  - C++ only (no Python), lifecycle node required, version.txt mandatory for version checking
+  - Include Docker build system, PlatformIO debug config, launch files with parameters
+  - Tests are OPTIONAL - only generate if user provides test description
 
   MICROROS2 FIRMWARE REQUIREMENTS:
   - Use PlatformIO as the build system (NOT Arduino IDE)
@@ -51,213 +46,61 @@ ai_directive: |
   - Implement graceful degradation if agent disconnects
   - Support firmware version reporting via topic or service
 
-  PLATFORMIO CONFIGURATION:
-  - Include appropriate platform (e.g., espressif32, ststm32, teensy, etc.)
-  - Specify board model (e.g., esp32dev, nucleo_f446re, teensy41)
-  - Add micro_ros_platformio library dependency
-  - Configure build flags for microROS (transport type, memory settings)
-  - Include upload settings (upload_port, upload_speed)
-  - Add debug configuration (debug_tool, debug_port, debug_speed)
-  - Support multiple build environments (debug, release, different boards)
-  - Include monitor settings (monitor_speed, monitor_port)
-  - Add custom scripts for pre/post build if needed
-  - Configure microROS transport via build flags
+  PLATFORMIO CONFIG (platformio.ini):
+  - Platform/board, micro_ros_platformio library, build flags for transport type
+  - Upload/monitor settings, debug tool configuration, multiple environments if needed
 
-  Example platformio.ini structure:
-  ```ini
-  [env:{{board_name}}]
-  platform = {{platform}}
-  board = {{board}}
-  framework = arduino
-  lib_deps = 
-      https://github.com/micro-ROS/micro_ros_platformio
-  build_flags = 
-      -DMICRO_ROS_TRANSPORT_{{transport_type}}
-      -DRCL_LOGGING_ENABLED
-  monitor_speed = 115200
-  upload_speed = 921600
-  debug_tool = {{debug_tool}}
-  debug_init_break = tbreak setup
-  ```
+  PLATFORMIO DEBUG (firmware/.vscode/launch.json):
+  - PlatformIO debug config for hardware debuggers (stlink, jlink, cmsis-dap, esp-prog, etc.)
+  - Upload-and-debug or debug-only modes
 
-  PLATFORMIO DEBUG CONFIGURATION:
-  - Include .vscode/launch.json with PlatformIO debug configurations
-  - Support common debug tools: stlink, jlink, cmsis-dap, esp-prog, etc.
-  - Configure debug breakpoints and initialization
-  - Include separate configurations for different boards if multiple environments exist
-  - Support both upload-and-debug and debug-only modes
-  - Include GDB server configuration
-  - Add debugging symbols and optimization flags for debug builds
-  - Example launch.json with PIO Debug configuration
+  HOST PACKAGE COMPONENTS:
+  - C++ lifecycle node: configure (version check) → activate (upload if needed, connect)
+  - Connection manager: serial/network handling with auto-detect and reconnection
+  - Firmware uploader: reads version.txt, compares with device, flashes if mismatch
+  - Launch files: always include micro_ros_agent + host node with configurable parameters
+  - Docker build system: cross-platform firmware compilation
+  - Multi-instance support: multiple devices with namespacing (if enabled)
 
-  Example .vscode/launch.json:
-  ```json
-  {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "type": "platformio-debug",
-        "request": "launch",
-        "name": "PIO Debug ({{board_name}})",
-        "executable": ".pio/build/{{board_name}}/firmware.elf",
-        "projectEnvName": "{{board_name}}",
-        "toolchainBinDir": "",
-        "internalConsoleOptions": "openOnSessionStart",
-        "preLaunchTask": {
-          "type": "PlatformIO",
-          "task": "Pre-Debug"
-        }
-      }
-    ]
-  }
-  ```
+  DOCKER BUILD:
+  - Dockerfile with PlatformIO, mount firmware source, output to resource/firmware/
+  - build_firmware.sh/.cmd scripts for cross-platform compilation
 
-  ROS 2 HOST PACKAGE REQUIREMENTS:
-  - Acts as LIFECYCLE MANAGER ONLY for the microcontroller firmware
-  - MUST use micro_ros_agent (do NOT implement agent functionality in host)
-  - Manages firmware lifecycle: version check (via version.txt), upload, connection management
-  - CRITICAL: Does NOT provide ROS 2 pub/sub/service/action interfaces
-  - All ROS 2 communication happens in firmware through micro_ros_agent bridge
-  - Host only provides: firmware upload service, version checking, connection status
-  - Includes Docker-based firmware build system
-  - Stores compiled firmware as a package resource with version.txt
-  - Includes configuration files for connection parameters
-  - Provides launch files that MUST launch micro_ros_agent + host lifecycle node
-  - Implements health monitoring for connection status only
-  - Supports multiple microcontroller instances (multi-robot scenarios)
-  - MUST be C++ only (no Python option)
+  FIRMWARE RESOURCES:
+  - Store in resource/firmware/: firmware.bin, firmware.elf, version.txt (required)
+  - Checksum verification, support multiple variants if needed
 
-  DOCKER-BASED FIRMWARE BUILD:
-  - Create Dockerfile for firmware compilation environment
-  - Use official PlatformIO Docker image or build custom image based on the user's specification of platform
-  - Install necessary dependencies (PlatformIO, toolchains)
-  - Mount firmware source as volume during build
-  - Copy compiled binary to package resource directory
-  - Include build script that can be run locally or in CI/CD
-  - Support cross-platform builds (Linux, Windows, macOS via Docker)
-  - Cache dependencies for faster subsequent builds
-  - Include .dockerignore to exclude unnecessary files
+  CONNECTION & UPLOAD:
+  - Serial: auto-detect VID/PID or specify port, hot-plug detection
+  - Network: UDP/TCP with IP/port, connection retry with backoff
+  - Upload: detect device, compare versions, flash if mismatch (auto-upload default: off)
+  - Use platformio/esptool/stm32flash/teensy_loader_cli, provide progress feedback
 
-  Example Dockerfile:
-  ```dockerfile
-  FROM python:3.11-slim
-  RUN pip install platformio
-  WORKDIR /firmware
-  COPY firmware/ /firmware/
-  RUN pio run -e {{board_name}}
-  ```
+  LAUNCH FILES:
+  - Main: micro_ros_agent + host lifecycle node (both required)
+  - Parameters: connection_type, serial_port, VID/PID, IP/port, auto_upload, namespace
+  - Examples: serial, network, multi-instance variants
 
-  Example build script (build_firmware.sh or build_firmware.cmd):
-  ```bash
-  #!/bin/bash
-  docker build -t {{package_name}}_firmware_builder .
-  docker run --rm -v $(pwd)/firmware:/firmware -v $(pwd)/resource/firmware:/output {{package_name}}_firmware_builder cp .pio/build/{{board_name}}/firmware.bin /output/
-  ```
+  VERSION MANAGEMENT:
+  - Host reads resource/firmware/version.txt (semantic versioning: "1.0.0")
+  - Queries device version, compares, triggers upload if mismatch (respects auto_upload flag)
+  - Firmware embeds version string and reports via service/topic
 
-  FIRMWARE RESOURCE MANAGEMENT:
-  - Store firmware binary in resource/firmware/ directory
-  - MUST include resource/firmware/version.txt with firmware version (e.g., "1.0.0")
-  - Host C++ node MUST read version.txt file to determine expected firmware version
-  - Implement firmware hash checking for integrity
-  - Support multiple firmware variants if needed (different boards, features)
-  - Include metadata file with firmware information (build date, git commit, features)
+  HOST IMPLEMENTATION (C++):
+  - rclcpp_lifecycle node with states: configure (version check) → activate (upload, connect)
+  - rclcpp_components for composable architecture
+  - Connection manager, firmware uploader, transport abstraction classes
+  - Async operations, comprehensive logging, modern C++17+ patterns
+  - Headers: microros_lifecycle_manager.hpp, connection_manager.hpp, firmware_uploader.hpp
 
-  CONNECTION MANAGEMENT IN HOST PACKAGE:
-  - Support serial connection: auto-detect or specify VID/PID
-  - Support network connection: UDP or TCP with configurable IP/port
-  - Implement connection retry with exponential backoff
-  - Provide connection status monitoring
-  - Support hot-plug detection for USB devices
-  - Implement graceful handling of disconnection
-  - Include connection state publishing for monitoring
-  - Support multiple simultaneous connections if needed
+  DEBUGGING & DEFAULTS:
+  - PlatformIO debug config in firmware/.vscode/launch.json (ST-Link, J-Link, etc.)
+  - Auto-upload DISABLED by default (prevents debug conflicts, enable via launch parameter)
+  - Firmware debugs independently from host - document hardware debugger setup
 
-  FIRMWARE UPLOAD FUNCTIONALITY:
-  - Detect connected microcontroller via VID/PID or serial port
-  - Read firmware version from microcontroller (if available)
-  - Compare with packaged firmware version
-  - Upload firmware if versions don't match or forced
-  - Support configurable auto-upload behavior (default: disabled)
-  - Use appropriate upload tool: platformio, esptool, stm32flash, teensy_loader_cli
-  - Provide upload progress feedback
-  - Verify successful upload before attempting connection
-  - Support DFU mode entry if needed
-
-  LAUNCH FILE CONFIGURATION:
-  - MUST include micro_ros_agent node - this is REQUIRED, not optional
-  - Include parameterized launch file for connection configuration
-  - Support command-line arguments and launch parameters
-  - Allow runtime specification of: serial port, VID/PID, IP address, port
-  - Include namespace support for multi-robot scenarios
-  - Launch host lifecycle node + micro_ros_agent together (both required)
-  - Include remapping capabilities
-  - Provide examples for different connection types
-  - Support conditional parameters but NOT conditional agent (agent always launches)
-
-  Example launch file structure:
-  ```python
-  def generate_launch_description():
-      # Declare arguments
-      connection_type_arg = DeclareLaunchArgument('connection_type', default_value='serial')
-      serial_port_arg = DeclareLaunchArgument('serial_port', default_value='/dev/ttyUSB0')
-      network_ip_arg = DeclareLaunchArgument('network_ip', default_value='192.168.1.100')
-      auto_upload_arg = DeclareLaunchArgument('auto_upload', default_value='false')
-      
-      # ALWAYS include micro_ros_agent node (required for firmware bridge)
-      # ALWAYS include host lifecycle node (firmware management)
-      # Agent and host work together - both are mandatory
-  ```
-
-  FIRMWARE VERSION CHECKING:
-  - Host C++ node MUST read resource/firmware/version.txt file for expected version
-  - Query actual version from microcontroller via service or topic
-  - Compare version.txt version with actual firmware version
-  - Trigger upload if versions don't match (unless auto_upload disabled)
-  - Log version information (expected vs actual)
-  - Provide version mismatch warnings
-  - MANDATORY format: semantic versioning (major.minor.patch) e.g., "1.0.0"
-  - This is the ONLY version checking mechanism - version.txt is authoritative source
-
-  HOST PACKAGE ARCHITECTURE (C++ ONLY):
-  - Use lifecycle node for firmware lifecycle management (REQUIRED)
-  - Lifecycle states: configure (check version), activate (upload if needed, connect)
-  - Include rclcpp_lifecycle and rclcpp_components registration
-  - Provide connection manager class (serial/network handling)
-  - Implement firmware uploader class (version check, flash)
-  - Include transport abstraction layer
-  - Support asynchronous operations for non-blocking behavior
-  - Include comprehensive logging and diagnostics
-  - Follow modern C++17+ patterns
-  - CRITICAL: Host node provides lifecycle services ONLY
-  - Host node does NOT implement publishers, subscribers, services, or actions
-  - All ROS 2 communication happens in firmware via micro_ros_agent bridge
-  - Host only manages: connection, version checking, firmware upload
-  - NO Python host package option - C++ is mandatory
-
-  DEBUGGING WORKFLOW:
-  - User can debug firmware independently using PlatformIO debugger
-  - Launch.json includes PlatformIO debug configuration
-  - Debug workflow: attach hardware debugger (ST-Link, J-Link, etc.)
-  - Set breakpoints in firmware code
-  - Launch PIO Debug from VS Code
-  - Firmware debugging is separate from host package
-  - Host package should NOT attempt upload during active debug session
-  - Document debugging prerequisites (hardware debugger, connections)
-
-  DEFAULT BEHAVIOR FOR PRODUCTION:
-  - Auto-upload should be DISABLED by default
-  - Prevents interference with debugging sessions
-  - User must explicitly enable auto-upload via launch parameter
-  - Suitable for bringup and development workflows
-  - Prevents accidental firmware overwrites during testing
-
-  MULTI-INSTANCE SUPPORT:
-  - Support multiple microcontrollers connected simultaneously
-  - Use unique identifiers (serial number, VID/PID combinations)
-  - Include namespace or prefix for each instance
-  - Provide launch file that can spawn multiple instances
-  - Support different configurations per instance
-  - Include mechanism to discover connected devices
+  MULTI-INSTANCE (if enabled):
+  - Unique identification via VID/PID/serial number, namespacing per instance
+  - Multi-instance launch file with device discovery
 
   QUALITY ASSURANCE:
   - Include comprehensive documentation in README.md
@@ -327,79 +170,23 @@ ai_directive: |
       └── troubleshooting.md        # Troubleshooting guide
   ```
 
-  CRITICAL NOTES:
-  - NO scripts/ directory - firmware manipulation is handled by lifecycle node
-  - NO Python host package - C++ only
-  - Host node is a lifecycle node that manages firmware lifecycle (NOT pub/sub interface)
-  - All launch files MUST include micro_ros_agent + host lifecycle node
-  - version.txt is mandatory for version checking
-  - test/ directory is OPTIONAL - only generate if user provides test description
+  NOTE: test/ directory is OPTIONAL - only if user provides test description
 
-  TRANSPORT-SPECIFIC IMPLEMENTATIONS:
+  TRANSPORT TYPES:
+  - Serial/USB: Configure baud rate, VID/PID filtering, agent: `micro_ros_agent serial --dev /dev/ttyUSB0 -b 115200`
+  - Network: WiFi/Ethernet with UDP/TCP, WiFi credentials if needed, agent: `micro_ros_agent udp4 --port 8888`
 
-  Serial/USB Transport (most common):
-  - Use Serial or UART for microROS transport
-  - Configure baud rate (typically 115200 or higher)
-  - Handle serial port enumeration and auto-detection
-  - Support VID/PID filtering for device identification
-  - Implement serial reconnection logic
-  - Include buffer management for serial communication
-  - micro_ros_agent: `micro_ros_agent serial --dev /dev/ttyUSB0 -b 115200`
+  PLATFORMS: ESP32/ESP8266 (WiFi), STM32 (CAN/UART), Teensy (ARM), Arduino, RPi Pico
 
-  Network Transport (WiFi/Ethernet):
-  - Use UDP or TCP for microROS transport
-  - Configure microcontroller as client or server
-  - Include WiFi credentials configuration (if WiFi)
-  - Implement IP address configuration or DHCP
-  - Support mDNS for device discovery
-  - Include network error handling and retry logic
-  - micro_ros_agent: `micro_ros_agent udp4 --port 8888`
+  AGENT: Host launches micro_ros_agent (bridges DDS-XRCE ↔ DDS), configurable namespace/logging
 
-  SUPPORTED PLATFORMS (common examples):
-  - ESP32 (espressif32 platform): WiFi, Bluetooth, dual-core
-  - ESP8266 (espressif8266 platform): WiFi, single-core
-  - STM32 (ststm32 platform): Various families, CAN, UART
-  - Teensy (teensy platform): High-performance ARM Cortex-M
-  - Arduino boards (atmelavr, atmelsam platforms)
-  - Raspberry Pi Pico (raspberrypi platform)
+  ERROR HANDLING & SECURITY:
+  - Firmware: resource-aware error handling, graceful degradation
+  - Host: detailed error handling, recovery mechanisms, comprehensive logging
+  - Checksum verification for firmware binaries, validate connection parameters
+  - Health monitoring for connection status
 
-  MICROROS AGENT INTEGRATION:
-  - Host package should launch micro_ros_agent
-  - Agent provides bridge between microROS (DDS-XRCE) and ROS 2 (DDS)
-  - Support agent configuration via parameters
-  - Include agent namespace configuration
-  - Monitor agent health and restart if needed
-  - Support agent logging configuration
-
-  SECURITY CONSIDERATIONS:
-  - Validate firmware binaries before upload
-  - Implement checksum verification
-  - Support secure boot if hardware supports it
-  - Include firmware signing if required
-  - Validate connection parameters
-  - Implement rate limiting for uploads
-  - Log all firmware operations for audit
-
-  ERROR HANDLING:
-  - Comprehensive error handling in firmware (limited resources)
-  - Detailed error handling in host package
-  - Include recovery mechanisms
-  - Provide meaningful error messages
-  - Log errors for debugging
-  - Support different error reporting mechanisms
-  - Include health monitoring and diagnostics topics
-
-  DOCUMENTATION REQUIREMENTS:
-  - README.md: Overview, features, quick start, usage examples
-  - Hardware setup guide: Wiring, connections, prerequisites
-  - Debugging guide: PlatformIO debug setup, common issues
-  - Troubleshooting guide: Common problems and solutions
-  - API documentation: Host package interfaces
-  - Firmware documentation: Code structure, customization
-  - Build instructions: Docker builds, local builds
-  - Deployment guide: Production deployment considerations
-
-  EXAMPLE USAGE PATTERNS:
+  EXAMPLE USAGE:
   ```bash
   # Build firmware using Docker
   ./build_firmware.sh
@@ -430,16 +217,9 @@ ai_directive: |
   # 5. Press F5 to start debugging firmware directly
   ```
 
-  ADDITIONAL FEATURES TO CONSIDER:
-  - Parameter server integration for dynamic configuration
-  - Firmware over-the-air (OTA) updates
-  - Configuration file generation for microcontroller
-  - Simulation support (Gazebo, mock microcontroller)
-  - Monitoring dashboard (rqt plugin)
-  - Performance metrics collection
-  - Power management features
-  - Bootloader support for field updates
-  - Factory reset functionality
+  OPTIONAL ENHANCEMENTS (if requested):
+  - Parameter server for dynamic config, OTA updates, monitoring dashboard
+  - Simulation support, performance metrics, power management
 
 options:
   - variable: "package_name"
