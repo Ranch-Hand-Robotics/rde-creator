@@ -13,14 +13,14 @@ export class AIPackageGenerator {
   private _isCancelled: boolean = false;
   
   // Maximum AI response size in characters (configurable)
-  // Default: 50KB - increase if you need larger/more complex packages
-  // Decrease if you're hitting memory issues
+  // Default: 500KB - for large/complex packages
+  // Set to a very high value to effectively disable the limit
   private readonly maxResponseSize: number;
 
   constructor(
     outputChannel: vscode.OutputChannel, 
     webview?: vscode.Webview,
-    maxResponseSize: number = 50000
+    maxResponseSize: number = 500000
   ) {
     this.outputChannel = outputChannel;
     this.webview = webview;
@@ -373,9 +373,9 @@ export class AIPackageGenerator {
     for await (const part of response.text) {
       fullResponse += part;
       
-      // Check if response is getting too large
-      if (fullResponse.length > this.maxResponseSize) {
-        throw new Error(`Response too long (${fullResponse.length} characters). The AI generated more than ${this.maxResponseSize} characters. Try simplifying your request or increase the maxResponseSize limit.`);
+      // Log warning if response is very large (but don't error)
+      if (fullResponse.length > this.maxResponseSize && fullResponse.length % 50000 < 100) {
+        this.outputChannel.appendLine(`Warning: Response is large (${fullResponse.length} characters). This may take a while to process.`);
       }
       
       // Only log progress every 5000 characters to reduce spam

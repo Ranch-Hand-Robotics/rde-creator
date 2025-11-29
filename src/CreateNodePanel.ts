@@ -211,7 +211,7 @@ export class CreateNodePanel {
             this._currentGenerator = new AIPackageGenerator(
               extension.outputChannel, 
               this._panel.webview,
-              50000  // Fixed chunk size
+              1000000  // 1MB limit - effectively unlimited for most use cases
             );
             (async () => {
               try {
