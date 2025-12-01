@@ -1,58 +1,192 @@
-name: "MicroROS2 Firmware + Host Package"
+name: "MicroROS2 for Raspberry Pi Pico (RP2040/RP2350)"
 version: 0.0.0
-description: A template for creating MicroROS2 firmware with PlatformIO and a ROS 2 host package that builds and manages the firmware
+description: A template for creating MicroROS2 firmware for Raspberry Pi Pico (RP2040/RP2350) using Pico SDK and a ROS 2 host package that manages the firmware
 license: "MIT"
-icon: "🔌"
-short_description: "Microcontroller + ROS 2 integration"
-user_instruction: "Describe the firmware functionality for your microcontroller. Include details about sensors, actuators, ROS 2 topics/services/actions, connection type (serial/network), and hardware configuration. The C++ host package will automatically manage firmware lifecycle (version checking, upload, connection). Be specific about hardware pins, protocols, and data rates."
-example_prompt: "Create MicroROS2 firmware for ESP32 to control a robotic gripper with servo motor on GPIO 18 and force sensor on GPIO 34. Firmware should publish force readings at 50Hz on /gripper/force topic and subscribe to gripper position commands on /gripper/position. Include a /gripper/calibrate service. Use WiFi transport to connect to host. The C++ host lifecycle node will handle firmware upload, version checking, and micro_ros_agent launch."
+icon: "🍓"
+short_description: "Raspberry Pi Pico + ROS 2 integration"
+user_instruction: "Describe the firmware functionality for your Raspberry Pi Pico (RP2040 or RP2350). Include details about sensors, actuators, ROS 2 topics/services/actions, GPIO pins, communication protocols (I2C, SPI, UART), and whether to use USB or UART serial transport. The C++ host package will automatically manage firmware lifecycle (version checking, upload via UF2, connection). Be specific about hardware pins, timing requirements, and data rates."
+example_prompt: "Create MicroROS2 firmware for Raspberry Pi Pico to control a robotic gripper with servo motor on GPIO 18 and force sensor on GPIO 26 (ADC0). Firmware should publish force readings at 50Hz on /gripper/force topic and subscribe to gripper position commands on /gripper/position. Include a /gripper/calibrate service. Use USB serial transport. The C++ host lifecycle node will handle firmware upload via UF2, version checking, and micro_ros_agent launch."
 test_instruction: "Describe what should be tested in both the firmware and host package. Include hardware-in-the-loop tests, connection tests, firmware upload validation, and integration scenarios. Tests will only be generated if you provide this description."
 test_example_prompt: "Create tests for host package connection manager, verify firmware version checking logic, test upload functionality with mock serial port, validate parameter parsing in launch files, and create integration tests for microROS agent communication. For firmware, test sensor reading accuracy and command processing."
+next_steps: |
+  ## Next Steps
+  
+  ### 1. Ensure Docker is Installed and Running
+  - **Docker Desktop** (Windows/Mac) or **Docker Engine** (Linux) must be installed
+  - Verify Docker is running: `docker --version`
+  - Ensure you have permissions to run Docker commands
+  
+  ### 2. Fetch Pico Template Files (First Time Only)
+  ```bash
+  # Linux/macOS
+  chmod +x fetch_pico_template.sh
+  ./fetch_pico_template.sh
+  
+  # Windows (PowerShell)
+  .\fetch_pico_template.ps1
+  ```
+  This downloads the micro-ROS Pico SDK base files (libmicroros, build scripts) from GitHub.
+  
+  ### 3. Build the Firmware
+  ```bash
+  # Linux/macOS
+  chmod +x build_firmware.sh
+  ./build_firmware.sh
+  
+  # Windows (PowerShell)
+  .\build_firmware.ps1
+  ```
+  This process:
+  - Builds libmicroros.a (if not already built) using Docker
+  - Compiles your firmware with Pico SDK
+  - Generates firmware.uf2 in resource/firmware/
+  
+  **Note:** First build may take 10-15 minutes as it downloads Pico SDK and builds micro-ROS library.
+  
+  ### 4. Flash Firmware to Raspberry Pi Pico
+  **Manual Method:**
+  - Hold BOOTSEL button on Pico while connecting USB
+  - Pico appears as USB drive (RPI-RP2)
+  - Copy firmware.uf2 to the drive
+  - Pico automatically reboots with new firmware
+  
+  **Automatic Method (via launch file):**
+  - Launch file can trigger BOOTSEL mode via USB control
+  - Set `auto_upload:=true` parameter (see step 6)
+  
+  ### 5. Build ROS 2 Host Package
+  ```bash
+  cd <your_ros2_workspace>
+  colcon build --packages-select {{package_name}}
+  source install/setup.bash
+  ```
+  
+  ### 6. Launch the System
+  ```bash
+  # Basic launch (USB serial)
+  ros2 launch {{package_name}} {{package_name}}.launch.py
+  
+  # With automatic firmware upload
+  ros2 launch {{package_name}} {{package_name}}.launch.py auto_upload:=true
+  
+  # With custom serial port
+  ros2 launch {{package_name}} {{package_name}}.launch.py serial_port:=/dev/ttyACM0
+  ```
+  
+  ### 7. Verify Communication
+  ```bash
+  # List topics (should see your firmware topics via micro_ros_agent)
+  ros2 topic list
+  
+  # Echo a topic
+  ros2 topic echo /your_topic_name
+  
+  # Check lifecycle state
+  ros2 lifecycle get /{{package_name}}_lifecycle_manager
+  ```
+  
+  ### Troubleshooting
+  - **Docker build fails:** Ensure Docker has internet access and sufficient disk space
+  - **Serial port not found:** Check `ls /dev/ttyACM*` (Linux) or Device Manager (Windows)
+  - **Agent connection fails:** Verify Pico is running firmware (LED should indicate status)
+  - **Build errors:** Check firmware/build/ directory for detailed CMake/compiler logs
+  
+  ### Additional Resources
+  - See `README.md` for detailed documentation
+  - Check `docs/hardware_setup.md` for wiring diagrams
+  - Refer to `docs/troubleshooting.md` for common issues
 ai_directive: |
-  This template generates TWO components:
-  1. MicroROS2 firmware (PlatformIO project) - implements ROS 2 communication via RCLC
+  This template generates TWO components for Raspberry Pi Pico (RP2040/RP2350):
+  1. MicroROS2 firmware (Pico SDK + CMake project) - implements ROS 2 communication via RCLC
   2. C++ lifecycle node (host package) - manages firmware lifecycle only (upload, version check, connection)
 
   CRITICAL ARCHITECTURE:
+  - Raspberry Pi Pico ONLY (RP2040 or RP2350) - uses Pico SDK, NOT PlatformIO
   - Host provides lifecycle management ONLY (not pub/sub) - all ROS 2 topics/services/actions are in firmware
   - Host MUST launch micro_ros_agent + lifecycle node together (agent bridges firmware to ROS 2)
   - C++ only (no Python), lifecycle node required, version.txt mandatory for version checking
-  - Include Docker build system, PlatformIO debug config, launch files with parameters
+  - Firmware flashed using libusb control to trigger BOOTSEL mode + UF2 mass storage copy
+  - Include Docker build system using micro_ros_static_library_builder
   - Tests are OPTIONAL - only generate if user provides test description
 
-  MICROROS2 FIRMWARE REQUIREMENTS:
-  - Use PlatformIO as the build system (NOT Arduino IDE)
-  - Create platformio.ini with appropriate board configuration
-  - Use micro_ros_platformio library
-  - Support multiple transport types: Serial (USB), UART, UDP, WiFi
+  RASPBERRY PI PICO FIRMWARE REQUIREMENTS:
+  - Use Pico SDK with CMake build system (NOT PlatformIO, NOT Arduino IDE)
+  - Use micro_ros_raspberrypi_pico_sdk library from https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk
+  - Precompiled micro-ROS library in libmicroros/ directory
+  - Support USB serial (default) or UART serial transport via pico_uart_transport.c
+  - Configure transport in CMakeLists.txt: pico_enable_stdio_usb() or pico_enable_stdio_uart()
   - Include proper microROS agent connection handling
   - Implement reconnection logic for robust operation
   - Use microROS publishers, subscribers, services as requested
-  - Follow microcontroller resource constraints (memory, CPU)
+  - Follow RP2040/RP2350 resource constraints (264KB RAM for RP2040, dual-core ARM Cortex-M0+)
   - Include error handling suitable for embedded systems
-  - Support both polling and interrupt-driven patterns where appropriate
-  - Include proper initialization sequence for microROS
-  - Implement watchdog or health monitoring if applicable
   - Use appropriate RCLC (ROS Client Library for C) patterns
   - Include timing management (loop rates, executor spin)
+  - Leverage Pico SDK features: GPIO, ADC, PWM, I2C, SPI, UART, PIO
 
-  FIRMWARE ARCHITECTURE PATTERNS:
-  - Main setup: Initialize hardware, microROS transport, node, publishers/subscribers
+  PICO FIRMWARE ARCHITECTURE:
+  - Main function: Initialize Pico SDK, microROS transport, RCLC node, publishers/subscribers
   - Main loop: Spin executor, process callbacks, handle reconnection
   - Use rclc_executor for callback management
   - Implement timer callbacks for periodic tasks
-  - Support parameter handling via microROS parameters if needed
-  - Include LED or status indicators for connection state
+  - Use Pico SDK stdlib functions (stdio_init_all, sleep_ms, etc.)
+  - Include LED or status indicators for connection state (built-in LED on GPIO 25)
   - Implement graceful degradation if agent disconnects
   - Support firmware version reporting via topic or service
+  
+  CRITICAL CODE GENERATION RULES:
+  - DO NOT generate error handling macros like RCCHECK or RCSOFTCHECK
+  - Use direct error checking with if statements instead of macros
+  - Example error handling:
+    ```c
+    rcl_ret_t rc = rcl_init(...);
+    if (rc != RCL_RET_OK) {
+        printf("Failed to initialize: %d\n", rc);
+        return false;
+    }
+    ```
+  - Keep error handling simple and readable
+  - Use standard C error patterns, not complex macro magic
+  - Ensure all printf strings with \n are properly escaped
+  - Use proper C string literal syntax (no multi-line string literals without continuation)
 
-  PLATFORMIO CONFIG (platformio.ini):
-  - Platform/board, micro_ros_platformio library, build flags for transport type
-  - Upload/monitor settings, debug tool configuration, multiple environments if needed
+  CMAKE CONFIGURATION (CMakeLists.txt):
+  - Target Raspberry Pi Pico with pico_sdk_init()
+  - Link against pico_stdlib and libmicroros precompiled library
+  - Configure USB or UART: pico_enable_stdio_usb() / pico_enable_stdio_uart()
+  - Set pico_add_extra_outputs() for UF2 generation
+  - Reference: https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk
+  - Example structure:
+    ```cmake
+    cmake_minimum_required(VERSION 3.13)
+    include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
+    project(pico_micro_ros_example C CXX ASM)
+    set(CMAKE_C_STANDARD 11)
+    set(CMAKE_CXX_STANDARD 17)
+    pico_sdk_init()
+    link_directories(libmicroros)
+    add_executable(firmware
+        main.c
+        pico_uart_transport.c
+    )
+    target_link_libraries(firmware
+        pico_stdlib
+        microros
+    )
+    target_include_directories(firmware PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/libmicroros/include
+    )
+    pico_enable_stdio_usb(firmware 1)
+    pico_enable_stdio_uart(firmware 0)
+    pico_add_extra_outputs(firmware)
+    ```
 
-  PLATFORMIO DEBUG (firmware/.vscode/launch.json):
-  - PlatformIO debug config for hardware debuggers (stlink, jlink, cmsis-dap, esp-prog, etc.)
-  - Upload-and-debug or debug-only modes
+  PICO DEBUG CONFIGURATION:
+  - Use Raspberry Pi Debug Probe or Picoprobe for SWD debugging
+  - OpenOCD + GDB for debugging via SWD interface
+  - USB UART for serial debugging (printf output)
+  - Optional .vscode/launch.json for Cortex-Debug extension
 
   HOST PACKAGE COMPONENTS:
   - C++ lifecycle node: configure (version check) → activate (upload if needed, connect)
@@ -62,19 +196,253 @@ ai_directive: |
   - Docker build system: cross-platform firmware compilation
   - Multi-instance support: multiple devices with namespacing (if enabled)
 
-  DOCKER BUILD:
-  - Dockerfile with PlatformIO, mount firmware source, output to resource/firmware/
-  - build_firmware.sh/.cmd scripts for cross-platform compilation
+  DOCKER BUILD (Pico SDK):
+  - TWO-STAGE BUILD PROCESS:
+    1. First stage: Build libmicroros.a using micro_ros_static_library_builder
+    2. Second stage: Build firmware using libmicroros.a with Pico SDK
+  - Use volume mounts (NOT COPY) to preserve build artifacts between runs
+  - build_firmware.sh/.ps1 scripts handle both stages
+  - BOTH scripts MUST use Docker (no local builds)
+  
+  BUILD SCRIPT REQUIREMENTS:
+  - build_firmware.sh (Linux/macOS - bash):
+    ```bash
+    #!/bin/bash
+    set -e
+    
+    # Stage 1: Build libmicroros if not exists
+    if [ ! -f "firmware/libmicroros/libmicroros.a" ]; then
+      echo "Building libmicroros..."
+      docker run --rm -v "$(pwd)/firmware/libmicroros:/libmicroros" \
+        microros/micro_ros_static_library_builder:humble \
+        -p raspberrypi_pico -a /libmicroros/libmicroros.a
+    fi
+    
+    # Stage 2: Build firmware
+    echo "Building firmware..."
+    docker build -t pico-firmware-builder -f Dockerfile .
+    docker run --rm \
+      -v "$(pwd)/firmware:/workspace/firmware" \
+      -v "$(pwd)/build:/workspace/build" \
+      -v "$(pwd)/resource:/workspace/resource" \
+      pico-firmware-builder
+    
+    echo "Build complete! Firmware: resource/firmware/firmware.uf2"
+    ```
+  
+  - build_firmware.ps1 (Windows - PowerShell):
+    ```powershell
+    # build_firmware.ps1
+    # Builds micro-ROS Pico firmware using Docker
+    
+    $ErrorActionPreference = "Stop"
+    
+    # Get current directory with forward slashes for Docker
+    $CURRENT_DIR = (Get-Location).Path.Replace("\", "/")
+    
+    # Stage 1: Build libmicroros if not exists
+    if (-not (Test-Path "firmware\libmicroros\libmicroros.a")) {
+        Write-Host "Building libmicroros..." -ForegroundColor Cyan
+        docker run --rm `
+            -v "${CURRENT_DIR}/firmware/libmicroros:/libmicroros" `
+            microros/micro_ros_static_library_builder:{{ros_distribution}} `
+            -p raspberrypi_pico `
+            -a /libmicroros/libmicroros.a
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: Failed to build libmicroros" -ForegroundColor Red
+            exit 1
+        }
+    } else {
+        Write-Host "libmicroros.a already exists, skipping stage 1" -ForegroundColor Yellow
+    }
+    
+    # Stage 2: Build firmware
+    Write-Host "Building firmware..." -ForegroundColor Cyan
+    docker build -t pico-firmware-builder -f Dockerfile .
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Error: Failed to build Docker image" -ForegroundColor Red
+        exit 1
+    }
+    
+    docker run --rm `
+        -v "${CURRENT_DIR}/firmware:/workspace/firmware" `
+        -v "${CURRENT_DIR}/build:/workspace/build" `
+        -v "${CURRENT_DIR}/resource:/workspace/resource" `
+        pico-firmware-builder
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Error: Firmware build failed" -ForegroundColor Red
+        exit 1
+    }
+    
+    Write-Host "`nBuild complete! Firmware: resource\firmware\firmware.uf2" -ForegroundColor Green
+    ```
+  
+  - Dockerfile for Stage 2:
+    ```dockerfile
+    FROM ubuntu:22.04
+    RUN apt-get update && apt-get install -y cmake gcc-arm-none-eabi \
+        libnewlib-arm-none-eabi build-essential git python3
+    ENV PICO_SDK_PATH=/pico-sdk
+    RUN git clone --recurse-submodules https://github.com/raspberrypi/pico-sdk.git $PICO_SDK_PATH
+    WORKDIR /workspace
+    CMD ["bash", "-c", "cd firmware && mkdir -p build && cd build && cmake .. && make && cp firmware.uf2 ../../resource/firmware/"]
+    ```
+  
+  - CRITICAL: Windows .cmd MUST use Docker, NOT local cmake/make
+  - Use forward slashes in Docker volume paths even on Windows
+  - Volume mapping preserves libmicroros/, build/, and resource/firmware/ between runs
+  - Output .uf2 file copied to resource/firmware/ automatically
+  
+  FETCH PICO TEMPLATE FILES:
+  - fetch_pico_template.sh script downloads ALL necessary files from GitHub repo
+  - Run BEFORE first build to populate firmware/ with complete base implementation
+  - Script runs in Docker to ensure git/curl availability
+  - Downloads from: https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk (kilted branch)
+  - Deep enumeration of critical directories (Apache 2.0 licensed):
+    * libmicroros/ - Precompiled micro-ROS library and headers (complete directory tree)
+    * microros_static_library/library_generation/ - Build scripts and configuration
+    * pico_sdk_import.cmake - Pico SDK initialization
+    * pico_uart_transport.c/h - UART transport implementation
+  
+  - fetch_pico_template.sh implementation:
+    ```bash
+    #!/bin/bash
+    set -e
+    
+    REPO_URL="https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk"
+    REPO_BRANCH="{{ros_distribution}}"
+    FIRMWARE_DIR="firmware"
+    
+    echo "Fetching micro-ROS Pico SDK reference files from $REPO_BRANCH branch..."
+    
+    # Run in Docker to ensure git is available
+    docker run --rm \
+      -v "$(pwd)/$FIRMWARE_DIR:/output" \
+      -w /workspace \
+      alpine/git:latest \
+      sh -c "
+        # Clone the repository
+        git clone --depth 1 --branch $REPO_BRANCH $REPO_URL /workspace/repo && \
+        
+        # Copy libmicroros directory (entire tree with all headers and library)
+        if [ -d /workspace/repo/libmicroros ]; then
+          cp -r /workspace/repo/libmicroros /output/
+          echo 'Copied libmicroros/ directory tree'
+        fi && \
+        
+        # Copy microros_static_library/library_generation directory (entire tree)
+        if [ -d /workspace/repo/microros_static_library/library_generation ]; then
+          mkdir -p /output/microros_static_library
+          cp -r /workspace/repo/microros_static_library/library_generation /output/microros_static_library/
+          echo 'Copied microros_static_library/library_generation/ directory tree'
+        fi && \
+        
+        # Copy pico_sdk_import.cmake
+        if [ -f /workspace/repo/pico_sdk_import.cmake ]; then
+          cp /workspace/repo/pico_sdk_import.cmake /output/
+          echo 'Copied pico_sdk_import.cmake'
+        fi && \
+        
+        # Copy transport files (may be in src/ or root)
+        find /workspace/repo -name 'pico_uart_transport*' -exec cp {} /output/ \\; 2>/dev/null || true && \
+        
+        # Create attribution file
+        echo 'Reference files copied from micro_ros_raspberrypi_pico_sdk (Apache 2.0)' > /output/TEMPLATE_SOURCE.txt && \
+        echo 'Repository: $REPO_URL' >> /output/TEMPLATE_SOURCE.txt && \
+        echo 'Branch: $REPO_BRANCH' >> /output/TEMPLATE_SOURCE.txt && \
+        echo 'License: Apache 2.0' >> /output/TEMPLATE_SOURCE.txt
+      "
+    
+    echo "Template files fetched successfully"
+    echo "Source: $REPO_URL (branch: $REPO_BRANCH)"
+    echo "License: Apache 2.0"
+    echo ""
+    echo "Fetched directories:"
+    echo "  - firmware/libmicroros/ (precompiled library + headers)"
+    echo "  - firmware/microros_static_library/library_generation/ (build scripts)"
+    echo "  - firmware/pico_sdk_import.cmake"
+    echo "  - firmware/pico_uart_transport.*"
+    echo ""
+    echo "Next: Customize main.c and CMakeLists.txt for your application"
+    ```
+  
+  - CRITICAL: Use branch specified by ros_distribution variable (default: kilted)
+  - Branch selection determines micro-ROS API version and compatibility
+  - libmicroros/ contains precompiled library files and all necessary headers
+  - microros_static_library/library_generation/ contains build scripts for regenerating library if needed
+  - AI should generate main.c and CMakeLists.txt customized for user requirements
+  - Reference files provide complete micro-ROS infrastructure
+  - User runs fetch_pico_template.sh once after package generation to populate base files
+  
+  - fetch_pico_template.ps1 (Windows PowerShell):
+    ```powershell
+    # fetch_pico_template.ps1
+    # Fetches micro-ROS Pico SDK reference files using Docker
+    
+    $ErrorActionPreference = "Stop"
+    
+    $REPO_URL = "https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk"
+    $REPO_BRANCH = "{{ros_distribution}}"
+    $FIRMWARE_DIR = "firmware"
+    
+    Write-Host "Fetching micro-ROS Pico SDK reference files from $REPO_BRANCH branch..." -ForegroundColor Green
+    
+    # Convert Windows path to Docker-compatible format
+    $CURRENT_DIR = (Get-Location).Path.Replace("\", "/")
+    
+    # Define shell script as a variable to avoid here-string issues
+    $shellScript = "git clone --depth 1 --branch $REPO_BRANCH $REPO_URL /workspace/repo && if [ -d /workspace/repo/libmicroros ]; then cp -r /workspace/repo/libmicroros /output/ && echo 'Copied libmicroros/'; fi && if [ -d /workspace/repo/microros_static_library/library_generation ]; then mkdir -p /output/microros_static_library && cp -r /workspace/repo/microros_static_library/library_generation /output/microros_static_library/ && echo 'Copied library_generation/'; fi && if [ -f /workspace/repo/pico_sdk_import.cmake ]; then cp /workspace/repo/pico_sdk_import.cmake /output/ && echo 'Copied pico_sdk_import.cmake'; fi && find /workspace/repo -name 'pico_uart_transport*' -exec cp {} /output/ \; 2>/dev/null || true && echo 'Reference files copied from micro_ros_raspberrypi_pico_sdk (Apache 2.0)' > /output/TEMPLATE_SOURCE.txt"
+    
+    # Run in Docker to ensure git is available
+    docker run --rm `
+      -v "${CURRENT_DIR}/${FIRMWARE_DIR}:/output" `
+      -w /workspace `
+      alpine/git:latest `
+      sh -c $shellScript
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Error: Docker command failed" -ForegroundColor Red
+        exit 1
+    }
+    
+    Write-Host "`nTemplate files fetched successfully" -ForegroundColor Green
+    Write-Host "Source: $REPO_URL (branch: $REPO_BRANCH)"
+    Write-Host "License: Apache 2.0"
+    Write-Host ""
+    Write-Host "Fetched directories:"
+    Write-Host "  - firmware/libmicroros/ (precompiled library + headers)"
+    Write-Host "  - firmware/microros_static_library/library_generation/ (build scripts)"
+    Write-Host "  - firmware/pico_sdk_import.cmake"
+    Write-Host "  - firmware/pico_uart_transport.*"
+    Write-Host ""
+    Write-Host "Next: Customize main.c and CMakeLists.txt for your application" -ForegroundColor Cyan
+    ```
 
   FIRMWARE RESOURCES:
-  - Store in resource/firmware/: firmware.bin, firmware.elf, version.txt (required)
-  - Checksum verification, support multiple variants if needed
+  - Store in resource/firmware/: firmware.uf2 (main), firmware.elf (optional), version.txt (required)
+  - UF2 format for Raspberry Pi Pico bootloader flashing
+  - Checksum verification, support multiple Pico variants (RP2040, RP2350)
+  - During initial generation, firmware.uf2 and firmware.elf should contain placeholder text
+  - version.txt MUST contain semantic version string (e.g., "1.0.0")
+  - User runs build_firmware.sh to generate actual .uf2 binary
 
-  CONNECTION & UPLOAD:
-  - Serial: auto-detect VID/PID or specify port, hot-plug detection
-  - Network: UDP/TCP with IP/port, connection retry with backoff
-  - Upload: detect device, compare versions, flash if mismatch (auto-upload default: off)
-  - Use platformio/esptool/stm32flash/teensy_loader_cli, provide progress feedback
+  CONNECTION & UPLOAD (Pico-specific):
+  - USB serial: auto-detect /dev/ttyACM0 (Linux) or COMx (Windows)
+  - Pico appears as USB CDC device (VID: 0x2E8A, PID: 0x000A for RP2040 app mode)
+  - BOOTSEL mode: USB device (VID: 0x2E8A, PID: 0x0003 for RP2040, 0x000F for RP2350)
+  - Automated upload via USB control (no external tools):
+    1. Detect running Pico via USB (VID/PID 0x2E8A/0x000A)
+    2. Send USB interface request to trigger BOOTSEL mode (SET_INTERFACE_ALT_SETTING)
+    3. Wait for BOOTSEL mass storage device to appear (VID/PID 0x2E8A/0x0003)
+    4. Mount mass storage and copy .uf2 file to RPI-RP2
+    5. Pico automatically reboots and runs new firmware
+  - Use libusb (C++) for USB control: usb_reset_device() or SET_INTERFACE request
+  - Fallback: Manual BOOTSEL mode (hold button, copy .uf2)
+  - Version checking: query via micro-ROS service, compare with version.txt
+  - Auto-upload default: off (prevents interference during development)
+  - Connection retry with backoff for USB serial enumeration
 
   LAUNCH FILES:
   - Main: micro_ros_agent + host lifecycle node (both required)
@@ -90,13 +458,47 @@ ai_directive: |
   - rclcpp_lifecycle node with states: configure (version check) → activate (upload, connect)
   - rclcpp_components for composable architecture
   - Connection manager, firmware uploader, transport abstraction classes
+  - USB control via libusb (libusb-1.0) for BOOTSEL triggering:
+    * Detect Pico: enumerate USB devices with VID 0x2E8A
+    * Trigger BOOTSEL: send USB_REQ_SET_INTERFACE with altsetting=1 to interface 1
+    * Alternative: use libusb_reset_device() to force USB reset into BOOTSEL
+    * Monitor for BOOTSEL device appearance (polling or hotplug events)
+  - UF2 uploader: mount detection, file copy to mass storage, verify completion
   - Async operations, comprehensive logging, modern C++17+ patterns
-  - Headers: microros_lifecycle_manager.hpp, connection_manager.hpp, firmware_uploader.hpp
+  - Headers: pico_lifecycle_manager.hpp, pico_connection_manager.hpp, pico_uf2_uploader.hpp, pico_usb_control.hpp
 
   DEBUGGING & DEFAULTS:
-  - PlatformIO debug config in firmware/.vscode/launch.json (ST-Link, J-Link, etc.)
+  - SWD debug via Raspberry Pi Debug Probe, Picoprobe, or J-Link
   - Auto-upload DISABLED by default (prevents debug conflicts, enable via launch parameter)
   - Firmware debugs independently from host - document hardware debugger setup
+  
+  USB BOOTSEL TRIGGER IMPLEMENTATION:
+  - Use libusb-1.0 (cross-platform USB library)
+  - Method 1 (Interface Reset - Preferred):
+    ```cpp
+    // Find Pico device (VID: 0x2E8A, PID: 0x000A for app, 0x0003/0x000F for BOOTSEL)
+    libusb_device_handle* handle;
+    libusb_open_device_with_vid_pid(ctx, 0x2E8A, 0x000A, &handle);
+    
+    // Claim interface 1 (CDC data interface)
+    libusb_claim_interface(handle, 1);
+    
+    // Send SET_INTERFACE with altsetting=1 to trigger BOOTSEL
+    libusb_set_interface_alt_setting(handle, 1, 1);
+    
+    // Release and close
+    libusb_release_interface(handle, 1);
+    libusb_close(handle);
+    ```
+  - Method 2 (USB Reset - Alternative):
+    ```cpp
+    // Trigger USB bus reset (forces Pico into BOOTSEL if held)
+    libusb_reset_device(handle);
+    ```
+  - After trigger: poll for BOOTSEL device (VID: 0x2E8A, PID: 0x0003/0x000F)
+  - Mount point detection: /media/$USER/RPI-RP2 (Linux), look for drive label (Windows/Mac)
+  - Copy firmware.uf2 to mount point, verify INDEX.HTM appears (indicates flash success)
+  - CMakeLists.txt: add dependency on libusb-1.0 (find_package or pkg-config)
 
   MULTI-INSTANCE (if enabled):
   - Unique identification via VID/PID/serial number, namespacing per instance
@@ -113,70 +515,84 @@ ai_directive: |
   - Include CI/CD configuration for automated firmware builds
   - Provide development environment setup instructions
 
-  PACKAGE STRUCTURE:
+  PACKAGE STRUCTURE (Pico-specific):
   The generated package should have this structure (C++ ONLY):
 
   ```
   {{package_name}}/
-  ├── CMakeLists.txt                # C++ build configuration
+  ├── CMakeLists.txt                # ROS 2 package build configuration
   ├── package.xml
   ├── README.md
   ├── LICENSE
-  ├── CONTRIBUTING.md
   ├── .gitignore
-  ├── Dockerfile                    # Firmware build environment
+  ├── Dockerfile                    # Firmware build environment (Pico SDK)
   ├── .dockerignore
   ├── build_firmware.sh             # Firmware build script (Linux/macOS)
-  ├── build_firmware.cmd            # Firmware build script (Windows)
-  ├── firmware/                     # MicroROS2 firmware source
-  │   ├── platformio.ini
-  │   ├── src/
-  │   │   └── main.cpp              # Main firmware code with RCLC node
-  │   ├── include/
-  │   │   └── {{package_name}}.h
-  │   ├── lib/                      # Custom libraries if needed
+  ├── build_firmware.ps1            # Firmware build script (Windows)
+  ├── fetch_pico_template.sh        # Fetches micro_ros_raspberrypi_pico_sdk files (Linux/macOS)
+  ├── fetch_pico_template.ps1       # Fetches micro_ros_raspberrypi_pico_sdk files (Windows)
+  ├── firmware/                     # Pico firmware source (Pico SDK + CMake)
+  │   ├── CMakeLists.txt            # Pico firmware CMake configuration
+  │   ├── pico_sdk_import.cmake     # Pico SDK import script
+  │   ├── main.cpp                    # Main firmware code with RCLC node
+  │   ├── pico_uart_transport.cpp     # Pico serial transport implementation
+  │   ├── pico_uart_transport.h
+  │   ├── libmicroros/              # Precompiled micro-ROS library (generated by Docker build)
+  │   │   ├── libmicroros.a         # Static library (generated)
+  │   │   └── include/              # micro-ROS headers (generated)
+  │   │       └── *.h
   │   └── .vscode/
-  │       └── launch.json           # PlatformIO debug configuration
+  │       └── launch.json           # Optional: Cortex-Debug for SWD debugging
   ├── resource/
   │   ├── {{package_name}}          # ament resource index
   │   └── firmware/
-  │       ├── firmware.bin          # Compiled firmware binary. During AI generation, fill with just the word `placeholder`
-  │       ├── firmware.elf          # Debug symbols. During AI generation, fill with just the word `placeholder`
-  │       └── version.txt           # Firmware version metadata (MANDATORY for version checking)
+  │       ├── firmware.uf2          # Compiled UF2 firmware. During AI generation, fill with `placeholder`
+  │       ├── firmware.elf          # Debug symbols (optional). During AI generation, fill with `placeholder`
+  │       └── version.txt           # Firmware version metadata (MANDATORY)
   ├── config/
-  │   ├── connection_params.yaml    # Connection configuration
+  │   ├── connection_params.yaml    # Connection configuration (USB serial)
   │   └── firmware_params.yaml      # Firmware parameters
   ├── launch/
   │   ├── {{package_name}}.launch.py         # Main launch file (MUST launch agent + host)
-  │   ├── {{package_name}}_serial.launch.py  # Serial connection example
-  │   ├── {{package_name}}_network.launch.py # Network connection example
-  │   └── {{package_name}}_multi.launch.py   # Multi-instance example
+  │   ├── {{package_name}}_usb.launch.py     # USB serial connection
+  │   ├── {{package_name}}_uart.launch.py    # UART serial connection (Debug Probe)
+  │   └── {{package_name}}_multi.launch.py   # Multi-Pico support (optional)
   ├── include/{{package_name}}/     # C++ host package headers
-  │   ├── microros_lifecycle_manager.hpp     # Lifecycle node for firmware management
-  │   ├── connection_manager.hpp             # Connection handling
-  │   ├── firmware_uploader.hpp              # Firmware upload logic
+  │   ├── pico_lifecycle_manager.hpp         # Lifecycle node for Pico firmware management
+  │   ├── pico_connection_manager.hpp        # USB/UART connection handling
+  │   ├── pico_usb_control.hpp               # USB control via libusb (BOOTSEL triggering)
+  │   ├── pico_uf2_uploader.hpp              # UF2 firmware upload logic (BOOTSEL mode)
   │   └── visibility_control.h
   ├── src/                          # C++ host package source
-  │   ├── microros_lifecycle_manager.cpp     # Lifecycle node (version check, upload, connect)
-  │   ├── connection_manager.cpp             # Serial/network connection
-  │   ├── firmware_uploader.cpp              # Firmware flash functionality
+  │   ├── pico_lifecycle_manager.cpp         # Lifecycle node (version check, UF2 upload, connect)
+  │   ├── pico_connection_manager.cpp        # USB serial connection (/dev/ttyACM0)
+  │   ├── pico_usb_control.cpp               # USB device control, BOOTSEL triggering
+  │   ├── pico_uf2_uploader.cpp              # UF2 flash via BOOTSEL + mass storage
   │   └── component.cpp                      # rclcpp_components registration
-  ├── test/                         # OPTIONAL - only generate if test description is provided
-  │   ├── test_connection.cpp       # Connection tests (OPTIONAL)
-  │   └── test_firmware_upload.cpp  # Upload tests (OPTIONAL)
+  ├── test/                         # OPTIONAL - only if test description provided
+  │   ├── test_pico_connection.cpp  # Connection tests (OPTIONAL)
+  │   └── test_uf2_upload.cpp       # UF2 upload tests (OPTIONAL)
   └── docs/
-      ├── hardware_setup.md         # Hardware setup guide
-      ├── debugging.md              # Debugging guide
-      └── troubleshooting.md        # Troubleshooting guide
+      ├── hardware_setup.md         # Pico wiring, GPIO pinout
+      ├── debugging.md              # Debug Probe setup, OpenOCD/GDB
+      └── troubleshooting.md        # Common Pico issues
   ```
 
   NOTE: test/ directory is OPTIONAL - only if user provides test description
 
-  TRANSPORT TYPES:
-  - Serial/USB: Configure baud rate, VID/PID filtering, agent: `micro_ros_agent serial --dev /dev/ttyUSB0 -b 115200`
-  - Network: WiFi/Ethernet with UDP/TCP, WiFi credentials if needed, agent: `micro_ros_agent udp4 --port 8888`
+  TRANSPORT TYPES (Pico):
+  - USB Serial (default): Configure in CMakeLists.txt with pico_enable_stdio_usb(target 1)
+    - Agent: `micro-ros-agent serial --dev /dev/ttyACM0 -b 115200`
+    - Default baud rate: 115200
+  - UART Serial: Configure in CMakeLists.txt with pico_enable_stdio_uart(target 1)
+    - Use with Raspberry Pi Debug Probe or external UART adapter
+    - Default UART pins: GPIO 0 (TX), GPIO 1 (RX)
+    - Agent: `micro-ros-agent serial --dev /dev/ttyUSB0 -b 115200`
+  - No WiFi/Network support (RP2040/RP2350 have no built-in networking)
 
-  PLATFORMS: ESP32/ESP8266 (WiFi), STM32 (CAN/UART), Teensy (ARM), Arduino, RPi Pico
+  PLATFORM: Raspberry Pi Pico (RP2040 or RP2350 only)
+  - RP2040: Dual-core ARM Cortex-M0+ @ 133MHz, 264KB SRAM, 2MB Flash
+  - RP2350: Dual-core ARM Cortex-M33 @ 150MHz, 520KB SRAM, improved security
 
   AGENT: Host launches micro_ros_agent (bridges DDS-XRCE ↔ DDS), configurable namespace/logging
 
@@ -186,35 +602,37 @@ ai_directive: |
   - Checksum verification for firmware binaries, validate connection parameters
   - Health monitoring for connection status
 
-  EXAMPLE USAGE:
+  EXAMPLE USAGE (Pico):
   ```bash
-  # Build firmware using Docker
+  # Build firmware using Docker (or local Pico SDK)
   ./build_firmware.sh
 
-  # Launch host lifecycle node + micro_ros_agent with serial connection
-  ros2 launch {{package_name}} {{package_name}}.launch.py connection_type:=serial
+  # Manual UF2 flash: Hold BOOTSEL button on Pico, connect USB, then:
+  cp build/firmware.uf2 /media/$USER/RPI-RP2/
 
-  # Launch with specific serial port and enable auto-upload
-  ros2 launch {{package_name}} {{package_name}}.launch.py connection_type:=serial serial_port:=/dev/ttyUSB0 auto_upload:=true
+  # Launch host lifecycle node + micro_ros_agent with USB serial
+  ros2 launch {{package_name}} {{package_name}}.launch.py
 
-  # Launch with network connection (WiFi/Ethernet)
-  ros2 launch {{package_name}} {{package_name}}.launch.py connection_type:=network network_ip:=192.168.1.100 network_port:=8888
+  # Launch with specific serial port (Pico on /dev/ttyACM0)
+  ros2 launch {{package_name}} {{package_name}}.launch.py serial_port:=/dev/ttyACM0
+
+  # Launch with auto-upload enabled (triggers BOOTSEL via USB control, no button press needed)
+  ros2 launch {{package_name}} {{package_name}}.launch.py auto_upload:=true
 
   # Interact with firmware ROS 2 topics (firmware appears as native ROS 2 node via agent)
   ros2 topic list
-  ros2 topic echo /your_firmware_topic
-  ros2 service call /your_firmware_service
+  ros2 topic echo /your_pico_topic
+  ros2 service call /your_pico_service
 
   # Check host lifecycle state (firmware management)
   ros2 lifecycle nodes
   ros2 lifecycle get /{{package_name}}_lifecycle_manager
 
-  # Debug firmware with PlatformIO
-  # 1. Connect hardware debugger (ST-Link, J-Link, etc.)
-  # 2. Disable auto_upload in launch file to prevent upload conflicts
-  # 3. Open VS Code, go to Run and Debug (Ctrl+Shift+D)
-  # 4. Select "PIO Debug ({{board_name}})"
-  # 5. Press F5 to start debugging firmware directly
+  # Debug firmware with Raspberry Pi Debug Probe
+  # 1. Connect Debug Probe to Pico SWD pins (SWDIO, SWCLK, GND)
+  # 2. Install OpenOCD with Pico support
+  # 3. Use GDB or VS Code Cortex-Debug extension
+  # 4. Disable auto_upload to prevent flash conflicts during debug
   ```
 
   OPTIONAL ENHANCEMENTS (if requested):
@@ -225,78 +643,93 @@ options:
   - variable: "package_name"
     name: "Package Name"
     type: "string"
-    description: "Name of the ROS 2 package (and prefix for firmware)"
-    default: "my_microros_package"
+    description: "Name of the ROS 2 package (and prefix for Pico firmware)"
+    default: "my_pico_microros_package"
     
-
-  - variable: "microcontroller_platform"
-    name: "Microcontroller Platform"
+  - variable: "ros_distribution"
+    name: "ROS 2 Distribution"
     type: "select"
-    description: "Target microcontroller platform"
+    description: "Target ROS 2 distribution (determines micro-ROS branch)"
     choices:
-      - value: "esp32"
-        label: "ESP32 (WiFi, Bluetooth, dual-core)"
-      - value: "esp8266"
-        label: "ESP8266 (WiFi, single-core)"
-      - value: "stm32"
-        label: "STM32 (Various families)"
-      - value: "teensy"
-        label: "Teensy (High-performance ARM)"
-      - value: "arduino"
-        label: "Arduino (Various boards)"
-      - value: "rpi_pico"
-        label: "Raspberry Pi Pico"
-    default: "esp32"
+      - value: "kilted"
+        label: "Kilted (Latest/Default)"
+      - value: "jazzy"
+        label: "Jazzy Jalisco (ROS 2)"
+      - value: "iron"
+        label: "Iron Irwini (ROS 2)"
+      - value: "humble"
+        label: "Humble Hawksbill (ROS 2 LTS)"
+      - value: "rolling"
+        label: "Rolling Ridley (Development)"
+    default: "kilted"
     
-  - variable: "board_name"
-    name: "Board Name"
-    type: "string"
-    description: "Specific board identifier for PlatformIO (e.g., esp32dev, nucleo_f446re, teensy41)"
-    default: "esp32dev"
+  - variable: "pico_chip"
+    name: "Raspberry Pi Chip"
+    type: "select"
+    description: "Target Raspberry Pi chip variant"
+    choices:
+      - value: "rp2040"
+        label: "RP2040 (Original Pico, Pico W)"
+      - value: "rp2350"
+        label: "RP2350 (Pico 2, improved performance & security)"
+    default: "rp2040"
+    
+  - variable: "board_variant"
+    name: "Board Variant"
+    type: "select"
+    description: "Specific Raspberry Pi board model"
+    choices:
+      - value: "pico"
+        label: "Raspberry Pi Pico (RP2040)"
+      - value: "pico_w"
+        label: "Raspberry Pi Pico W (RP2040 + WiFi) - WiFi not supported in micro-ROS"
+      - value: "pico2"
+        label: "Raspberry Pi Pico 2 (RP2350)"
+    default: "pico"
     
   - variable: "transport_type"
-    name: "Primary Transport Type"
+    name: "Serial Transport Type"
     type: "select"
-    description: "Communication transport between firmware and host"
+    description: "Communication transport between Pico and host"
     choices:
-      - value: "serial"
-        label: "Serial/USB (most common)"
-      - value: "udp"
-        label: "UDP over WiFi/Ethernet"
-      - value: "tcp"
-        label: "TCP over WiFi/Ethernet"
-    default: "serial"
+      - value: "usb"
+        label: "USB Serial (stdio_usb, most common)"
+      - value: "uart"
+        label: "UART Serial (stdio_uart, for Debug Probe)"
+    default: "usb"
     
-  - variable: "include_wifi"
-    name: "Include WiFi Configuration"
-    type: "boolean"
-    description: "Include WiFi setup code (for ESP32/ESP8266 with network transport)"
-    default: false
-    condition: "transport_type == 'udp' || transport_type == 'tcp'"
+  - variable: "uart_tx_pin"
+    name: "UART TX GPIO Pin"
+    type: "string"
+    description: "GPIO pin for UART TX (default: 0)"
+    default: "0"
+    condition: "transport_type == 'uart'"
+    
+  - variable: "uart_rx_pin"
+    name: "UART RX GPIO Pin"
+    type: "string"
+    description: "GPIO pin for UART RX (default: 1)"
+    default: "1"
+    condition: "transport_type == 'uart'"
     
   - variable: "default_baud_rate"
     name: "Serial Baud Rate"
     type: "string"
     description: "Default baud rate for serial communication"
     default: "115200"
-    condition: "transport_type == 'serial'"
     
   - variable: "debug_tool"
     name: "Debug Tool"
     type: "select"
-    description: "Hardware debugger for PlatformIO debugging"
+    description: "Hardware debugger for SWD debugging"
     choices:
-      - value: "stlink"
-        label: "ST-Link (STM32)"
-      - value: "jlink"
-        label: "J-Link (Universal)"
       - value: "cmsis-dap"
-        label: "CMSIS-DAP"
-      - value: "esp-prog"
-        label: "ESP-Prog (ESP32)"
+        label: "Raspberry Pi Debug Probe (CMSIS-DAP)"
       - value: "picoprobe"
-        label: "Picoprobe (Raspberry Pi Pico)"
-    default: "stlink"
+        label: "Picoprobe (Another Pico as debugger)"
+      - value: "jlink"
+        label: "J-Link (Universal SWD debugger)"
+    default: "cmsis-dap"
     
   - variable: "include_publisher"
     name: "Include Publisher Example"

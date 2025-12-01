@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as yaml from 'yaml';
-import { constructPlanPrompt, constructFileChunkPrompt, constructFollowupPromptInstructions } from './prompts';
+import { constructPlanPrompt, constructFileChunkPrompt, constructMultiFilePrompt, constructFollowupPromptInstructions } from './prompts';
 
 export class AIPackageGenerator {
   private outputChannel: vscode.OutputChannel;
@@ -148,9 +148,11 @@ export class AIPackageGenerator {
         }
       }
 
-      // Stage 2: Request each file chunk-by-chunk and stream to disk
+      // Stage 2: Request files - batch small files together, chunk large files
       // Generate files in parallel (max 3 at a time to avoid overwhelming the API)
       const MAX_PARALLEL_FILES = 3;
+      const MULTI_FILE_SIZE_THRESHOLD = Math.floor(this.maxResponseSize * 0.15); // 15% of max for batching
+      const MAX_FILES_PER_BATCH = 5; // Maximum number of files in a single batch
       
       // Common file generation function
       const generateFileWithChunks = async (
@@ -185,6 +187,16 @@ export class AIPackageGenerator {
               throw new Error(`Unexpected ${messagePrefix}chunk response for ${processedPath}`);
             }
             
+            // Validate chunk index to prevent duplicates
+            if (chunkObj.chunk_index !== i) {
+              this.outputChannel.appendLine(`WARNING: Expected chunk ${i} but received chunk ${chunkObj.chunk_index} for ${processedPath}`);
+              this.outputChannel.appendLine(`This may indicate AI model confusion. Content may be duplicated or out of order.`);
+            }
+            
+            if (chunkObj.total_chunks !== total) {
+              this.outputChannel.appendLine(`WARNING: Chunk reports total_chunks=${chunkObj.total_chunks} but expected ${total} for ${processedPath}`);
+            }
+            
             // Unescape and process chunk content
             const contentEscaped = String(chunkObj.content || '');
             const unescaped = contentEscaped.replace(/\\n/g, '\n');
@@ -208,24 +220,110 @@ export class AIPackageGenerator {
         }
       };
       
-      // Process files in parallel batches
-      for (let i = 0; i < filesList.length; i += MAX_PARALLEL_FILES) {
-        this.checkCancellation();
-        const batch = filesList.slice(i, i + MAX_PARALLEL_FILES);
-        if (!model) {
-          throw new Error('Language model is not available');
+      // Group files into batches: small files together, large files individually
+      const fileBatches: Array<{path: string; estimate_bytes?: number}[]> = [];
+      let currentBatch: typeof filesList = [];
+      let currentBatchSize = 0;
+      
+      for (const file of filesList) {
+        const estimatedSize = file.estimate_bytes || 2000;
+        const needsChunking = chunksMap[file.path] > 1;
+        
+        // Files that need chunking go in their own batch
+        if (needsChunking) {
+          if (currentBatch.length > 0) {
+            fileBatches.push([...currentBatch]);
+            currentBatch = [];
+            currentBatchSize = 0;
+          }
+          fileBatches.push([file]);
+        } else {
+          // Try to batch small files together
+          // Flush batch if we exceed size threshold OR file count limit
+          if ((currentBatchSize + estimatedSize > MULTI_FILE_SIZE_THRESHOLD || currentBatch.length >= MAX_FILES_PER_BATCH) && currentBatch.length > 0) {
+            fileBatches.push([...currentBatch]);
+            currentBatch = [];
+            currentBatchSize = 0;
+          }
+          currentBatch.push(file);
+          currentBatchSize += estimatedSize;
         }
-        const currentModel = model;
-        await Promise.all(batch.map(f => 
-          generateFileWithChunks(
-            f,
-            currentModel,
+      }
+      if (currentBatch.length > 0) {
+        fileBatches.push(currentBatch);
+      }
+      
+      // Process file batches
+      for (const batch of fileBatches) {
+        this.checkCancellation();
+        
+        if (batch.length === 1) {
+          // Single file - use chunking if needed
+          const file = batch[0];
+          await generateFileWithChunks(
+            file,
+            model!,
             chunksMap,
             (filePath, chunkIndex, totalChunks) => 
               constructFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, filePath, chunkIndex, totalChunks),
             ''
-          )
-        ));
+          );
+        } else {
+          // Multiple small files - generate together
+          const filePaths = batch.map(f => f.path);
+          
+          // Mark each file as generating for UI animation
+          for (const file of batch) {
+            this.sendProgress(`Requesting chunk 1/1 for ${file.path}`);
+          }
+          
+          this.sendProgress(`Requesting ${batch.length} files together: ${filePaths.join(', ')}`);
+          
+          const multiFilePrompt = constructMultiFilePrompt(
+            templateContent,
+            manifest,
+            variablesObj,
+            naturalLanguageDescription,
+            filePaths,
+            this.maxResponseSize
+          );
+          
+          const multiFileResp = await model!.sendRequest([
+            vscode.LanguageModelChatMessage.User(multiFilePrompt + '\n' + followupInstr)
+          ], { justification: `Request multiple files: ${filePaths.join(', ')}` });
+          
+          const multiFileObj = await this.processAIResponse(multiFileResp);
+          
+          if (!multiFileObj || !multiFileObj.files) {
+            throw new Error(`Expected multi-file response with "files" object`);
+          }
+          
+          // Write each file from the batch
+          for (const file of batch) {
+            const processedPath = this.processVariables(file.path, variables);
+            const fullPath = path.join(targetDirectory, processedPath);
+            await fs.mkdir(path.dirname(fullPath), { recursive: true });
+            
+            const content = multiFileObj.files[file.path] || multiFileObj.files[processedPath];
+            if (!content) {
+              this.outputChannel.appendLine(`WARNING: File ${processedPath} not found in multi-file response`);
+              continue;
+            }
+            
+            // Unescape and process content
+            const contentEscaped = String(content);
+            const unescaped = contentEscaped.replace(/\\n/g, '\n');
+            const processedContent = this.processVariables(unescaped, variables);
+            
+            // Validate variable replacement
+            if (processedContent.includes('{{')) {
+              this.outputChannel.appendLine(`WARNING: Unreplaced variables found in ${processedPath}`);
+            }
+            
+            await fs.writeFile(fullPath, processedContent, 'utf-8');
+            this.sendProgress(`Completed file: ${processedPath}`);
+          }
+        }
       }
 
       this.sendProgress('ROS 2 package files created successfully');
@@ -319,9 +417,12 @@ export class AIPackageGenerator {
       }
 
       this.outputChannel.appendLine('AI-powered ROS package generation completed successfully');
-      // Send completion message to webview
+      // Send completion message to webview with next_steps
       if (this.webview) {
-        this.webview.postMessage({ command: 'aiComplete' });
+        this.webview.postMessage({ 
+          command: 'aiComplete',
+          next_steps: manifest.next_steps || ''
+        });
       }
 
     } catch (error) {

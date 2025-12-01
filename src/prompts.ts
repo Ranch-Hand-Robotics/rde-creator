@@ -76,6 +76,49 @@ User request: ${naturalLanguageDescription}
 `;
 }
 
+export function constructMultiFilePrompt(
+  templateContent: string,
+  manifest: any,
+  variablesObj: Record<string, string>,
+  naturalLanguageDescription: string,
+  filePaths: string[],
+  maxResponseSize: number
+): string {
+  const aiDirective = manifest.ai_directive || '';
+  const fileList = filePaths.map(f => `"${f}"`).join(', ');
+  
+  return `You are an expert ROS 2 developer. Generate multiple complete files in a single JSON response.
+
+IMPORTANT: Return ONLY raw JSON. Do NOT wrap in markdown code blocks. Do NOT use \`\`\`json formatting.
+Your response must start with { and end with }.
+
+Files to generate: ${fileList}
+
+Example output format:
+{
+  "files": {
+    "file1.txt": "content of file1 with \\n for newlines",
+    "file2.cpp": "content of file2 with \\n for newlines",
+    "file3.h": "content of file3"
+  }
+}
+
+Requirements:
+- Return a "files" object mapping file path to file content
+- Each file content must be a JSON string with special characters escaped
+- Use \\n for newlines, escape quotes as \\" and backslashes as \\\\
+- Generate ALL ${filePaths.length} files listed above
+- Keep total response under ${maxResponseSize} characters
+- If files are too large to fit, you'll be asked for them individually
+${aiDirective ? `
+TEMPLATE AI DIRECTIVE:
+${aiDirective}
+` : ''}
+User variables: ${JSON.stringify(variablesObj)}
+User request: ${naturalLanguageDescription}
+`;
+}
+
 export function constructFollowupPromptInstructions(maxResponseSize: number): string {
   return `
 

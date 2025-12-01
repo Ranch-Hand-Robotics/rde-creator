@@ -8,6 +8,74 @@ import { createRoot } from 'react-dom/client';
 declare const acquireVsCodeApi: () => any;
 const vscode = acquireVsCodeApi();
 
+// Simple markdown to HTML converter
+function convertMarkdownToHtml(markdown: string): string {
+  let html = markdown;
+  
+  // Escape HTML entities first
+  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
+  // Handle code blocks
+  html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+    return `<pre><code class="language-${lang || 'text'}">${code.trim()}</code></pre>`;
+  });
+  
+  // Handle inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  
+  // Handle headers
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  
+  // Handle bold and italic
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  
+  // Handle lists
+  const lines = html.split('\n');
+  let inList = false;
+  const processedLines: string[] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const listMatch = line.match(/^(\s*)- (.+)$/);
+    
+    if (listMatch) {
+      if (!inList) {
+        processedLines.push('<ul>');
+        inList = true;
+      }
+      processedLines.push(`<li>${listMatch[2]}</li>`);
+    } else {
+      if (inList) {
+        processedLines.push('</ul>');
+        inList = false;
+      }
+      processedLines.push(line);
+    }
+  }
+  
+  if (inList) {
+    processedLines.push('</ul>');
+  }
+  
+  html = processedLines.join('\n');
+  
+  // Handle paragraphs (lines separated by blank lines, but not in pre/ul/h tags)
+  html = html.replace(/\n\n+/g, '</p><p>');
+  html = '<p>' + html + '</p>';
+  
+  // Clean up: remove empty paragraphs and paragraphs around block elements
+  html = html.replace(/<p>\s*<\/p>/g, '');
+  html = html.replace(/<p>(\s*<(?:h[123]|ul|pre|code))/g, '$1');
+  html = html.replace(/(<\/(?:h[123]|ul|pre|code)>)\s*<\/p>/g, '$1');
+  html = html.replace(/<p>\s*<pre>/g, '<pre>');
+  html = html.replace(/<\/pre>\s*<\/p>/g, '</pre>');
+  
+  return html;
+}
+
 interface WebviewMessage {
   command: string;
   text?: string;
@@ -31,6 +99,7 @@ interface PackageManifest {
   example_prompt?: string;
   test_instruction?: string;
   test_example_prompt?: string;
+  next_steps?: string;
 }
 
 interface LanguageModel {
@@ -51,6 +120,7 @@ const App: React.FC = () => {
   const [availableManifests, setAvailableManifests] = useState<PackageManifest[]>([]);
   const [naturalLanguageDescription, setNaturalLanguageDescription] = useState('');
   const [testDescription, setTestDescription] = useState('');
+  const [nextSteps, setNextSteps] = useState('');
 
   const [generationProgress, setGenerationProgress] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -288,6 +358,12 @@ const App: React.FC = () => {
           setIsGenerating(false);
           setGenerationComplete(true);
           setCurrentStep('Generation complete');
+          // Mark all remaining files as completed
+          setPlanSteps(prev => prev.map(s => ({ ...s, completed: true, generating: false })));
+          // Store next_steps if provided
+          if ((message as any).next_steps) {
+            setNextSteps((message as any).next_steps);
+          }
           break;
       }
     };
@@ -303,6 +379,12 @@ const App: React.FC = () => {
     const finalPackageDescription = packageDescription.trim();
     const finalPackageLicense = packageLicense.trim() || "MIT";
     const finalNaturalLanguageDescription = naturalLanguageDescription.trim();
+    
+    // Get next_steps from selected manifest
+    const selectedManifest = availableManifests.find(m => m.directory === packageType);
+    if (selectedManifest?.next_steps) {
+      setNextSteps(selectedManifest.next_steps);
+    }
 
     // Validation
     if (!finalPackageName) {
@@ -698,6 +780,7 @@ const App: React.FC = () => {
             setPackageDescription('');
             setPlanSteps([]);
             setCurrentStep('');
+            setNextSteps('');
           }}
         >
           ✨ Create Another Package
@@ -736,6 +819,12 @@ const App: React.FC = () => {
                 ))}
               </div>
             )}
+            
+            {nextSteps && (
+              <div className="next-steps" style={{ marginTop: '20px' }}>
+                <div dangerouslySetInnerHTML={{ __html: convertMarkdownToHtml(nextSteps) }} />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -754,6 +843,7 @@ const App: React.FC = () => {
             setPackageDescription('');
             setPlanSteps([]);
             setCurrentStep('');
+            setNextSteps('');
           }}
         >
           ✨ Create Another Package

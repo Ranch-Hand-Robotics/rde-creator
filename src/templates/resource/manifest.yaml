@@ -8,6 +8,107 @@ user_instruction: "Describe the resources you need for your ROS 2 system. Includ
 example_prompt: "Create a resource package for a mobile manipulator robot with differential drive base and 6-DOF arm. Include URDF with collision meshes, visual STL files, launch files for visualization in RViz, Gazebo simulation configuration, and parameter files for controllers. Add camera and lidar sensor descriptions."
 test_instruction: "Describe what validation should be performed on your resources. Include URDF validation, launch file testing, parameter verification, and simulation checks. Tests will only be generated if you provide this description."
 test_example_prompt: "Create validation scripts to check URDF syntax and joint limits, test that all mesh files are accessible, verify launch files start without errors, and validate parameter files contain required fields with correct types."
+next_steps: |
+  ## Next Steps After Package Creation
+  
+  ### 1. Review Configuration Files
+  - Check `config/` directory for parameter files (YAML format)
+  - Verify parameter names, types, and default values match your requirements
+  - Update any placeholder values with actual configuration data
+  - Consider environment-specific configs (dev, test, production)
+  
+  ### 2. Configure Launch Files
+  - Review launch files in `launch/` directory
+  - Verify node names, namespaces, and remappings
+  - Update parameter file paths to match your configuration structure
+  - Test launch files individually before combining them
+  - Add launch arguments for runtime configurability
+  
+  ```bash
+  ros2 launch your_package_name your_launch_file.launch.py
+  ```
+  
+  ### 3. Update package.xml Dependencies
+  - Add dependencies for any ROS 2 packages your resources reference
+  - Include runtime dependencies for launch files (e.g., `robot_state_publisher`, `joint_state_publisher`)
+  - Add build dependencies if you have generated meshes or complex resources
+  - Common dependencies for resource packages:
+    - `urdf` - For robot descriptions
+    - `xacro` - For parameterized URDF files
+    - `robot_state_publisher` - For publishing robot state
+    - `joint_state_publisher` - For joint state publishing
+    - `rviz2` - If you have RViz configurations
+    - `gazebo_ros` - If you have Gazebo worlds/models
+  
+  ### 4. Validate URDF/Xacro Files
+  - Check URDF files in `urdf/` directory for syntax errors
+  - Verify all mesh file paths are correct and files exist
+  - Validate joint limits, dynamics, and collision properties
+  
+  ```bash
+  # Check URDF syntax
+  check_urdf urdf/your_robot.urdf
+  
+  # If using Xacro, process and validate
+  xacro urdf/your_robot.urdf.xacro > /tmp/robot.urdf
+  check_urdf /tmp/robot.urdf
+  
+  # Visualize in RViz
+  ros2 launch urdf_tutorial display.launch.py model:=urdf/your_robot.urdf
+  ```
+  
+  ### 5. Verify Mesh Files
+  - Check `meshes/` directory for visual and collision mesh files
+  - Ensure mesh formats are supported (STL, DAE, OBJ)
+  - Verify mesh origins and scales are correct
+  - Consider separate visual (detailed) and collision (simplified) meshes for performance
+  - If using OpenSCAD files, process them to STL:
+  
+  ```bash
+  openscad -o meshes/visual/part.stl meshes/visual/part.scad
+  ```
+  
+  ### 6. Test Gazebo Worlds and Models
+  - Review world files in `worlds/` directory
+  - Check model files in `models/` directory
+  - Verify model.sdf and model.config files are properly formatted
+  - Test worlds load correctly in Gazebo
+  
+  ```bash
+  # Launch Gazebo with your world
+  gazebo worlds/your_world.world
+  
+  # Or use ROS 2 Gazebo launch
+  ros2 launch gazebo_ros gazebo.launch.py world:=worlds/your_world.world
+  ```
+  
+  ### 7. Build and Install the Package
+  - Build your workspace to install resources
+  - Verify resource installation paths
+  
+  ```bash
+  cd /path/to/your/workspace
+  colcon build --packages-select your_package_name
+  source install/setup.bash
+  ```
+  
+  ### 8. Set Up Resource Discovery
+  - Ensure the `resource/package_name` marker file exists (empty file for ament indexing)
+  - Verify setup.py includes proper data_files entries for all resources
+  - Test that resources can be found using ROS 2 resource lookup
+  
+  ### 9. Document Your Resources
+  - Update README.md with resource descriptions and usage examples
+  - Document any custom conventions or file organization
+  - Add diagrams or images for complex robot descriptions
+  - Include troubleshooting tips for common issues
+  
+  ### 10. Version Control Best Practices
+  - Review .gitignore to exclude build artifacts and generated files
+  - Commit source files (URDF, Xacro, OpenSCAD) but consider excluding generated meshes if large
+  - Use Git LFS for large binary mesh files if needed
+  - Tag releases for stable resource versions
+  
 ai_directive: |
   This is a ROS 2 resource package template. When generating code for this template:
   
