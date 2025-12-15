@@ -1,0 +1,827 @@
+name: "MicroROS2 for ESP32"
+version: 0.0.0
+description: A template for creating MicroROS2 firmware for ESP32 using ESP-IDF and a ROS 2 host package that manages the firmware
+license: "MIT"
+icon: "🔧"
+short_description: "ESP32 + ROS 2 integration"
+user_instruction: "Describe the firmware functionality for your ESP32. Include details about sensors, actuators, ROS 2 topics/services/actions, GPIO pins, communication protocols (I2C, SPI, UART), WiFi configuration, and transport type (UDP for WiFi/Ethernet or UART serial). The C++ host package will automatically manage firmware lifecycle (version checking, OTA upload, connection). Be specific about hardware pins, timing requirements, and data rates."
+example_prompt: "Create MicroROS2 firmware for ESP32 to control a robotic gripper with servo motor on GPIO 18 and force sensor on GPIO 26 (ADC0). Firmware should publish force readings at 50Hz on /gripper/force topic and subscribe to gripper position commands on /gripper/position. Include a /gripper/calibrate service. Use UDP transport with WiFi. The C++ host lifecycle node will handle firmware version checking, OTA update, and micro_ros_agent launch."
+test_instruction: "Describe what should be tested in both the firmware and host package. Include hardware-in-the-loop tests, WiFi connection tests, OTA firmware update validation, and integration scenarios. Tests will only be generated if you provide this description."
+test_example_prompt: "Create tests for host package connection manager, verify firmware version checking logic, test OTA update functionality with mock network, validate parameter parsing in launch files, and create integration tests for microROS agent communication. For firmware, test sensor reading accuracy and command processing under WiFi latency."
+next_steps: |
+  ## Next Steps
+  
+  ### 1. Ensure Docker is Installed and Running
+  - **Docker Desktop** (Windows/Mac) or **Docker Engine** (Linux) must be installed
+  - Verify Docker is running: `docker --version`
+  - Ensure you have permissions to run Docker commands
+  - On Linux, add user to docker group: `sudo usermod -aG docker $USER`
+  
+  ### 2. Build Docker Development Container (First Time Only)
+  ```bash
+  cd {{package_name}}
+  docker build -t {{package_name}}-esp32-builder -f Dockerfile.esp32 .
+  ```
+  This creates an ESP-IDF development environment with all dependencies pre-installed:
+  - ESP-IDF v5.2
+  - Python dependencies (catkin_pkg, lark-parser, colcon-common-extensions)
+  - micro-ROS tools and libraries
+  - Build utilities (cmake, gcc-xtensa-esp32-elf, etc.)
+  
+  **Note:** First build may take 10-15 minutes but is only needed once.
+  
+  ### 3. Configure Firmware (Optional)
+  Edit `firmware/sdkconfig.defaults` to set WiFi credentials and agent parameters:
+  ```
+  CONFIG_MICROROS_WIFI_SSID="YourWiFiSSID"
+  CONFIG_MICROROS_WIFI_PASSWORD="YourPassword"
+  CONFIG_MICROROS_AGENT_IP="192.168.1.100"
+  CONFIG_MICROROS_AGENT_PORT=8888
+  ```
+  
+  Or use interactive configuration (generates full sdkconfig):
+  ```bash
+  docker run --rm -it \
+    -v "$(pwd)/firmware:/workspace/firmware" \
+    {{package_name}}-esp32-builder \
+    bash -c "cd /workspace/firmware && idf.py set-target {{esp32_chip}} && idf.py menuconfig"
+  ```
+  
+  ### 4. Build the Firmware
+  ```bash
+  # Linux/macOS
+  chmod +x build_firmware.sh
+  ./build_firmware.sh
+  
+  # Windows (PowerShell)
+  .\build_firmware.ps1
+  ```
+  This process (fully containerized):
+  - Initializes ESP-IDF environment in container
+  - Auto-downloads micro_ros_espidf_component
+  - Builds libmicroros library using colcon
+  - Compiles your firmware
+  - Outputs firmware.bin and firmware.elf to `resource/firmware/`
+  
+  **Note:** First build may take 15-20 minutes as it downloads and builds micro-ROS. Subsequent builds are much faster (2-5 minutes).
+  
+  ### 5. Flash Firmware to ESP32
+  Install esptool on host (only flashing tool needed):
+  ```bash
+  pip install esptool
+  esptool.py -p /dev/ttyUSB0 write_flash 0x1000 resource/firmware/firmware.bin
+  ```
+  
+  Or use PlatformIO for flashing (if installed for debugging):
+  ```bash
+  pio run -t upload -e {{esp32_chip}}
+  ```
+  
+  Or flash from container with USB device access:
+  ```bash
+  docker run --rm --privileged \
+    -v /dev:/dev \
+    -v "$(pwd)/resource/firmware:/firmware:ro" \
+    {{package_name}}-esp32-builder \
+    bash -c "esptool.py -p /dev/ttyUSB0 write_flash 0x1000 /firmware/firmware.bin"
+  ```
+  
+  ### 6. Hardware Debugging with PlatformIO (Optional)
+  PlatformIO provides integrated debugging with VS Code. Install PlatformIO locally for debugging only:
+  ```bash
+  pip install platformio
+  ```
+  
+  The generated `platformio.ini` references Docker-built firmware for debugging:
+  ```bash
+  # Start debug session (loads Docker-built firmware.elf)
+  pio debug -e {{esp32_chip}}
+  ```
+  
+  Or use VS Code with PlatformIO extension:
+  - Install "PlatformIO IDE" extension in VS Code
+  - Open project folder
+  - Press F5 or use "Run → Start Debugging"
+  - PlatformIO loads pre-built `.elf` from `firmware/.pio/build/{{esp32_chip}}/`
+  
+  **Supported Debug Probes:**
+  - Built-in USB-JTAG (ESP32-C3, C6, S3)
+  - ESP-Prog (JTAG adapter for any ESP32)
+  - J-Link
+  - CMSIS-DAP compatible debuggers
+  
+  **Note:** Build happens in Docker, debugging uses PlatformIO locally to connect hardware debugger.
+  
+  ### 7. Monitor Serial Output (Optional)
+  ```bash
+  # Using screen or miniterm
+  screen /dev/ttyUSB0 115200
+    # Or with PlatformIO
+  pio device monitor -e {{esp32_chip}}
+    # Or with Docker
+  docker run --rm --privileged -it \
+    -v /dev:/dev \
+    {{package_name}}-esp32-builder \
+    bash -c "idf.py -p /dev/ttyUSB0 monitor"
+  ```
+  
+  ### 7. Build ROS 2 Host Package
+  ```bash
+  cd <your_ros2_workspace>
+  colcon build --packages-select {{package_name}}
+  source install/setup.bash
+  ```
+  
+  ### 8. Launch the System
+  ```bash
+  # For WiFi/UDP transport
+  ros2 launch {{package_name}} {{package_name}}.launch.py
+  
+  # For UART serial transport
+  ros2 launch {{package_name}} {{package_name}}_uart.launch.py
+  
+  # With custom agent parameters
+  ros2 launch {{package_name}} {{package_name}}.launch.py agent_host:=192.168.1.100 agent_port:=8888
+  ```
+  
+  ### 9. Verify Communication
+  ```bash
+  # List topics (should see your firmware topics via micro_ros_agent)
+  ros2 topic list
+  
+  # Echo a topic
+  ros2 topic echo /your_topic_name
+  
+  # Check lifecycle state
+  ros2 lifecycle get /{{package_name}}_lifecycle_manager
+  ```
+  
+  ### Build Environment Scripts
+  - **build_firmware.sh** - Main build script (Linux/macOS)
+  - **build_firmware.ps1** - Main build script (Windows PowerShell)
+  - **Dockerfile.esp32** - Docker container definition with ESP-IDF
+  - **.dockerignore** - Exclude files from Docker context  - **platformio.ini** - PlatformIO configuration for debugging/upload (optional)
+  - **.vscode/launch.json** - VS Code debug configuration (optional)
+  
+  ### Debugging Workflow
+  1. Build firmware in Docker: `./build_firmware.sh`
+  2. Open project in VS Code with PlatformIO extension installed
+  3. Connect hardware debugger (USB-JTAG, ESP-Prog, J-Link)
+  4. Press F5 to start debugging
+  5. PlatformIO loads Docker-built firmware.elf and connects to hardware
+  6. Set breakpoints, inspect variables, step through code
+  
+  **Note:** Building remains in Docker (reproducible), debugging uses PlatformIO locally (hardware access).  
+  ### Troubleshooting
+  - **Docker image fails to build:** Ensure Docker has internet access and sufficient disk space (5-10GB)
+  - **Firmware build fails in container:** Check logs in terminal output
+  - **USB device not found:** Verify port name (`ls /dev/tty*` on Linux, Device Manager on Windows)
+  - **Flash permission denied:** Add user to dialout group: `sudo usermod -aG dialout $USER` (logout/login required)
+  - **Build cache issues:** Rebuild container: `docker build --no-cache -t {{package_name}}-esp32-builder -f Dockerfile.esp32 .`
+  - **Output file permissions:** Fix with `sudo chown -R $USER:$USER resource/firmware/`
+  
+  ### Advanced Usage
+  - **Rebuild container:** `docker build --no-cache -t {{package_name}}-esp32-builder -f Dockerfile.esp32 .`
+  - **Clean firmware build:** `docker run --rm -v "$(pwd)/firmware:/workspace/firmware" {{package_name}}-esp32-builder bash -c "cd /workspace/firmware && idf.py fullclean"`
+  - **Interactive development:** `docker run -it -v "$(pwd)/firmware:/workspace/firmware" -v "$(pwd)/resource/firmware:/workspace/output" {{package_name}}-esp32-builder bash`
+  - **Preserve ESP-IDF cache:** Use Docker volumes to persist `~/.espressif` directory for faster rebuilds
+  
+  ### Additional Resources
+  - See `README.md` for detailed documentation
+  - Check `docs/hardware_setup.md` for wiring diagrams
+  - Refer `docs/troubleshooting.md` for common issues
+  - ESP-IDF docs: https://docs.espressif.com/projects/esp-idf/
+  - micro-ROS ESP-IDF component: https://github.com/micro-ROS/micro_ros_espidf_component
+  - Espressif Docker images: https://hub.docker.com/r/espressif/idf
+
+ai_directive: |
+  This template generates TWO components for ESP32:
+  1. MicroROS2 firmware (ESP-IDF project) - implements ROS 2 communication via RCLC
+  2. C++ lifecycle node (host package) - manages firmware lifecycle (version check, OTA update, connection)
+
+  CRITICAL ARCHITECTURE:
+  - ESP32 ONLY (ESP32, ESP32-S2, ESP32-S3, ESP32-C3, ESP32-C6) - uses ESP-IDF, NOT PlatformIO
+  - Host provides lifecycle management ONLY (not pub/sub) - all ROS 2 topics/services/actions are in firmware
+  - Host MUST launch micro_ros_agent + lifecycle node together (agent bridges firmware to ROS 2)
+  - C++ only (no Python), lifecycle node required, version.txt mandatory for version checking
+  - Firmware flashed using ESP-IDF OTA update mechanism or direct flashing via esptool
+  - Uses micro_ros_espidf_component (cloned directly into components/ directory)
+  - Tests are OPTIONAL - only generate if user provides test description
+
+  ESP32 FIRMWARE REQUIREMENTS:
+  - Use ESP-IDF with CMake build system (NOT PlatformIO, NOT Arduino IDE)
+  - Use micro_ros_espidf_component from https://github.com/micro-ROS/micro_ros_espidf_component
+  - Component is cloned into `firmware/components/` directory automatically
+  - Support UDP transport (WiFi/Ethernet, default) or UART serial transport
+  - Configure transport in menuconfig: micro-ROS Settings > micro-ROS transport configuration
+  - For WiFi: Configure SSID/password in menuconfig under micro-ROS Settings
+  - For UART: Default UART pins are TX=GPIO 1, RX=GPIO 3 (can be customized)
+  - Include proper microROS agent connection handling with reconnection logic
+  - Use microROS publishers, subscribers, services as requested
+  - Follow ESP32 resource constraints (varies by variant, typically 160KB+ usable SRAM)
+  - Include error handling suitable for embedded systems
+  - Use appropriate RCLC (ROS Client Library for C) patterns
+  - Include timing management (loop rates, executor spin)
+  - Leverage ESP-IDF features: GPIO, ADC, PWM, I2C, SPI, UART, WiFi, Ethernet
+
+  ESP32 FIRMWARE ARCHITECTURE:
+  - Main function: Initialize ESP-IDF, WiFi/UART transport, RCLC node, publishers/subscribers
+  - Main loop: Spin executor, process callbacks, handle disconnection/reconnection
+  - Use rclc_executor for callback management
+  - Implement timer callbacks for periodic tasks
+  - Use ESP-IDF standard library (gpio, ledc, adc, uart, etc.)
+  - Include LED or status indicators for connection state
+  - Implement graceful degradation if agent disconnects
+  - Support firmware version reporting via topic or service
+  - Log to ESP-IDF logger (printf compatible)
+  
+  CRITICAL CODE GENERATION RULES:
+  - DO NOT generate error handling macros like RCCHECK or RCSOFTCHECK
+  - Use direct error checking with if statements instead of macros
+  - Example error handling:
+    ```c
+    rcl_ret_t rc = rcl_init(...);
+    if (rc != RCL_RET_OK) {
+        ESP_LOGE(TAG, "Failed to initialize: %d", rc);
+        return false;
+    }
+    ```
+  - Keep error handling simple and readable
+  - Use standard C error patterns with ESP-IDF logging macros (ESP_LOGE, ESP_LOGW, ESP_LOGI)
+  - Ensure all printf strings with \n are properly escaped
+  - Use proper C string literal syntax (no multi-line string literals without continuation)
+
+  CMAKE CONFIGURATION (CMakeLists.txt in firmware directory):
+  - Use esp_idf_version_major/minor for version detection
+  - Target ESP32 with idf_component_register()
+  - Add micro_ros_espidf_component to REQUIRES
+  - Include micro-ROS headers via components/micro_ros_espidf_component
+  - Example structure:
+    ```cmake
+    cmake_minimum_required(VERSION 3.16)
+    include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+    project({{package_name}}_firmware)
+    
+    file(GLOB_RECURSE app_sources "*.c" "*.cpp")
+    idf_component_register(
+        SRCS ${app_sources}
+        INCLUDE_DIRS .
+        REQUIRES esp_wifi esp_eth nvs_flash micro_ros_espidf_component
+    )
+    ```
+
+  ESP-IDF CONFIGURATION (via menuconfig):
+  - Set target: `idf.py set-target esp32` (or esp32s2, esp32s3, esp32c3, esp32c6)
+  - Navigate to micro-ROS Settings:
+    * Middleware selection (default: Micro XRCE-DDS)
+    * Transport type (UDP or UART)
+    * Agent host/port (UDP) or device (UART)
+    * WiFi SSID and password (if UDP)
+    * Domain ID
+  - Enable necessary hardware interfaces (GPIO, ADC, PWM, I2C, SPI, UART, WiFi, Ethernet)
+
+  BUILD PROCESS (Docker Container - 100% Containerized):
+  - All build tooling contained in Docker image (no host ESP-IDF required)
+  - Two build scripts provided (Linux/macOS bash and Windows PowerShell):
+    1. **build_firmware.sh** - Orchestrates Docker build and outputs firmware
+    2. **build_firmware.ps1** - Windows PowerShell equivalent
+  - Workflow:
+    1. `docker build` - Creates ESP-IDF container with all dependencies (one-time, 10-15 min)
+    2. `build_firmware.sh` - Runs containerized build, outputs firmware.bin to host
+    3. `docker run --privileged` - Flashes firmware to device (USB device access)
+  
+  BUILD SCRIPTS:
+  - **build_firmware.sh** (Linux/macOS):
+    ```bash
+    #!/bin/bash
+    set -e
+    
+    CONTAINER_IMAGE="{{package_name}}-esp32-builder"
+    FIRMWARE_DIR="firmware"
+    OUTPUT_DIR="resource/firmware"
+    
+    echo "Building Docker ESP-IDF image..."
+    docker build -t $CONTAINER_IMAGE -f Dockerfile.esp32 .
+    
+    echo "Building firmware in container..."
+    mkdir -p $OUTPUT_DIR
+    docker run --rm \
+      -v "$(pwd)/$FIRMWARE_DIR:/workspace/firmware" \
+      -v "$(pwd)/$OUTPUT_DIR:/workspace/output" \
+      $CONTAINER_IMAGE \
+      bash -c "
+        cd /workspace/firmware && \
+        idf.py set-target {{esp32_chip}} && \
+        idf.py build && \
+        cp build/firmware.bin /workspace/output/ && \
+        cp build/firmware.elf /workspace/output/
+      "
+    
+    echo "Build complete! Firmware: $OUTPUT_DIR/firmware.bin"
+    ```
+  
+  - **build_firmware.ps1** (Windows PowerShell):
+    ```powershell
+    $ErrorActionPreference = "Stop"
+    
+    $CONTAINER_IMAGE = "{{package_name}}-esp32-builder"
+    $FIRMWARE_DIR = "firmware"
+    $OUTPUT_DIR = "resource\firmware"
+    
+    # Build container image
+    Write-Host "Building Docker ESP-IDF image..." -ForegroundColor Cyan
+    docker build -t $CONTAINER_IMAGE -f Dockerfile.esp32 .
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Error: Failed to build Docker image" -ForegroundColor Red
+        exit 1
+    }
+    
+    # Run containerized build
+    Write-Host "Building firmware in container..." -ForegroundColor Cyan
+    $CURRENT_DIR = (Get-Location).Path.Replace("\", "/")
+    
+    docker run --rm `
+        -v "${CURRENT_DIR}/${FIRMWARE_DIR}:/workspace/firmware" `
+        -v "${CURRENT_DIR}/${OUTPUT_DIR}:/workspace/output" `
+        $CONTAINER_IMAGE `
+        bash -c "cd /workspace/firmware && idf.py set-target {{esp32_chip}} && idf.py build && cp build/firmware.bin /workspace/output/ && cp build/firmware.elf /workspace/output/"
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Error: Firmware build failed" -ForegroundColor Red
+        exit 1
+    }
+    
+    Write-Host "`nBuild complete! Firmware: $OUTPUT_DIR\firmware.bin" -ForegroundColor Green
+    ```
+  
+  - **Dockerfile.esp32**:
+    ```dockerfile
+    # Use official ESP-IDF image as base
+    FROM espressif/idf:release-v5.2
+    
+    # Set environment variables
+    ENV DEBIAN_FRONTEND=noninteractive
+    ENV IDF_PATH=/opt/esp-idf
+    
+    # Install additional dependencies
+    RUN apt-get update && apt-get install -y \
+        python3-pip \
+        git \
+        wget \
+        curl \
+        && rm -rf /var/lib/apt/lists/*
+    
+    # Install Python dependencies for micro-ROS
+    RUN . $IDF_PATH/export.sh && \
+        pip3 install --no-cache-dir \
+        catkin_pkg \
+        lark-parser \
+        colcon-common-extensions \
+        importlib-resources
+    
+    # Set working directory
+    WORKDIR /workspace/firmware
+    
+    # Entrypoint allows running commands
+    ENTRYPOINT ["/bin/bash", "-c"]
+    CMD ["idf.py build"]
+    ```
+  
+  - **platformio.ini** (for hardware debugging support):
+    ```ini
+    [platformio]
+    default_envs = {{esp32_chip}}
+    
+    [env:{{esp32_chip}}]
+    platform = espressif32
+    board = {{esp32_chip}}_dev
+    framework = espidf
+    
+    ; Use Docker-built firmware for debugging/upload
+    build_dir = .pio/build/{{esp32_chip}}
+    
+    ; Debug configuration
+    debug_tool = {{debug_tool}}
+    debug_init_break = tbreak app_main
+    debug_load_mode = manual
+    
+    ; Monitor configuration
+    monitor_speed = 115200
+    monitor_filters = esp32_exception_decoder
+    
+    ; Upload configuration (uses pre-built binary)
+    upload_protocol = {{upload_protocol}}
+    upload_speed = 460800
+    
+    ; Build flags (informational - actual build in Docker)
+    build_flags = 
+        -DBOARD_HAS_PSRAM
+        -mfix-esp32-psram-cache-issue
+    ```
+  
+  - **.vscode/launch.json** (VS Code PlatformIO debugging):
+    ```json
+    {
+      "version": "0.2.0",
+      "configurations": [
+        {
+          "type": "platformio-debug",
+          "request": "launch",
+          "name": "PlatformIO Debug (ESP32)",
+          "executable": "firmware/.pio/build/{{esp32_chip}}/firmware.elf",
+          "projectEnvName": "{{esp32_chip}}",
+          "toolchainBinDir": "",
+          "internalConsoleOptions": "openOnSessionStart",
+          "preLaunchTask": {
+            "type": "shell",
+            "command": "./build_firmware.sh",
+            "label": "Build firmware in Docker"
+          }
+        }
+      ]
+    }
+    ```
+  
+  - **.dockerignore** (exclude from build context):
+    ```
+    firmware/build/
+    firmware/sdkconfig
+    firmware/components/
+    resource/firmware/*.bin
+    resource/firmware/*.elf
+    build/
+    install/
+    .git/
+    .gitignore
+    __pycache__/
+    *.pyc
+    .vscode/
+    .DS_Store
+    ```
+  
+  - **Key characteristics:**
+    * Fully containerized build - no host ESP-IDF needed
+    * PlatformIO integration for debugging - optional, install only if debugging hardware
+    * Volume mounts: `/workspace/firmware` (source), `/workspace/output` (firmware output)
+    * Build outputs placed in PlatformIO-compatible location: `firmware/.pio/build/{{esp32_chip}}/`
+    * Docker builds firmware, PlatformIO debugs/uploads (hybrid approach)
+    * Cross-platform: Same scripts work on Linux, macOS, Windows
+    * Reproducible: Exact same build environment every time
+    * CI/CD ready: No special setup needed, just Docker
+
+  microros COMPONENT AUTO-CLONING:
+  - micro_ros_espidf_component automatically cloned by ESP-IDF during build
+  - No manual fetch step required (unlike Pico template)
+  - Cloned into: `firmware/components/micro_ros_espidf_component/`
+  - Component URL: https://github.com/micro-ROS/micro_ros_espidf_component
+  - Branch: Automatically selected by ESP-IDF based on version
+
+  FIRMWARE RESOURCES:
+  - Store in resource/firmware/: firmware.bin (main), firmware.elf (optional), version.txt (required)
+  - Binary format: ESP32 format (.bin with partition information)
+  - During initial generation, firmware.bin should contain placeholder text
+  - version.txt MUST contain semantic version string (e.g., "1.0.0")
+  - User runs `idf.py build` to generate actual .bin binary
+
+  CONNECTION & UPDATE (ESP32-specific):
+  - WiFi (UDP): Auto-connect via configured SSID/password in menuconfig
+  - UART: Auto-detect /dev/ttyUSB0 (Linux) or COMx (Windows)
+  - OTA update: HTTPS or HTTP endpoint, signed binary with rollback support
+  - Version checking: query via micro-ROS service, compare with version.txt
+  - Connection retry with backoff for WiFi reconnection
+
+  LAUNCH FILES:
+  - Main: micro_ros_agent + host lifecycle node (both required)
+  - Parameters: transport_type (udp/uart), agent_host, agent_port, domain_id, namespace
+  - Examples: WiFi UDP, UART serial, multi-instance variants
+
+  VERSION MANAGEMENT:
+  - Host reads resource/firmware/version.txt (semantic versioning: "1.0.0")
+  - Queries device version via ROS 2 service, compares, triggers OTA if mismatch
+  - Firmware embeds version string and reports via service/topic
+  - OTA system validates signatures and checksums
+
+  HOST IMPLEMENTATION (C++):
+  - rclcpp_lifecycle node with states: configure (version check) → activate (OTA, connect)
+  - Connection manager for WiFi/UART handling
+  - OTA updater for firmware updates
+  - Modern C++17+ patterns with comprehensive logging
+  - Headers: esp32_lifecycle_manager.hpp, esp32_connection_manager.hpp, esp32_ota_updater.hpp
+
+  DEBUGGING & DEFAULTS:
+  - UART debugging enabled by default (serial output to console)
+  - Optional JTAG debugging (requires hardware debugger)
+  - Auto-update DISABLED by default
+  - Firmware debugs independently from host
+
+  TRANSPORT TYPES (ESP32):
+  - UDP (default): WiFi or Ethernet
+    - Supports WiFi SoftAP mode for easy initial connection
+    - Configure SSID/password via menuconfig
+    - Agent: `micro-ros-agent udp4 --ip 192.168.1.x --port 8888`
+    - Default port: 8888
+  - UART Serial: Hardware UART interface
+    - Default pins: TX=GPIO 1, RX=GPIO 3 (configurable)
+    - Default baud rate: 115200
+    - Agent: `micro-ros-agent serial --dev /dev/ttyUSB0 -b 115200`
+
+  PLATFORMS: ESP32 variants
+  - ESP32: Original, dual-core @ 160MHz, WiFi + Bluetooth, 160KB SRAM
+  - ESP32-S2: Single-core @ 160MHz, WiFi + USB, 160KB SRAM
+  - ESP32-S3: Dual-core @ 240MHz, WiFi + Bluetooth + USB + PSRAM, 320KB SRAM
+  - ESP32-C3: Single-core RISC-V @ 160MHz, WiFi + Bluetooth, 160KB SRAM
+  - ESP32-C6: Dual-core RISC-V @ 160MHz, WiFi + Bluetooth + Thread, 320KB SRAM
+
+  PACKAGE STRUCTURE (ESP32-specific):
+  ```
+  {{package_name}}/
+  ├── CMakeLists.txt                # ROS 2 package build configuration
+  ├── package.xml
+  ├── README.md
+  ├── LICENSE
+  ├── .gitignore
+  ├── .dockerignore                 # Docker build context exclusions
+  ├── Dockerfile.esp32              # Docker container for ESP-IDF build environment
+  ├── platformio.ini                # PlatformIO config for debugging/upload (optional)
+  ├── build_firmware.sh             # Build script (Linux/macOS) - runs containerized build
+  ├── build_firmware.ps1            # Build script (Windows PowerShell)
+  ├── firmware/                     # ESP-IDF firmware project
+  │   ├── CMakeLists.txt            # Main ESP-IDF CMake configuration
+  │   ├── idf_component.yml         # Component manifest
+  │   ├── main/                     # Main application component
+  │   │   ├── CMakeLists.txt
+  │   │   ├── main.c                # Main firmware code with RCLC node
+  │   │   └── Kconfig               # menuconfig options
+  │   ├── components/               # ESP-IDF components (auto-populated)
+  │   │   └── micro_ros_espidf_component/  # Auto-cloned from GitHub by ESP-IDF
+  │   ├── sdkconfig.defaults        # ESP-IDF default configuration (optional override)
+  │   ├── build/                    # ESP-IDF build artifacts (git-ignored)
+  │   │   ├── firmware.bin          # Final firmware binary
+  │   │   └── firmware.elf          # Debug symbols
+  │   └── .pio/                     # PlatformIO artifacts (git-ignored, generated by build script)
+  │       └── build/{{esp32_chip}}/ # PlatformIO expects build outputs here
+  │           ├── firmware.bin      # Symlink or copy from build/
+  │           └── firmware.elf      # Symlink or copy from build/
+  ├── .vscode/
+  │   ├── launch.json               # VS Code debug config (PlatformIO + Docker build)
+  │   ├── tasks.json                # Build tasks for VS Code
+  │   └── extensions.json           # Recommended extensions (PlatformIO IDE)
+  ├── resource/
+  │   ├── {{package_name}}          # ament resource index
+  │   └── firmware/                 # Output directory for built firmware
+  │       ├── firmware.bin          # Copied from build/ by build script
+  │       ├── firmware.elf          # Copied from build/ by build script
+  │       └── version.txt           # Firmware version metadata (MANDATORY)
+  ├── config/
+  │   ├── agent_params.yaml         # Agent configuration
+  │   └── connection_params.yaml    # Connection configuration
+  ├── launch/
+  │   ├── {{package_name}}.launch.py          # Main launch file
+  │   ├── {{package_name}}_wifi.launch.py     # WiFi UDP transport
+  │   ├── {{package_name}}_uart.launch.py     # UART serial transport
+  │   └── {{package_name}}_multi.launch.py    # Multi-ESP32 support (optional)
+  ├── include/{{package_name}}/     # C++ host package headers
+  │   ├── esp32_lifecycle_manager.hpp
+  │   ├── esp32_connection_manager.hpp
+  │   ├── esp32_ota_updater.hpp
+  │   └── visibility_control.h
+  ├── src/                          # C++ host package source
+  │   ├── esp32_lifecycle_manager.cpp
+  │   ├── esp32_connection_manager.cpp
+  │   ├── esp32_ota_updater.cpp
+  │   └── component.cpp
+  ├── test/                         # OPTIONAL - only if test description provided
+  │   ├── test_esp32_connection.cpp  # Connection tests (OPTIONAL)
+  │   └── test_ota_update.cpp        # OTA update tests (OPTIONAL)
+  ├── docs/
+  │   ├── hardware_setup.md
+  │   ├── wifi_configuration.md
+  │   ├── debugging.md              # PlatformIO debugging guide
+  │   └── troubleshooting.md
+  └── .github/
+      └── workflows/
+          └── firmware-build.yml     # Optional: CI/CD workflow for automated builds
+  ```
+
+  NOTE: test/ directory is OPTIONAL - only if user provides test description
+  NOTE: firmware/build/ and firmware/components/ are git-ignored and rebuilt in container
+  NOTE: PlatformIO files (.pio/, platformio.ini) are OPTIONAL - only needed for hardware debugging
+
+  QUALITY ASSURANCE:
+  - Include comprehensive documentation in README.md
+  - Document hardware requirements and setup
+  - Include wiring diagrams if applicable
+  - Provide troubleshooting guide
+  - Include example usage and configuration
+  - Document debugging workflow
+  - Provide development environment setup instructions
+  - Document WiFi configuration and troubleshooting
+
+  EXAMPLE USAGE (ESP32):
+  ```bash
+  # Build firmware in Docker (handles all dependencies automatically)
+  cd {{package_name}}
+  ./build_firmware.sh
+  
+  # Flash with esptool (minimal host dependency)
+  esptool.py -p /dev/ttyUSB0 write_flash 0x1000 resource/firmware/firmware.bin
+  
+  # OR flash with PlatformIO (if installed for debugging)
+  pio run -t upload -e {{esp32_chip}}
+  
+  # Monitor serial output
+  screen /dev/ttyUSB0 115200
+  # OR with PlatformIO
+  pio device monitor -e {{esp32_chip}}
+  
+  # Debug with PlatformIO + VS Code (optional, requires PlatformIO installed)
+  # 1. Install PlatformIO IDE extension in VS Code
+  # 2. Connect hardware debugger (USB-JTAG, ESP-Prog, J-Link)
+  # 3. Press F5 in VS Code
+  # 4. PlatformIO loads Docker-built firmware.elf and starts debugging session
+  
+  # Launch host lifecycle node + micro_ros_agent with UDP
+  ros2 launch {{package_name}} {{package_name}}.launch.py
+  
+  # Launch with UART serial transport
+  ros2 launch {{package_name}} {{package_name}}_uart.launch.py
+  
+  # Launch with custom agent IP (for remote host)
+  ros2 launch {{package_name}} {{package_name}}.launch.py agent_host:=192.168.1.100
+  
+  # Interact with firmware ROS 2 topics
+  ros2 topic list
+  ros2 topic echo /your_esp32_topic
+  
+  # Check host lifecycle state
+  ros2 lifecycle get /{{package_name}}_lifecycle_manager
+  ```
+  
+  DEBUGGING WORKFLOW:
+  - Build: Docker container compiles firmware (reproducible, no host deps)
+  - Debug: PlatformIO connects to hardware debugger (loads Docker-built .elf)
+  - Upload: PlatformIO or esptool flashes firmware (uses Docker-built .bin)
+  - Monitor: PlatformIO, screen, or Docker container for serial output
+  - Hybrid: Build in container, debug on host (best of both worlds)
+
+  OPTIONAL ENHANCEMENTS (if requested):
+  - Parameter server for dynamic config, OTA updates, monitoring dashboard
+  - Simulation support, performance metrics, power management
+  - Multi-core optimization, task prioritization
+
+options:
+  - variable: "package_name"
+    name: "Package Name"
+    type: "string"
+    description: "Name of the ROS 2 package (and prefix for ESP32 firmware)"
+    default: "my_esp32_microros_package"
+    
+  - variable: "ros_distribution"
+    name: "ROS 2 Distribution"
+    type: "select"
+    description: "Target ROS 2 distribution (determines micro-ROS branch)"
+    choices:
+      - value: "kilted"
+        label: "Kilted (Latest/Default)"
+      - value: "jazzy"
+        label: "Jazzy Jalisco (ROS 2)"
+      - value: "iron"
+        label: "Iron Irwini (ROS 2)"
+      - value: "humble"
+        label: "Humble Hawksbill (ROS 2 LTS)"
+      - value: "rolling"
+        label: "Rolling Ridley (Development)"
+    default: "kilted"
+    
+  - variable: "esp32_chip"
+    name: "ESP32 Chip Variant"
+    type: "select"
+    description: "Target ESP32 chip variant"
+    choices:
+      - value: "esp32"
+        label: "ESP32 (Original, dual-core, WiFi+Bluetooth)"
+      - value: "esp32s2"
+        label: "ESP32-S2 (Single-core, WiFi+USB)"
+      - value: "esp32s3"
+        label: "ESP32-S3 (Dual-core, WiFi+Bluetooth+USB+PSRAM)"
+      - value: "esp32c3"
+        label: "ESP32-C3 (Single-core RISC-V, WiFi+Bluetooth)"
+      - value: "esp32c6"
+        label: "ESP32-C6 (Dual-core RISC-V, WiFi+Bluetooth+Thread)"
+    default: "esp32"
+    
+  - variable: "transport_type"
+    name: "Communication Transport"
+    type: "select"
+    description: "Transport type for micro-ROS communication"
+    choices:
+      - value: "udp"
+        label: "UDP (WiFi/Ethernet, default, lowest latency)"
+      - value: "uart"
+        label: "UART Serial (Direct connection, minimal setup)"
+    default: "udp"
+    
+  - variable: "wifi_ssid"
+    name: "WiFi SSID"
+    type: "string"
+    description: "WiFi network SSID (leave empty to configure via menuconfig)"
+    default: ""
+    condition: "transport_type == 'udp'"
+    
+  - variable: "wifi_password"
+    name: "WiFi Password"
+    type: "string"
+    description: "WiFi network password (leave empty to configure via menuconfig)"
+    default: ""
+    condition: "transport_type == 'udp'"
+    
+  - variable: "agent_host"
+    name: "Micro-ROS Agent Host"
+    type: "string"
+    description: "IP address of micro-ROS agent (UDP) or serial device (UART)"
+    default: "192.168.1.100"
+    condition: "transport_type == 'udp'"
+    
+  - variable: "agent_port"
+    name: "Micro-ROS Agent Port"
+    type: "string"
+    description: "Port number for micro-ROS agent (UDP default: 8888)"
+    default: "8888"
+    condition: "transport_type == 'udp'"
+    
+  - variable: "uart_tx_pin"
+    name: "UART TX GPIO Pin"
+    type: "string"
+    description: "GPIO pin for UART TX (default: 1)"
+    default: "1"
+    condition: "transport_type == 'uart'"
+    
+  - variable: "uart_rx_pin"
+    name: "UART RX GPIO Pin"
+    type: "string"
+    description: "GPIO pin for UART RX (default: 3)"
+    default: "3"
+    condition: "transport_type == 'uart'"
+    
+  - variable: "uart_baud_rate"
+    name: "UART Baud Rate"
+    type: "string"
+    description: "UART baud rate (default: 115200)"
+    default: "115200"
+    condition: "transport_type == 'uart'"
+    
+  - variable: "domain_id"
+    name: "DDS Domain ID"
+    type: "string"
+    description: "DDS domain ID for multi-domain ROS 2 networks"
+    default: "0"
+    
+  - variable: "include_publisher"
+    name: "Include Publisher Example"
+    type: "boolean"
+    description: "Include example publisher in firmware"
+    default: true
+    
+  - variable: "include_subscriber"
+    name: "Include Subscriber Example"
+    type: "boolean"
+    description: "Include example subscriber in firmware"
+    default: true
+    
+  - variable: "include_service"
+    name: "Include Service Example"
+    type: "boolean"
+    description: "Include example service in firmware"
+    default: false
+    
+  - variable: "include_version_service"
+    name: "Include Version Query Service"
+    type: "boolean"
+    description: "Include service for querying firmware version"
+    default: true
+    
+  - variable: "auto_update_default"
+    name: "Auto-Update Default"
+    type: "boolean"
+    description: "Enable automatic OTA firmware updates by default (NOT recommended for development)"
+    default: false
+    
+  - variable: "include_multi_instance"
+    name: "Multi-Instance Support"
+    type: "boolean"
+    description: "Include support for multiple ESP32 instances"
+    default: false
+    
+  - variable: "include_diagnostics"
+    name: "Include Diagnostics"
+    type: "boolean"
+    description: "Include diagnostic publishers for monitoring health (WiFi signal, memory, uptime)"
+    default: true
+    
+  - variable: "include_lifecycle"
+    name: "Use Lifecycle Node"
+    type: "boolean"
+    description: "Use lifecycle node for host package (always recommended)"
+    default: true
+
+file_mapping: []
