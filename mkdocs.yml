@@ -4,10 +4,10 @@ edit_uri: edit/master/docs/
 nav:
   - Getting Started: index.md
   - C++ ROS 2 Package: cpp-package.md
-      - Python ROS 2 Package: python-package.md
-      - Node.js ROS 2 Package: nodejs-package.md
-      - Resource Package: resource-package.md
-      - Troubleshooting: troubleshooting.md
+  - Python ROS 2 Package: python-package.md
+  - Node.js ROS 2 Package: nodejs-package.md
+  - Resource Package: resource-package.md
+  - Troubleshooting: troubleshooting.md
   - Contributing: CONTRIBUTING.md
 
 theme: 
