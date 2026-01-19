@@ -37,11 +37,6 @@
           "default": 50000,
           "minimum": 10000,
           "description": "Maximum AI response size in characters (default: 50000). Increase for larger/more complex packages. Decrease if you encounter memory issues."
-        },
-        "rosPackageCreator.copilotCLIPath": {
-          "type": "string",
-          "default": "",
-          "description": "Custom path to GitHub Copilot CLI executable. Leave empty to use the bundled CLI that comes with the extension."
         }
       }
     },

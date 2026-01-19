@@ -34,11 +34,8 @@ export class CopilotSDKService {
       // Dynamically import the SDK (ES module)
       this.CopilotSDK = await import('@github/copilot-sdk');
       
-      // Create client with default options (spawns bundled CLI server via stdio)
-      const config = vscode.workspace.getConfiguration('rosPackageCreator');
-      const cliPath = config.get<string>('copilotCLIPath');
+      // Create client with default options (uses bundled CLI via stdio)
       this.client = new this.CopilotSDK.CopilotClient({
-        cliPath: cliPath || undefined, // Use bundled CLI if not specified
         useStdio: true, // Use stdio for better compatibility
         logLevel: 'error',
         autoStart: true,

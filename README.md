@@ -99,7 +99,7 @@ Configuration and asset management:
 
 ## AI Generation
 
-This extension uses the GitHub Copilot SDK for background agent functionality. The SDK and CLI are **bundled with the extension** - no separate installation required!
+This extension uses the GitHub Copilot SDK for background agent functionality. The SDK and CLI are **bundled with the extension** - no separate installation or configuration required!
 
 Features:
 - Robust session management
@@ -108,9 +108,6 @@ Features:
 - Official SDK support from GitHub
 
 The extension works out of the box. Simply install and start creating ROS 2 packages with AI assistance.
-
-You can optionally configure a custom CLI path in extension settings:
-- `rosPackageCreator.copilotCLIPath`: Custom path to Copilot CLI (leave empty to use bundled version)
 
 ## Troubleshooting
 
