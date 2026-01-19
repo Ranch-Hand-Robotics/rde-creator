@@ -4,6 +4,7 @@
 import * as vscode from 'vscode';
 import { getNonce, getUri, fileNameFromVariable, getAllManifestMap } from './utils';
 import { AIPackageGenerator } from './AIPackageGenerator';
+import { CopilotSDKService } from './CopilotSDKService';
 import * as extension from "./extension";
 
 export class CreateNodePanel {
@@ -47,67 +48,20 @@ export class CreateNodePanel {
     }
   }
 
-  private async _loadAvailableModels() {
-    try {
-      extension.outputChannel.appendLine('Loading available AI models...');
-      
-      if (!vscode.lm) {
-        extension.outputChannel.appendLine('Language Model API not available');
-        return;
-      }
-
-      // Get all available models
-      const allModels = await vscode.lm.selectChatModels({});
-      extension.outputChannel.appendLine(`Found ${allModels.length} available models`);
-
-      // Format models for the webview
-      const formattedModels = allModels.map((model, index) => ({
-        id: `${model.vendor}-${model.family}-${index}`, // Create unique ID
-        name: model.name,
-        vendor: model.vendor,
-        family: model.family,
-        displayName: `${model.name} (${model.family})`
-      }));
-
-      // Get last selected models from settings
-      const config = vscode.workspace.getConfiguration('rosPackageCreator');
-      const lastSelectedModel = config.get<string>('lastSelectedModel', 'auto');
-      const lastSelectedTestModel = config.get<string>('lastSelectedTestModel', 'auto');
-
-      this._panel.webview.postMessage({ 
-        command: "setAvailableModels", 
-        models: formattedModels,
-        lastSelectedModel: lastSelectedModel,
-        lastSelectedTestModel: lastSelectedTestModel
-      });
-    } catch (error) {
-      extension.outputChannel.appendLine(`Error loading models: ${error}`);
-      // Send empty models list on error
-      this._panel.webview.postMessage({ 
-        command: "setAvailableModels", 
-        models: [],
-        lastSelectedModel: 'auto'
-      });
-    }
-  }
-
-
 
   public static async render(extensionUri: vscode.Uri, targetFolderUri?: vscode.Uri) {
-    // Check if AI models are available before showing the webview
-    if (!vscode.lm) {
-      vscode.window.showErrorMessage('AI models are required for package generation. Please ensure GitHub Copilot Chat extension is installed and configured.');
-      return;
-    }
-
-    try {
-      const availableModels = await vscode.lm.selectChatModels({});
-      if (availableModels.length === 0) {
-        vscode.window.showErrorMessage('No AI models are available. Please ensure GitHub Copilot Chat extension is installed and you have access to AI models.');
+    // Check if Copilot SDK is available
+    const cliInstalled = await CopilotSDKService.isCLIInstalled();
+    
+    if (!cliInstalled) {
+      // Offer to install the CLI
+      const installed = await CopilotSDKService.offerToInstallCLI();
+      if (!installed) {
+        // User declined or chose to learn more - extension cannot function
+        vscode.window.showWarningMessage('GitHub Copilot CLI is required for this extension. The extension will not be available until the CLI is installed.');
         return;
       }
-    } catch (error) {
-      vscode.window.showErrorMessage(`Failed to check available AI models: ${error}`);
+      // If user chose to install, they need to try again after installation completes
       return;
     }
 
@@ -147,9 +101,8 @@ export class CreateNodePanel {
 
         switch (command) {
           case "webviewLoaded":
-            // Webview is ready, load manifests and models
+            // Webview is ready, load manifests
             this._loadManifests();
-            this._loadAvailableModels();
             return;
 
           case "createPackage":

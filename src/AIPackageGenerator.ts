@@ -64,45 +64,13 @@ export class AIPackageGenerator {
     selectedTestModelId?: string
   ): Promise<void> {
     try {
-      // Try to initialize SDK first
-      const sdkInitialized = await this.sdkService.initialize();
-      if (sdkInitialized) {
-        this.sendProgress('Using GitHub Copilot SDK for package generation');
-        this.outputChannel.appendLine('SDK mode: Using Copilot SDK for AI generation');
-      } else {
-        this.sendProgress('Using VS Code Language Model API for package generation');
-        this.outputChannel.appendLine('Fallback mode: Using vscode.lm API for AI generation');
-      }
+      // Initialize SDK - this will throw if SDK is not available
+      await this.sdkService.initialize();
+      this.sendProgress('Using GitHub Copilot SDK for package generation');
+      this.outputChannel.appendLine('Using Copilot SDK for AI generation');
 
-      // Check if language model access is available (for fallback)
-      if (!sdkInitialized && !vscode.lm) {
-        throw new Error('Neither Copilot SDK nor Language Model API is available');
-      }
-
-      let model: vscode.LanguageModelChat | undefined;
-      let selectionMethod = 'default';
-
-      // Only need to select model if using vscode.lm fallback
-      if (!sdkInitialized) {
-        // If a specific model was selected by the user, try to find it
-        if (selectedModelId && selectedModelId !== 'auto') {
-          const allModels = await vscode.lm.selectChatModels({});
-          model = allModels.find(m => `${m.vendor}-${m.family}-${allModels.indexOf(m)}` === selectedModelId);
-          if (model) {
-            selectionMethod = `user selected (${model.name})`;
-            this.outputChannel.appendLine(`Using user-selected model: ${model.name} (${model.vendor}, ${model.family})`);
-          }
-        }
-
-        // If no specific model was selected or found, show error
-        if (!model) {
-            vscode.window.showErrorMessage("Unfortunately the selected language model is not available. Please select a different model and try again.");
-            return;
-        }
-      } else {
-        // Using SDK - create a session
-        await this.sdkService.createSession(selectedModelId !== 'auto' ? selectedModelId : undefined);
-      }
+      // Create a session
+      await this.sdkService.createSession(selectedModelId !== 'auto' ? selectedModelId : undefined);
 
       // Read template files and manifest
       const templateContent = await this.readTemplateContent(templatePath);
@@ -119,11 +87,7 @@ export class AIPackageGenerator {
       const planPrompt = constructPlanPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, this.maxResponseSize);
       const followupInstr = constructFollowupPromptInstructions(this.maxResponseSize);
       this.sendProgress('Sending plan request to AI model...');
-      const planResponseText = await this.sendAIRequest(
-        planPrompt + '\n' + followupInstr,
-        model,
-        'Request generation plan (file list + chunking)'
-      );
+      const planResponseText = await this.sendAIRequest(planPrompt + '\n' + followupInstr);
       const planObj = await this.processAIResponse(planResponseText);
       this.sendProgress('Plan received from AI');
       this.checkCancellation();
@@ -180,7 +144,6 @@ export class AIPackageGenerator {
       // Common file generation function
       const generateFileWithChunks = async (
         f: {path: string; estimate_bytes?: number},
-        aiModel: vscode.LanguageModelChat | undefined,
         chunksMapping: Record<string, number>,
         promptConstructor: (filePath: string, chunkIndex: number, totalChunks: number) => string,
         messagePrefix: string
@@ -202,11 +165,7 @@ export class AIPackageGenerator {
             this.checkCancellation();
             const chunkPrompt = promptConstructor(f.path, i, total);
             this.sendProgress(`Requesting ${messagePrefix}chunk ${i}/${total} for ${f.path}`);
-            const chunkRespText = await this.sendAIRequest(
-              chunkPrompt + '\n' + followupInstr,
-              aiModel,
-              `Request ${messagePrefix}file chunk ${i}/${total} for ${f.path}`
-            );
+            const chunkRespText = await this.sendAIRequest(chunkPrompt + '\n' + followupInstr);
             const chunkObj = await this.processAIResponse(chunkRespText);
             if (!chunkObj || chunkObj.file !== processedPath) {
               throw new Error(`Unexpected ${messagePrefix}chunk response for ${processedPath}`);
@@ -239,11 +198,9 @@ export class AIPackageGenerator {
       for (let i = 0; i < filesList.length; i += MAX_PARALLEL_FILES) {
         this.checkCancellation();
         const batch = filesList.slice(i, i + MAX_PARALLEL_FILES);
-        const currentModel = model;
         await Promise.all(batch.map(f => 
           generateFileWithChunks(
             f,
-            currentModel,
             chunksMap,
             (filePath, chunkIndex, totalChunks) => 
               constructFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, filePath, chunkIndex, totalChunks),
@@ -257,50 +214,34 @@ export class AIPackageGenerator {
       // Stage 3: Generate tests if requested
       if (testDescription && testDescription.trim() && selectedTestModelId) {
         this.checkCancellation();
-        this.sendProgress('Starting test generation with separate AI model...');
+        this.sendProgress('Starting test generation...');
         
-        // Select test model
-        let testModel: vscode.LanguageModelChat | undefined;
-        if (selectedTestModelId && selectedTestModelId !== 'auto') {
-          const allModels = await vscode.lm.selectChatModels({});
-          testModel = allModels.find(m => `${m.vendor}-${m.family}-${allModels.indexOf(m)}` === selectedTestModelId);
+        // Request test plan
+        const testPlanPrompt = this.constructTestPlanPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, testDescription);
+        this.sendProgress('Requesting test generation plan...');
+        const testPlanResponseText = await this.sendAIRequest(testPlanPrompt + '\n' + followupInstr);
+        const testPlanObj = await this.processAIResponse(testPlanResponseText);
+        this.sendProgress('Test plan received from AI');
+        
+        // Normalize test plan
+        const testFilesList: Array<{path: string; estimate_bytes?: number}> = [];
+        const testChunksMap: Record<string, number> = {};
+        
+        if (Array.isArray(testPlanObj.files)) {
+          for (const f of testPlanObj.files) {
+            if (typeof f === 'string') { testFilesList.push({ path: f }); }
+            else if (f && f.path) { testFilesList.push({ path: f.path, estimate_bytes: f.estimate_bytes }); }
+          }
         }
         
-        if (!testModel) {
-          this.sendProgress('Warning: Test model not found, skipping test generation');
-        } else {
-          this.outputChannel.appendLine(`Using test model: ${testModel.name} (${testModel.vendor}, ${testModel.family})`);
-          
-          // Request test plan
-          const testPlanPrompt = this.constructTestPlanPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, testDescription);
-          this.sendProgress('Requesting test generation plan...');
-          const testPlanResponseText = await this.sendAIRequest(
-            testPlanPrompt + '\n' + followupInstr,
-            testModel,
-            'Request test generation plan'
-          );
-          const testPlanObj = await this.processAIResponse(testPlanResponseText);
-          this.sendProgress('Test plan received from AI');
-          
-          // Normalize test plan
-          const testFilesList: Array<{path: string; estimate_bytes?: number}> = [];
-          const testChunksMap: Record<string, number> = {};
-          
-          if (Array.isArray(testPlanObj.files)) {
-            for (const f of testPlanObj.files) {
-              if (typeof f === 'string') { testFilesList.push({ path: f }); }
-              else if (f && f.path) { testFilesList.push({ path: f.path, estimate_bytes: f.estimate_bytes }); }
-            }
-          }
-          
-          // Send test file list to webview
-          if (testFilesList.length > 0) {
-            const processedTestFilesList = testFilesList.map(f => this.processVariables(f.path, variables));
-            if (this.webview) {
-              this.webview.postMessage({ 
-                command: 'aiTestPlan', 
-                files: processedTestFilesList 
-              });
+        // Send test file list to webview
+        if (testFilesList.length > 0) {
+          const processedTestFilesList = testFilesList.map(f => this.processVariables(f.path, variables));
+          if (this.webview) {
+            this.webview.postMessage({ 
+              command: 'aiTestPlan', 
+              files: processedTestFilesList 
+            });
             }
             this.sendProgress(`Test generation plan includes ${testFilesList.length} files`);
           }
@@ -324,14 +265,9 @@ export class AIPackageGenerator {
           // Process test files in parallel batches
           for (let i = 0; i < testFilesList.length; i += MAX_PARALLEL_FILES) {
             const batch = testFilesList.slice(i, i + MAX_PARALLEL_FILES);
-            const currentTestModel = testModel;
-            if (!currentTestModel) {
-              throw new Error('Test model is not available');
-            }
             await Promise.all(batch.map(f => 
               generateFileWithChunks(
                 f,
-                currentTestModel,
                 testChunksMap,
                 (filePath, chunkIndex, totalChunks) => 
                   this.constructTestFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, testDescription, filePath, chunkIndex, totalChunks),
@@ -341,7 +277,6 @@ export class AIPackageGenerator {
           }
           
           this.sendProgress('Test files generated successfully');
-        }
       }
 
       this.outputChannel.appendLine('AI-powered ROS package generation completed successfully');
@@ -395,64 +330,31 @@ export class AIPackageGenerator {
   }
 
   /**
-   * Send a request to AI using either Copilot SDK or vscode.lm (fallback)
+   * Send a request to AI using Copilot SDK
    * Returns the raw text response that needs to be parsed
    */
-  private async sendAIRequest(prompt: string, model?: vscode.LanguageModelChat, justification?: string): Promise<string> {
-    // Try SDK first if available
-    if (this.sdkService.isSDKAvailable()) {
-      try {
-        let lastLoggedLength = 0;
-        const logInterval = 5000;
-        
-        const response = await this.sdkService.sendMessage(
-          prompt,
-          (partialText) => {
-            // Progress callback for streaming
-            if (partialText.length - lastLoggedLength >= logInterval) {
-              this.sendProgress(`Receiving AI response... (${partialText.length} characters so far)`);
-              lastLoggedLength = partialText.length;
-            }
-          }
-        );
-        
-        this.sendProgress(`AI Response received (${response.length} characters)`);
-        return response;
-      } catch (error) {
-        this.outputChannel.appendLine(`SDK request failed: ${error}`);
-        this.sendProgress('SDK request failed, falling back to vscode.lm');
-        // Fall through to vscode.lm fallback
-      }
+  private async sendAIRequest(prompt: string): Promise<string> {
+    // SDK must be available (no fallback)
+    if (!this.sdkService.isSDKAvailable()) {
+      throw new Error('Copilot SDK is not available');
     }
 
-    // Fallback to vscode.lm
-    if (!model) {
-      throw new Error('No model available for fallback');
-    }
-
-    const response = await model.sendRequest([
-      vscode.LanguageModelChatMessage.User(prompt)
-    ], { justification: justification || 'ROS 2 package generation' });
-
-    let fullResponse = '';
     let lastLoggedLength = 0;
     const logInterval = 5000;
-
-    for await (const part of response.text) {
-      fullResponse += part;
-      
-      if (fullResponse.length > this.maxResponseSize) {
-        throw new Error(`Response too long (${fullResponse.length} characters)`);
+    
+    const response = await this.sdkService.sendMessage(
+      prompt,
+      (partialText) => {
+        // Progress callback for streaming
+        if (partialText.length - lastLoggedLength >= logInterval) {
+          this.sendProgress(`Receiving AI response... (${partialText.length} characters so far)`);
+          lastLoggedLength = partialText.length;
+        }
       }
-      
-      if (fullResponse.length - lastLoggedLength >= logInterval) {
-        this.sendProgress(`Receiving AI response... (${fullResponse.length} characters so far)`);
-        lastLoggedLength = fullResponse.length;
-      }
-    }
-
-    this.sendProgress(`AI Response received (${fullResponse.length} characters)`);
-    return fullResponse;
+    );
+    
+    this.sendProgress(`AI Response received (${response.length} characters)`);
+    return response;
   }
 
   private async processAIResponse(responseText: string): Promise<any> {

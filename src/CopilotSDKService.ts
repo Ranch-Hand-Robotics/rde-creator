@@ -9,14 +9,13 @@ type CopilotSession = any;
 
 /**
  * Service for interacting with GitHub Copilot via the Copilot SDK.
- * Provides a unified interface for AI-powered code generation with automatic
- * fallback to vscode.lm if the SDK is unavailable.
+ * Requires GitHub Copilot CLI to be installed.
+ * No fallback - the SDK is mandatory for this extension to function.
  */
 export class CopilotSDKService {
   private client: CopilotClient | undefined;
   private session: CopilotSession | undefined;
   private outputChannel: vscode.OutputChannel;
-  private useSDK: boolean = true;
   private sdkAvailable: boolean = false;
   private CopilotSDK: any; // Dynamically imported module
 
@@ -26,19 +25,10 @@ export class CopilotSDKService {
 
   /**
    * Initialize the Copilot SDK client.
-   * Attempts to start the CLI server and establish connection.
-   * Falls back to vscode.lm if SDK initialization fails.
+   * Requires Copilot CLI to be installed - no fallback.
+   * @throws Error if SDK initialization fails
    */
-  async initialize(): Promise<boolean> {
-    const config = vscode.workspace.getConfiguration('rosPackageCreator');
-    this.useSDK = config.get<boolean>('useCopilotSDK', true);
-
-    if (!this.useSDK) {
-      this.outputChannel.appendLine('Copilot SDK disabled in settings, using vscode.lm');
-      this.sdkAvailable = false;
-      return false;
-    }
-
+  async initialize(): Promise<void> {
     try {
       this.outputChannel.appendLine('Initializing GitHub Copilot SDK...');
       
@@ -46,6 +36,7 @@ export class CopilotSDKService {
       this.CopilotSDK = await import('@github/copilot-sdk');
       
       // Create client with default options (spawns CLI server via stdio)
+      const config = vscode.workspace.getConfiguration('rosPackageCreator');
       const cliPath = config.get<string>('copilotCLIPath');
       this.client = new this.CopilotSDK.CopilotClient({
         cliPath: cliPath || undefined, // Use default 'copilot' if not specified
@@ -63,15 +54,57 @@ export class CopilotSDKService {
       
       this.sdkAvailable = true;
       this.outputChannel.appendLine('GitHub Copilot SDK initialized successfully');
-      return true;
     } catch (error) {
       this.outputChannel.appendLine(`Failed to initialize Copilot SDK: ${error}`);
-      this.outputChannel.appendLine('Ensure GitHub Copilot CLI is installed: npm install -g @github/copilot');
-      this.outputChannel.appendLine('Falling back to vscode.lm API');
       this.sdkAvailable = false;
       this.client = undefined;
+      throw new Error(`GitHub Copilot SDK is required but failed to initialize: ${error}`);
+    }
+  }
+
+  /**
+   * Check if the Copilot CLI is installed by attempting to import the SDK
+   * @returns true if SDK package is available
+   */
+  static async isCLIInstalled(): Promise<boolean> {
+    try {
+      await import('@github/copilot-sdk');
+      return true;
+    } catch {
       return false;
     }
+  }
+
+  /**
+   * Offer to install the Copilot CLI for the user
+   * @returns true if user chose to install, false otherwise
+   */
+  static async offerToInstallCLI(): Promise<boolean> {
+    const choice = await vscode.window.showErrorMessage(
+      'GitHub Copilot CLI is required for this extension to function. Would you like to install it?',
+      { modal: true },
+      'Install Now',
+      'Learn More',
+      'Cancel'
+    );
+
+    if (choice === 'Install Now') {
+      // Open terminal and run installation command
+      const terminal = vscode.window.createTerminal('Install Copilot CLI');
+      terminal.show();
+      terminal.sendText('npm install -g @github/copilot');
+      
+      await vscode.window.showInformationMessage(
+        'Installing GitHub Copilot CLI... Please wait for the installation to complete, then try again.',
+        'OK'
+      );
+      return true;
+    } else if (choice === 'Learn More') {
+      vscode.env.openExternal(vscode.Uri.parse('https://github.com/github/copilot-sdk'));
+      return false;
+    }
+    
+    return false;
   }
 
   /**

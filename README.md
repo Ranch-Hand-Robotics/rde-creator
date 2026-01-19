@@ -95,51 +95,39 @@ Configuration and asset management:
 
 - **VS Code**: Latest version recommended (1.101.0+)
 - **ROS 2**: Humble, Iron, Jazzy, or Kilted
-- **GitHub Copilot**: For AI-powered generation (optional but recommended)
-- **Node.js**: For the extension itself (comes with VS Code)
-- **GitHub Copilot CLI** (optional): For enhanced background agent functionality
+- **GitHub Copilot CLI** (**Required**): For AI-powered package generation
   - Install with: `npm install -g @github/copilot`
-  - The extension will automatically fall back to VS Code's Language Model API if the CLI is not available
+  - The extension will offer to install it for you if not found
+  - Extension will not function without the CLI
 
-## AI Generation Modes
+## AI Generation
 
-This extension supports two AI generation modes:
-
-### 1. GitHub Copilot SDK (Recommended)
-The extension uses the new GitHub Copilot SDK for background agent functionality when available. This provides:
-- More robust session management
+This extension uses the GitHub Copilot SDK for background agent functionality. This provides:
+- Robust session management
 - Better error handling
 - Improved streaming response processing
 - Official SDK support from GitHub
 
-To use this mode:
-1. Install the Copilot CLI globally: `npm install -g @github/copilot`
-2. The extension will automatically detect and use the SDK
+**Installation**: The extension will automatically check for the GitHub Copilot CLI when you try to create a package. If not installed, you'll be prompted to install it.
 
-### 2. VS Code Language Model API (Fallback)
-If the Copilot SDK is unavailable, the extension automatically falls back to using VS Code's built-in Language Model API. This mode:
-- Works with any installed language model provider
-- Requires GitHub Copilot Chat extension
-- Provides full functionality with slightly different architecture
-
-You can configure which mode to use in the extension settings:
-- `rosPackageCreator.useCopilotSDK`: Enable/disable Copilot SDK usage
+You can configure the CLI path in extension settings:
 - `rosPackageCreator.copilotCLIPath`: Custom path to Copilot CLI (leave empty for default)
 
 ## Troubleshooting
 
 ### Common Issues
 
-**"Language Model API not available"**
-- Ensure GitHub Copilot Chat extension is installed and active
-- Check that you have a valid GitHub Copilot subscription
-- If using Copilot SDK mode, ensure the CLI is installed
+**"GitHub Copilot CLI is required"**
+- Choose "Install Now" when prompted to automatically install the CLI
+- Or manually install: `npm install -g @github/copilot`
+- Verify the CLI is accessible in your PATH
+- After installation, try creating a package again
 
 **"Failed to initialize Copilot SDK"**
-- Install the GitHub Copilot CLI: `npm install -g @github/copilot`
-- Verify the CLI is accessible in your PATH
+- Ensure the GitHub Copilot CLI is installed: `npm install -g @github/copilot`
+- Verify the CLI is accessible in your PATH (run `copilot --version` in terminal)
 - Check extension logs in the "RDE Creator" output channel
-- The extension will automatically fall back to vscode.lm API
+- If you have a custom CLI path, set it in `rosPackageCreator.copilotCLIPath`
 
 **"Template generation failed"**
 - Verify ROS 2 environment is properly sourced
