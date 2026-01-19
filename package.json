@@ -47,6 +47,16 @@
           "default": 50000,
           "minimum": 10000,
           "description": "Maximum AI response size in characters (default: 50000). Increase for larger/more complex packages. Decrease if you encounter memory issues."
+        },
+        "rosPackageCreator.useCopilotSDK": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use GitHub Copilot SDK for background agent functionality. Requires Copilot CLI to be installed. If disabled or unavailable, falls back to vscode.lm API."
+        },
+        "rosPackageCreator.copilotCLIPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the GitHub Copilot CLI executable. Leave empty to use 'copilot' from PATH. Install with: npm install -g @github/copilot"
         }
       }
     },

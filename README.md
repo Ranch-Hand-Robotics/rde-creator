@@ -93,10 +93,38 @@ Configuration and asset management:
 
 ## Requirements
 
-- **VS Code**: Latest version recommended
+- **VS Code**: Latest version recommended (1.101.0+)
 - **ROS 2**: Humble, Iron, Jazzy, or Kilted
 - **GitHub Copilot**: For AI-powered generation (optional but recommended)
 - **Node.js**: For the extension itself (comes with VS Code)
+- **GitHub Copilot CLI** (optional): For enhanced background agent functionality
+  - Install with: `npm install -g @github/copilot`
+  - The extension will automatically fall back to VS Code's Language Model API if the CLI is not available
+
+## AI Generation Modes
+
+This extension supports two AI generation modes:
+
+### 1. GitHub Copilot SDK (Recommended)
+The extension uses the new GitHub Copilot SDK for background agent functionality when available. This provides:
+- More robust session management
+- Better error handling
+- Improved streaming response processing
+- Official SDK support from GitHub
+
+To use this mode:
+1. Install the Copilot CLI globally: `npm install -g @github/copilot`
+2. The extension will automatically detect and use the SDK
+
+### 2. VS Code Language Model API (Fallback)
+If the Copilot SDK is unavailable, the extension automatically falls back to using VS Code's built-in Language Model API. This mode:
+- Works with any installed language model provider
+- Requires GitHub Copilot Chat extension
+- Provides full functionality with slightly different architecture
+
+You can configure which mode to use in the extension settings:
+- `rosPackageCreator.useCopilotSDK`: Enable/disable Copilot SDK usage
+- `rosPackageCreator.copilotCLIPath`: Custom path to Copilot CLI (leave empty for default)
 
 ## Troubleshooting
 
@@ -105,11 +133,19 @@ Configuration and asset management:
 **"Language Model API not available"**
 - Ensure GitHub Copilot Chat extension is installed and active
 - Check that you have a valid GitHub Copilot subscription
+- If using Copilot SDK mode, ensure the CLI is installed
+
+**"Failed to initialize Copilot SDK"**
+- Install the GitHub Copilot CLI: `npm install -g @github/copilot`
+- Verify the CLI is accessible in your PATH
+- Check extension logs in the "RDE Creator" output channel
+- The extension will automatically fall back to vscode.lm API
 
 **"Template generation failed"**
 - Verify ROS 2 environment is properly sourced
 - Check that target directory is writable
 - Ensure template manifests are valid
+- Check for error details in the "RDE Creator" output channel
 
 **"Build failures after generation"**
 - Verify all ROS 2 dependencies are installed
