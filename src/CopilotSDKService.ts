@@ -125,14 +125,20 @@ export class CopilotSDKService {
       
       // Subscribe to session events
       const unsubscribe = this.session!.on((event: any) => {
-        if (event.type === 'assistant.message') {
-          fullResponse = event.data.content;
-          if (onProgress) {
-            onProgress(fullResponse);
+        try {
+          if (event.type === 'assistant.message') {
+            fullResponse = event.data.content;
+            if (onProgress) {
+              onProgress(fullResponse);
+            }
+          } else if (event.type === 'session.error') {
+            this.outputChannel.appendLine(`Session error: ${event.data.message}`);
+            unsubscribe(); // Clean up subscription
+            reject(new Error(event.data.message));
           }
-        } else if (event.type === 'session.error') {
-          this.outputChannel.appendLine(`Session error: ${event.data.message}`);
-          reject(new Error(event.data.message));
+        } catch (error) {
+          unsubscribe(); // Clean up on any error
+          reject(error);
         }
       });
 
@@ -205,52 +211,5 @@ export class CopilotSDKService {
         this.outputChannel.appendLine(`Failed to shutdown client: ${error}`);
       }
     }
-  }
-
-  /**
-   * Fallback method: Use vscode.lm API when SDK is not available
-   * @param prompt The prompt to send
-   * @param onProgress Callback for progress updates
-   * @returns Promise that resolves with the complete response
-   */
-  async sendWithFallback(
-    prompt: string,
-    onProgress?: (text: string) => void
-  ): Promise<string> {
-    // Try SDK first if available
-    if (this.isSDKAvailable() && this.session) {
-      try {
-        return await this.sendMessage(prompt, onProgress);
-      } catch (error) {
-        this.outputChannel.appendLine(`SDK failed, falling back to vscode.lm: ${error}`);
-        // Fall through to vscode.lm fallback
-      }
-    }
-
-    // Fallback to vscode.lm
-    if (!vscode.lm) {
-      throw new Error('Neither Copilot SDK nor vscode.lm is available');
-    }
-
-    this.outputChannel.appendLine('Using vscode.lm API as fallback');
-    const models = await vscode.lm.selectChatModels({});
-    if (models.length === 0) {
-      throw new Error('No language models available');
-    }
-
-    const model = models[0];
-    const response = await model.sendRequest([
-      vscode.LanguageModelChatMessage.User(prompt)
-    ], { justification: 'ROS 2 package generation' });
-
-    let fullResponse = '';
-    for await (const part of response.text) {
-      fullResponse += part;
-      if (onProgress) {
-        onProgress(fullResponse);
-      }
-    }
-
-    return fullResponse;
   }
 }
