@@ -4,7 +4,6 @@
 import * as vscode from 'vscode';
 import { getNonce, getUri, fileNameFromVariable, getAllManifestMap } from './utils';
 import { AIPackageGenerator } from './AIPackageGenerator';
-import { CopilotSDKService } from './CopilotSDKService';
 import * as extension from "./extension";
 
 export class CreateNodePanel {
@@ -50,21 +49,6 @@ export class CreateNodePanel {
 
 
   public static async render(extensionUri: vscode.Uri, targetFolderUri?: vscode.Uri) {
-    // Check if Copilot SDK is available
-    const cliInstalled = await CopilotSDKService.isCLIInstalled();
-    
-    if (!cliInstalled) {
-      // Offer to install the CLI
-      const installed = await CopilotSDKService.offerToInstallCLI();
-      if (!installed) {
-        // User declined or chose to learn more - extension cannot function
-        vscode.window.showWarningMessage('GitHub Copilot CLI is required for this extension. The extension will not be available until the CLI is installed.');
-        return;
-      }
-      // If user chose to install, they need to try again after installation completes
-      return;
-    }
-
     if (CreateNodePanel.currentPanel) {
       CreateNodePanel.currentPanel._panel.reveal(vscode.ViewColumn.One);
       // Update target folder if provided

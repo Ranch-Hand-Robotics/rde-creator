@@ -41,7 +41,7 @@
         "rosPackageCreator.copilotCLIPath": {
           "type": "string",
           "default": "",
-          "description": "Path to the GitHub Copilot CLI executable. Leave empty to use 'copilot' from PATH. Install with: npm install -g @github/copilot"
+          "description": "Custom path to GitHub Copilot CLI executable. Leave empty to use the bundled CLI that comes with the extension."
         }
       }
     },

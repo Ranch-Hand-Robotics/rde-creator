@@ -95,39 +95,31 @@ Configuration and asset management:
 
 - **VS Code**: Latest version recommended (1.101.0+)
 - **ROS 2**: Humble, Iron, Jazzy, or Kilted
-- **GitHub Copilot CLI** (**Required**): For AI-powered package generation
-  - Install with: `npm install -g @github/copilot`
-  - The extension will offer to install it for you if not found
-  - Extension will not function without the CLI
+- **GitHub Copilot SDK**: Bundled with the extension (no separate installation needed)
 
 ## AI Generation
 
-This extension uses the GitHub Copilot SDK for background agent functionality. This provides:
+This extension uses the GitHub Copilot SDK for background agent functionality. The SDK and CLI are **bundled with the extension** - no separate installation required!
+
+Features:
 - Robust session management
 - Better error handling
 - Improved streaming response processing
 - Official SDK support from GitHub
 
-**Installation**: The extension will automatically check for the GitHub Copilot CLI when you try to create a package. If not installed, you'll be prompted to install it.
+The extension works out of the box. Simply install and start creating ROS 2 packages with AI assistance.
 
-You can configure the CLI path in extension settings:
-- `rosPackageCreator.copilotCLIPath`: Custom path to Copilot CLI (leave empty for default)
+You can optionally configure a custom CLI path in extension settings:
+- `rosPackageCreator.copilotCLIPath`: Custom path to Copilot CLI (leave empty to use bundled version)
 
 ## Troubleshooting
 
 ### Common Issues
 
-**"GitHub Copilot CLI is required"**
-- Choose "Install Now" when prompted to automatically install the CLI
-- Or manually install: `npm install -g @github/copilot`
-- Verify the CLI is accessible in your PATH
-- After installation, try creating a package again
-
 **"Failed to initialize Copilot SDK"**
-- Ensure the GitHub Copilot CLI is installed: `npm install -g @github/copilot`
-- Verify the CLI is accessible in your PATH (run `copilot --version` in terminal)
-- Check extension logs in the "RDE Creator" output channel
-- If you have a custom CLI path, set it in `rosPackageCreator.copilotCLIPath`
+- Check extension logs in the "RDE Creator" output channel for details
+- Try reloading VS Code window (Ctrl+Shift+P → "Developer: Reload Window")
+- If issue persists, please report it with the error details from the output channel
 
 **"Template generation failed"**
 - Verify ROS 2 environment is properly sourced
