@@ -5,6 +5,9 @@ This extension provides AI-powered tools to streamline ROS 2 package development
 
 > NOTE: AI Generated code may not always be correct or optimal. Always review and test generated code thoroughly. If you have issues or improvements for the templates, please submit an issue or pull request on GitHub.
 
+
+![Creator](screenshot.png)
+
 ## Getting Started
 
 ### Installation
