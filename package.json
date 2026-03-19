@@ -19,8 +19,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-  ],
+  "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -33,16 +32,6 @@
     "configuration": {
       "title": "Creator for ROS 2",
       "properties": {
-        "rosPackageCreator.lastSelectedModel": {
-          "type": "string",
-          "default": "auto",
-          "description": "Last selected AI model for package generation. Set to 'auto' to use preferred model family."
-        },
-        "rosPackageCreator.lastSelectedTestModel": {
-          "type": "string",
-          "default": "auto",
-          "description": "Last selected AI model for test generation. Set to 'auto' to use preferred model family."
-        },
         "rosPackageCreator.maxAIResponseSize": {
           "type": "number",
           "default": 50000,
@@ -105,6 +94,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "@github/copilot-sdk": "^0.1.22",
     "memfs": "^4.9.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

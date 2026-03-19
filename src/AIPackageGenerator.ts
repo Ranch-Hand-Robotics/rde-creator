@@ -6,11 +6,13 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as yaml from 'yaml';
 import { constructPlanPrompt, constructFileChunkPrompt, constructFollowupPromptInstructions } from './prompts';
+import { CopilotSDKService } from './CopilotSDKService';
 
 export class AIPackageGenerator {
   private outputChannel: vscode.OutputChannel;
   private webview: vscode.Webview | undefined;
   private _isCancelled: boolean = false;
+  private sdkService: CopilotSDKService;
   
   // Maximum AI response size in characters (configurable)
   // Default: 50KB - increase if you need larger/more complex packages
@@ -25,6 +27,7 @@ export class AIPackageGenerator {
     this.outputChannel = outputChannel;
     this.webview = webview;
     this.maxResponseSize = maxResponseSize;
+    this.sdkService = new CopilotSDKService(outputChannel);
   }
 
   /**
@@ -33,6 +36,10 @@ export class AIPackageGenerator {
   public cancel(): void {
     this._isCancelled = true;
     this.outputChannel.appendLine('Generation cancellation requested');
+    // Abort SDK session if active
+    this.sdkService.abort().catch(err => {
+      this.outputChannel.appendLine(`Error aborting SDK session: ${err}`);
+    });
   }
 
   /**
@@ -57,29 +64,13 @@ export class AIPackageGenerator {
     selectedTestModelId?: string
   ): Promise<void> {
     try {
-      // Check if language model access is available
-      if (!vscode.lm) {
-        throw new Error('Language Model API is not available in this VS Code version');
-      }
+      // Initialize SDK - this will throw if SDK is not available
+      await this.sdkService.initialize();
+      this.sendProgress('Using GitHub Copilot SDK for package generation');
+      this.outputChannel.appendLine('Using Copilot SDK for AI generation');
 
-      let model: vscode.LanguageModelChat | undefined;
-      let selectionMethod = 'default';
-
-      // If a specific model was selected by the user, try to find it
-      if (selectedModelId && selectedModelId !== 'auto') {
-        const allModels = await vscode.lm.selectChatModels({});
-        model = allModels.find(m => `${m.vendor}-${m.family}-${allModels.indexOf(m)}` === selectedModelId);
-        if (model) {
-          selectionMethod = `user selected (${model.name})`;
-          this.outputChannel.appendLine(`Using user-selected model: ${model.name} (${model.vendor}, ${model.family})`);
-        }
-      }
-
-      // If no specific model was selected or found, use the configuration-based selection
-      if (!model) {
-          vscode.window.showErrorMessage("Unfortunately the selected language model is not available. Please select a different model and try again.");
-          return;
-      }
+      // Create a session
+      await this.sdkService.createSession(selectedModelId !== 'auto' ? selectedModelId : undefined);
 
       // Read template files and manifest
       const templateContent = await this.readTemplateContent(templatePath);
@@ -96,10 +87,8 @@ export class AIPackageGenerator {
       const planPrompt = constructPlanPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, this.maxResponseSize);
       const followupInstr = constructFollowupPromptInstructions(this.maxResponseSize);
       this.sendProgress('Sending plan request to AI model...');
-      const planResponse = await model.sendRequest([
-        vscode.LanguageModelChatMessage.User(planPrompt + '\n' + followupInstr)
-      ], { justification: 'Request generation plan (file list + chunking)' });
-      const planObj = await this.processAIResponse(planResponse);
+      const planResponseText = await this.sendAIRequest(planPrompt + '\n' + followupInstr);
+      const planObj = await this.processAIResponse(planResponseText);
       this.sendProgress('Plan received from AI');
       this.checkCancellation();
 
@@ -155,7 +144,6 @@ export class AIPackageGenerator {
       // Common file generation function
       const generateFileWithChunks = async (
         f: {path: string; estimate_bytes?: number},
-        aiModel: vscode.LanguageModelChat,
         chunksMapping: Record<string, number>,
         promptConstructor: (filePath: string, chunkIndex: number, totalChunks: number) => string,
         messagePrefix: string
@@ -177,10 +165,8 @@ export class AIPackageGenerator {
             this.checkCancellation();
             const chunkPrompt = promptConstructor(f.path, i, total);
             this.sendProgress(`Requesting ${messagePrefix}chunk ${i}/${total} for ${f.path}`);
-            const chunkResp = await aiModel.sendRequest([
-              vscode.LanguageModelChatMessage.User(chunkPrompt + '\n' + followupInstr)
-            ], { justification: `Request ${messagePrefix}file chunk ${i}/${total} for ${f.path}` });
-            const chunkObj = await this.processAIResponse(chunkResp);
+            const chunkRespText = await this.sendAIRequest(chunkPrompt + '\n' + followupInstr);
+            const chunkObj = await this.processAIResponse(chunkRespText);
             if (!chunkObj || chunkObj.file !== processedPath) {
               throw new Error(`Unexpected ${messagePrefix}chunk response for ${processedPath}`);
             }
@@ -212,14 +198,9 @@ export class AIPackageGenerator {
       for (let i = 0; i < filesList.length; i += MAX_PARALLEL_FILES) {
         this.checkCancellation();
         const batch = filesList.slice(i, i + MAX_PARALLEL_FILES);
-        if (!model) {
-          throw new Error('Language model is not available');
-        }
-        const currentModel = model;
         await Promise.all(batch.map(f => 
           generateFileWithChunks(
             f,
-            currentModel,
             chunksMap,
             (filePath, chunkIndex, totalChunks) => 
               constructFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, filePath, chunkIndex, totalChunks),
@@ -233,48 +214,34 @@ export class AIPackageGenerator {
       // Stage 3: Generate tests if requested
       if (testDescription && testDescription.trim() && selectedTestModelId) {
         this.checkCancellation();
-        this.sendProgress('Starting test generation with separate AI model...');
+        this.sendProgress('Starting test generation...');
         
-        // Select test model
-        let testModel: vscode.LanguageModelChat | undefined;
-        if (selectedTestModelId && selectedTestModelId !== 'auto') {
-          const allModels = await vscode.lm.selectChatModels({});
-          testModel = allModels.find(m => `${m.vendor}-${m.family}-${allModels.indexOf(m)}` === selectedTestModelId);
+        // Request test plan
+        const testPlanPrompt = this.constructTestPlanPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, testDescription);
+        this.sendProgress('Requesting test generation plan...');
+        const testPlanResponseText = await this.sendAIRequest(testPlanPrompt + '\n' + followupInstr);
+        const testPlanObj = await this.processAIResponse(testPlanResponseText);
+        this.sendProgress('Test plan received from AI');
+        
+        // Normalize test plan
+        const testFilesList: Array<{path: string; estimate_bytes?: number}> = [];
+        const testChunksMap: Record<string, number> = {};
+        
+        if (Array.isArray(testPlanObj.files)) {
+          for (const f of testPlanObj.files) {
+            if (typeof f === 'string') { testFilesList.push({ path: f }); }
+            else if (f && f.path) { testFilesList.push({ path: f.path, estimate_bytes: f.estimate_bytes }); }
+          }
         }
         
-        if (!testModel) {
-          this.sendProgress('Warning: Test model not found, skipping test generation');
-        } else {
-          this.outputChannel.appendLine(`Using test model: ${testModel.name} (${testModel.vendor}, ${testModel.family})`);
-          
-          // Request test plan
-          const testPlanPrompt = this.constructTestPlanPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, testDescription);
-          this.sendProgress('Requesting test generation plan...');
-          const testPlanResponse = await testModel.sendRequest([
-            vscode.LanguageModelChatMessage.User(testPlanPrompt + '\n' + followupInstr)
-          ], { justification: 'Request test generation plan' });
-          const testPlanObj = await this.processAIResponse(testPlanResponse);
-          this.sendProgress('Test plan received from AI');
-          
-          // Normalize test plan
-          const testFilesList: Array<{path: string; estimate_bytes?: number}> = [];
-          const testChunksMap: Record<string, number> = {};
-          
-          if (Array.isArray(testPlanObj.files)) {
-            for (const f of testPlanObj.files) {
-              if (typeof f === 'string') { testFilesList.push({ path: f }); }
-              else if (f && f.path) { testFilesList.push({ path: f.path, estimate_bytes: f.estimate_bytes }); }
-            }
-          }
-          
-          // Send test file list to webview
-          if (testFilesList.length > 0) {
-            const processedTestFilesList = testFilesList.map(f => this.processVariables(f.path, variables));
-            if (this.webview) {
-              this.webview.postMessage({ 
-                command: 'aiTestPlan', 
-                files: processedTestFilesList 
-              });
+        // Send test file list to webview
+        if (testFilesList.length > 0) {
+          const processedTestFilesList = testFilesList.map(f => this.processVariables(f.path, variables));
+          if (this.webview) {
+            this.webview.postMessage({ 
+              command: 'aiTestPlan', 
+              files: processedTestFilesList 
+            });
             }
             this.sendProgress(`Test generation plan includes ${testFilesList.length} files`);
           }
@@ -298,14 +265,9 @@ export class AIPackageGenerator {
           // Process test files in parallel batches
           for (let i = 0; i < testFilesList.length; i += MAX_PARALLEL_FILES) {
             const batch = testFilesList.slice(i, i + MAX_PARALLEL_FILES);
-            const currentTestModel = testModel;
-            if (!currentTestModel) {
-              throw new Error('Test model is not available');
-            }
             await Promise.all(batch.map(f => 
               generateFileWithChunks(
                 f,
-                currentTestModel,
                 testChunksMap,
                 (filePath, chunkIndex, totalChunks) => 
                   this.constructTestFileChunkPrompt(templateContent, manifest, variablesObj, naturalLanguageDescription, testDescription, filePath, chunkIndex, totalChunks),
@@ -315,7 +277,6 @@ export class AIPackageGenerator {
           }
           
           this.sendProgress('Test files generated successfully');
-        }
       }
 
       this.outputChannel.appendLine('AI-powered ROS package generation completed successfully');
@@ -331,6 +292,9 @@ export class AIPackageGenerator {
         this.webview.postMessage({ command: 'aiComplete' });
       }
       throw error; // Re-throw instead of falling back to template processing
+    } finally {
+      // Cleanup: destroy SDK session if active
+      await this.sdkService.destroySession();
     }
   }
 
@@ -365,30 +329,37 @@ export class AIPackageGenerator {
     return templateFiles.join('\n');
   }
 
-  private async processAIResponse(response: vscode.LanguageModelChatResponse): Promise<any> {
-    let fullResponse = '';
-    let lastLoggedLength = 0;
-    const logInterval = 5000; // Log every 5000 characters
-
-    for await (const part of response.text) {
-      fullResponse += part;
-      
-      // Check if response is getting too large
-      if (fullResponse.length > this.maxResponseSize) {
-        throw new Error(`Response too long (${fullResponse.length} characters). The AI generated more than ${this.maxResponseSize} characters. Try simplifying your request or increase the maxResponseSize limit.`);
-      }
-      
-      // Only log progress every 5000 characters to reduce spam
-      if (fullResponse.length - lastLoggedLength >= logInterval) {
-        this.sendProgress(`Receiving AI response... (${fullResponse.length} characters so far)`);
-        lastLoggedLength = fullResponse.length;
-      }
+  /**
+   * Send a request to AI using Copilot SDK
+   * Returns the raw text response that needs to be parsed
+   */
+  private async sendAIRequest(prompt: string): Promise<string> {
+    // SDK must be available (no fallback)
+    if (!this.sdkService.isSDKAvailable()) {
+      throw new Error('Copilot SDK is not available');
     }
 
-    this.sendProgress(`AI Response received (${fullResponse.length} characters)`);
+    let lastLoggedLength = 0;
+    const logInterval = 5000;
+    
+    const response = await this.sdkService.sendMessage(
+      prompt,
+      (partialText) => {
+        // Progress callback for streaming
+        if (partialText.length - lastLoggedLength >= logInterval) {
+          this.sendProgress(`Receiving AI response... (${partialText.length} characters so far)`);
+          lastLoggedLength = partialText.length;
+        }
+      }
+    );
+    
+    this.sendProgress(`AI Response received (${response.length} characters)`);
+    return response;
+  }
 
+  private async processAIResponse(responseText: string): Promise<any> {
     // Clean up the response - remove markdown code blocks if present
-    let cleanedResponse = fullResponse.trim();
+    let cleanedResponse = responseText.trim();
     
     // Try to extract JSON from markdown code blocks first (most common case)
     const markdownJsonMatch = cleanedResponse.match(/```(?:json)?\s*\n?(\{[\s\S]*?\})\s*\n?```/);
@@ -420,9 +391,9 @@ export class AIPackageGenerator {
       // Fallback 2: Try to find JSON after common prefixes
       const prefixesToTry = ['Here is the ROS 2 package:', 'Here\'s the package:', 'Package structure:', 'Generated package:', 'Here is the file:', 'Here\'s the chunk:'];
       for (const prefix of prefixesToTry) {
-        const prefixIndex = fullResponse.indexOf(prefix);
+        const prefixIndex = responseText.indexOf(prefix);
         if (prefixIndex !== -1) {
-          const afterPrefix = fullResponse.substring(prefixIndex + prefix.length).trim();
+          const afterPrefix = responseText.substring(prefixIndex + prefix.length).trim();
           const jsonFromRest = afterPrefix.match(/\{[\s\S]*\}/);
           if (jsonFromRest) {
             try {
@@ -435,8 +406,8 @@ export class AIPackageGenerator {
       }
 
       this.sendProgress(`Failed to parse AI response as JSON: ${error}`);
-      this.sendProgress(`Response preview: ${fullResponse.substring(0, 200)}...`);
-      throw new Error(`AI response is not valid JSON. Response starts with: "${fullResponse.substring(0, 100)}..."`);
+      this.sendProgress(`Response preview: ${responseText.substring(0, 200)}...`);
+      throw new Error(`AI response is not valid JSON. Response starts with: "${responseText.substring(0, 100)}..."`);
     }
   }
 

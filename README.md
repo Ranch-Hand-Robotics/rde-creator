@@ -93,23 +93,36 @@ Configuration and asset management:
 
 ## Requirements
 
-- **VS Code**: Latest version recommended
+- **VS Code**: Latest version recommended (1.101.0+)
 - **ROS 2**: Humble, Iron, Jazzy, or Kilted
-- **GitHub Copilot**: For AI-powered generation (optional but recommended)
-- **Node.js**: For the extension itself (comes with VS Code)
+- **GitHub Copilot SDK**: Bundled with the extension (no separate installation needed)
+
+## AI Generation
+
+This extension uses the GitHub Copilot SDK for background agent functionality. The SDK and CLI are **bundled with the extension** - no separate installation or configuration required!
+
+Features:
+- Robust session management
+- Better error handling
+- Improved streaming response processing
+- Official SDK support from GitHub
+
+The extension works out of the box. Simply install and start creating ROS 2 packages with AI assistance.
 
 ## Troubleshooting
 
 ### Common Issues
 
-**"Language Model API not available"**
-- Ensure GitHub Copilot Chat extension is installed and active
-- Check that you have a valid GitHub Copilot subscription
+**"Failed to initialize Copilot SDK"**
+- Check extension logs in the "RDE Creator" output channel for details
+- Try reloading VS Code window (Ctrl+Shift+P → "Developer: Reload Window")
+- If issue persists, please report it with the error details from the output channel
 
 **"Template generation failed"**
 - Verify ROS 2 environment is properly sourced
 - Check that target directory is writable
 - Ensure template manifests are valid
+- Check for error details in the "RDE Creator" output channel
 
 **"Build failures after generation"**
 - Verify all ROS 2 dependencies are installed
